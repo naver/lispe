@@ -33,6 +33,14 @@ typedef int16_t (LispE::*checkBasicEval)(Listincode*);
 //------------------------------------------------------------
 string LispVersion();
 //------------------------------------------------------------
+#ifdef LISPE_WASM
+LispE* global_lispe(long i = 0);
+bool clean_global_lispe(long i);
+bool reset_global_lispe(long i);
+void clean_all_global_lispe();
+long create_global_lispe();
+#endif
+//------------------------------------------------------------
 #define the_char_max(x,y) (x < y)?y:x
 //------------------------------------------------------------
 // The main class to handle the Lisp Interpreter
@@ -490,7 +498,7 @@ public:
     
     Element* load_library(string name);
     Element* extension(string, Element* e = NULL);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
     Element* EVAL(u_ustring&);
     Element* EVAL(wstring& w) {
         u_ustring s = _w_to_u(w);
@@ -604,7 +612,7 @@ public:
         delegation->windowmode = wnd;
     }
     
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
     inline bool sendError() {
         delegation->set_end();
         return false;
@@ -1227,6 +1235,22 @@ public:
 
     inline bool localsave(Element* e, List* l) {
         return execution_stack.back()->localsave(e, l);
+    }
+
+    inline string get_variable_string(int16_t label) {
+        return execution_stack.back()->variables.at(label)->toString(this);
+    }
+
+    inline u_ustring get_variable_ustring(int16_t label) {
+        return execution_stack.back()->variables.at(label)->asUString(this);
+    }
+
+    inline long get_variable_integer(int16_t label) {
+        return execution_stack.back()->variables.at(label)->asInteger();
+    }
+
+    inline double get_variable_number(int16_t label) {
+        return execution_stack.back()->variables.at(label)->asNumber();
     }
 
     inline Element* get_variable(string name) {

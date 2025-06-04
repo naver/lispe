@@ -164,7 +164,7 @@ public:
     unordered_map<u_ustring, ThreadLock*> locks;
     unordered_map<u_ustring, BlockThread*> waitons;
     
-    unordered_map<u_ustring, List> thread_pool;
+    unordered_map<u_ustring, List*> thread_pool;
 
     //this is an all-purpose pool for internal usage
 
@@ -189,10 +189,12 @@ public:
     Atome* _TERMINAL;
     Atome* _TRUE;
     Atome* _NULL;
+    Atome* _CUT;
     Atome* _EMPTYATOM;
     Atome* _LISTSEPARATOR;
     Atome* _DEFPAT;
     Atome* _DEFPRED;
+    Atome* _defprol;
     Atome* _DICO_INTEGER;
     Atome* _DICO_NUMBER;
     Atome* _DICO_STRING;
@@ -225,7 +227,7 @@ public:
     long i_current_line;
     long i_current_file;
     int16_t stop_execution;
-    
+
     bool* windowmode;
 
     bool next_stop;
@@ -725,7 +727,7 @@ public:
         lock.unlocking(true);
     }
     
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
     void throwError() {
         //We need to  check if the error has not be thrown yet
         stop_execution &= 0xFFFE;
@@ -803,8 +805,12 @@ public:
     void thread_store(u_ustring& key, Element* e) {
         e = e->fullcopy();
         lock.locking();
-        thread_pool[key].status = 1;
-        thread_pool[key].append(e);
+        if (thread_pool.find(key) == thread_pool.end()) {
+            thread_pool[key] = new List();
+            thread_pool[key]->increment();
+        }
+        thread_pool[key]->status = 1;
+        thread_pool[key]->append(e);
         lock.unlocking();
     }
     
@@ -814,7 +820,7 @@ public:
         lock.locking();
         for (auto& a: thread_pool) {
             key = a.first;
-            d->recording(key, a.second.copying(true));
+            d->recording(key, a.second->copying(true));
         }
         lock.unlocking();
         return d;
@@ -825,7 +831,7 @@ public:
         lock.locking();
         const auto& a = thread_pool.find(key);
         if (a != thread_pool.end())
-            v = a->second.copying(true);
+            v = a->second->copying(true);
         lock.unlocking();
         return v;
     }
@@ -833,7 +839,7 @@ public:
     void thread_clear_all() {
         lock.locking();
         for (auto& a: thread_pool) {
-            a.second.clear();
+            a.second->decrement();
         }
         thread_pool.clear();
         lock.unlocking();
@@ -843,7 +849,7 @@ public:
         lock.locking();
         const auto& a = thread_pool.find(key);
         if (a != thread_pool.end()) {
-            a->second.clear();
+            a->second->clear();
             lock.unlocking();
             return true;
         }

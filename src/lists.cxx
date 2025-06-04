@@ -106,7 +106,7 @@ void u_links::push_back_as_last(LispE* lisp, Element* v) {
     }
 
     e->connect_as_last(v);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
     if (e->error) {
         e->error = false;
         lisp->delegation->set_error(new Error("Error: Cannot add an element to this linked list"));
@@ -8241,7 +8241,7 @@ void LList::push_element_back(LispE* lisp, List* l) {
         }
         else {
             current->u_push(u);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
             if (current->error) {
                 current->error = false;
                 lisp->delegation->set_error(new Error("Error: Cannot add an element to this linked list"));
@@ -8256,7 +8256,7 @@ void LList::push_element_back(LispE* lisp, List* l) {
             current = u;
             u = new u_link(value->copying(false));
             current->u_push(u);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
             if (current->error) {
                 current->error = false;
                 lisp->delegation->set_error(new Error("Error: Cannot add an element to this linked list"));
@@ -8909,7 +8909,7 @@ Element* LList::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
     }
     else {
         last->u_push(u);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
             if (last->error) {
                 last->error = false;
                 return lisp->delegation->set_error(new Error("Error: Cannot add an element to this linked list"));

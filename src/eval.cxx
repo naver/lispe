@@ -18,6 +18,7 @@
 //------------------------------------------------------------------------------------------
 string get_char(jag_get* h);
 //------------------------------------------------------------------------------------------
+
 void List::evalAsUString(long i, LispE* lisp, u_ustring& w) {
     Element* e = liste[i]->eval(lisp);
     w = e->asUString(lisp);
@@ -445,12 +446,155 @@ Element* Instruction::eval(LispE* lisp) {
 // This function is called when the 'eval' instruction is executed on a string
 // We need to clean the garbage after the compiling
 //------------------------------------------------------------------------------
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 Element* LispE::EVAL(u_ustring& code) {
     return _eval(code);
 }
 #endif
 
+
+#ifdef LISPE_WASM
+string eval_js(string code, bool& error);
+void eval_js_sync(LispE* lisp, string& code, List* recall);
+
+Element* List::evall_js(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    string code;
+    if (element->isList()) {
+        Element* e;
+        if (!element->size()) {
+            element->release();
+            throw new Error ("Error: empty list");
+        }
+        code = element->index(0)->toString(lisp);
+        code += "(";
+        try {
+            for (long i = 1; i < element->size();i++) {
+                if (i != 1)
+                    code += ", ";
+                e = element->index(i)->eval(lisp);
+                code += e->jsonify(lisp);
+                e->release();
+            }
+        }
+        catch(Error* err) {
+            element->release();
+            throw err;
+        }
+        code += ");";
+    }
+    else
+        code = element->toString(lisp);
+    element->release();
+    bool err = false;
+    code = eval_js(code, err);
+    if (err)
+        return new Error(code);
+    return lisp->provideString(code);
+}
+
+Element* List::evall_js_sync(LispE* lisp) {
+    static int i = 0;
+    Element* element = liste[1]->eval(lisp);
+    string code;
+    if (element->isList()) {
+        Element* e;
+        if (!element->size()) {
+            element->release();
+            throw new Error ("Error: empty list");
+        }
+        code = element->index(0)->toString(lisp);
+        code += "(";
+        try {
+            for (long i = 1; i < element->size();i++) {
+                if (i != 1)
+                    code += ", ";
+                e = element->index(i)->eval(lisp);
+                code += e->jsonify(lisp);
+                e->release();
+            }
+        }
+        catch(Error* err) {
+            element->release();
+            throw err;
+        }
+        code += ");";
+    }
+    else
+        code = element->toString(lisp);
+
+    element->release();
+    long sz = liste.size();
+    List* recall = lisp->provideList();
+    element = liste[2]->eval(lisp);
+    recall->append(element);
+    recall->append(null_);
+    for (long i = 3; i < sz; i++) {
+        element = liste[i]->eval(lisp);
+        recall->append(element->quoting());
+    }
+    eval_js_sync(lisp, code, recall);
+    return true_;
+}
+
+Element* LispE::eval(u_ustring& code) {
+    long garbage_size = garbages.size();
+    bool add = delegation->add_to_listing;
+    delegation->add_to_listing = false;
+    
+    //First we compile it, some elements will be stored in the garbage
+    //essentially lists and dictionaries
+    //eval can be called when threads are active, we need then to protect
+    //the access to the inner dictionaries
+    Element* e = NULL;
+    try {
+        e = compile_lisp_code(code);
+        e = e->eval(this);
+    }
+    catch (Error* err) {
+        if (e != NULL)
+            e->release();
+        e = err;
+    }
+
+    delegation->add_to_listing = add;
+
+    //If nothing has been added to the garbage collector, we return the obtained value.
+    if (garbage_size == garbages.size())
+        return e;
+    
+    //We protect our new value, it can be saved in the garbage.
+    //It's better not to lose it... We protect these elements recursively
+    //Their status will be s_protect (status == 254).
+    //We will put their value back to 0 at the end of the process
+    e->protecting(true, this);
+    
+    //temporary keeps track of the elements that will be stored back in the
+    //garbage...
+    Element* element;
+    temporary.clear();
+    for (long index = garbage_size; index < garbages.size(); index++) {
+        element = garbages[index];
+        // Unprotected elements are destroyed
+        if (garbages[index]->status == s_constant) {
+            delete garbages[index];
+        }
+        else //This is the returned value, we want to be able to destroy it later.
+            if (garbages[index]->status != s_protect)
+                temporary.push_back(garbages[index]);
+    }
+    
+    //Delete section from pick-up
+    garbages.erase(garbages.begin()+garbage_size, garbages.end());
+    //Then we add temporary, this way we avoid holes in the structure.
+    for (const auto& a: temporary)
+        garbages.push_back(a);
+    
+    //We de-protect... Note that we now give the status s_destructible in this case
+    e->protecting(false, this);
+    return e;
+}
+#else
 Element* LispE::eval(u_ustring& code) {
     long garbage_size = garbages.size();
     bool add = delegation->add_to_listing;
@@ -514,6 +658,7 @@ Element* LispE::eval(u_ustring& code) {
     e->protecting(false, this);
     return e;
 }
+#endif
 //--------------------------------------------------------------------------------
 
 Element* List::evall_break(LispE* lisp) {
@@ -583,7 +728,8 @@ Element* List::evall_addr_(LispE* lisp) {
 }
 
 
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
+
 Element* List::evall_root(LispE* lisp) {
     size_t listsize = liste.size();
 
@@ -1057,6 +1203,29 @@ Element* List::evall_defpred(LispE* lisp) {
     return lisp->recordingMethod(this, label);
 }
 
+Element* List::evall_defprol(LispE* lisp) {
+    //if the function was created on the fly, we need to store its contents
+    //in the garbage
+    if (!is_protected()) {
+        lisp->storeforgarbage(this);
+        garbaging_values(lisp);
+    }
+
+    if (liste.size() < 4)
+        throw new Error("Error: wrong number of arguments");
+    
+    int16_t label;
+    
+    //We declare a function
+    label = liste[1]->label();
+    if (label == v_null)
+        throw new Error(L"Error: Missing name in the declaration of a function");
+    if (!liste[2]->isList())
+        throw new Error(L"Error: List of missing parameters in a function declaration");
+    last(lisp)->setterminal();
+    return lisp->recordingMethod(this, label);
+}
+
 Element* List::evall_defspace(LispE* lisp) {
     int16_t label = liste[1]->label();
     if (label == l_thread)
@@ -1372,7 +1541,7 @@ Element* List::evall_setg(LispE* lisp) {
     return True_;
 }
 
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 Element* List::evall_let(LispE* lisp) {
     long i;
     vector<uint16_t> labels;

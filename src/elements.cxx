@@ -46,7 +46,7 @@ Rankloop::Rankloop(LispE* lp, List* l) : List(l,0) {
     max_iterator = 0;
 }
 //------------------------------------------------------------------------------------------
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 int16_t Element::function_label(LispE* lisp) {
     lisp->delegation->set_error(new Error("Error: Not a function or a data structure"));
     return -1;
@@ -888,14 +888,14 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         
         Element* params;
         
-        if (type == l_defun || type == l_defpat || type == l_deflib || type == l_defpred) {
+        if (type == l_defun || type == l_defpat || type == l_deflib || type == l_defpred || type == l_defprol) {
             code += "(";
             code += lisp->toString(type);
             code += " ";
             code += index(1)->toString(lisp);
             code += " ";
             params = index(2);
-            if (type == l_defpat || type == l_defpred) {
+            if (type == l_defpat || type == l_defpred || type == l_defprol) {
                 code += "(";
                 string local;
                 for (long i = 0; i < params->size(); i++) {

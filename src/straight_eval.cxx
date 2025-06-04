@@ -3661,7 +3661,7 @@ Element* List_xor_eval::eval(LispE* lisp) {
     return booleans_[test];
 }
 
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 Element* List_setqv_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     if (thrown_error)
@@ -3831,7 +3831,7 @@ Element* List_print_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         for (long i = 1; i < listsize; i++) {
             element = liste[i]->eval(lisp);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
             if (thrown_error != NULL)
                 return thrown_error;
 #endif
@@ -3860,7 +3860,7 @@ Element* List_printerr_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         for (long i = 1; i < listsize; i++) {
             element = liste[i]->eval(lisp);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
             if (thrown_error != NULL)
                 return thrown_error;
 #endif
@@ -3888,7 +3888,7 @@ Element* List_printerrln_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         for (long i = 1; i < listsize; i++) {
             element = liste[i]->eval(lisp);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
             if (thrown_error != NULL)
                 return thrown_error;
 #endif
@@ -3919,7 +3919,7 @@ Element* List_println_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         for (long i = 1; i < listsize; i++) {
             element = liste[i]->eval(lisp);
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
             if (thrown_error != NULL)
                 return thrown_error;
 #endif
@@ -4273,7 +4273,7 @@ Element* List_max_eval::eval(LispE* lisp) {
     return first_element;
 }
 
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 Element* List_maybe_eval::eval(LispE* lisp) {
     long listsize = liste.size();
     Element* first_element;
@@ -4787,7 +4787,7 @@ Element* List_converttoatom_eval::eval(LispE* lisp) {
 Element* List_bodies_eval::eval(LispE* lisp) {
     Element* function = liste[1]->eval(lisp);
     int16_t ty = function->protected_index(lisp, (long)0)->type;
-    if (ty == l_defpat || ty == l_defpred) {
+    if (ty == l_defpat || ty == l_defpred || ty == l_defprol) {
         List* functions =  lisp->provideList();
         int16_t label = function->protected_index(lisp, (long)1)->label();
         lisp->checkState(this);
@@ -4805,7 +4805,7 @@ Element* List_bodies_eval::eval(LispE* lisp) {
     return function;
 }
 
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 Element* List_catch_eval::eval(LispE* lisp) {
     long listsize = liste.size();
     Element* element = null_;

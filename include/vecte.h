@@ -771,7 +771,7 @@ public:
     }
 
     inline void extend(vecte_a<Z>* val) {
-        items->extend(val->item, val->home);
+        items->extend(val->items, val->home);
     }
 
     inline Z& operator[](long pos) {
@@ -1239,7 +1239,7 @@ public:
     }
 
     inline void extend(vecte_n<Z>* val) {
-        items->extend(val->item, val->home);
+        items->extend(val->items, val->home);
     }
 
     inline Z& operator[](long pos) {

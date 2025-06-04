@@ -8705,9 +8705,47 @@ Element* List::evall_powerequal2(LispE* lisp) {
 
 //------------------------------------------------------------------------------------------
 
-typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_iabs,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf} math;
+typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_iabs,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf, math_cosine} math;
 
 
+//------------------------------------------------------------------------------------------
+float cosine_similarity(vecte_a<float>& values, vecte_a<float>& v) {
+    float dot_product = 0.0;
+    float magnitude_A = 0.0;
+    float magnitude_B = 0.0;
+    
+    for (size_t i = 0; i < values.size(); ++i) {
+        dot_product += values[i] * v[i];
+        magnitude_A += values[i] * values[i];
+        magnitude_B += v[i] * v[i];
+    }
+    
+    if (!magnitude_A || !magnitude_B)
+        return 0.0;
+    
+    float similarity = dot_product / (std::sqrt(magnitude_A) * std::sqrt(magnitude_B));
+    return similarity;
+}
+
+double cosine_similarity(vecte_a<double>& values, vecte_a<double>& v) {
+    double dot_product = 0.0;
+    double magnitude_A = 0.0;
+    double magnitude_B = 0.0;
+    
+    for (size_t i = 0; i < values.size(); ++i) {
+        dot_product += values[i] * v[i];
+        magnitude_A += values[i] * values[i];
+        magnitude_B += v[i] * v[i];
+    }
+    
+    if (!magnitude_A || !magnitude_B)
+        return 0.0;
+    
+    double similarity = dot_product / (std::sqrt(magnitude_A) * std::sqrt(magnitude_B));
+    return similarity;
+}
+
+//------------------------------------------------------------------------------------------
 long gcd_math(long a, long b)
 {
     // Everything divides 0
@@ -9091,6 +9129,20 @@ public:
                 long vv = lisp->get_variable(U"vaal")->asInteger();
                 return lisp->provideInteger(hcf_math(v,vv));
             }
+            case math_cosine: {
+                Element* valb = lisp->get_variable(U"valb");
+                if (valb->label() != val_v->label() || valb->size() != val_v->size())
+                    throw new Error("Error: expected 'floats' or 'numbers' or same size lists");
+                if (valb->label() == t_floats) {
+                    float v = cosine_similarity(((Floats*)val_v)->liste, ((Floats*)valb)->liste);
+                    return lisp->provideFloat(v);
+                }
+                if (valb->label() == t_numbers) {
+                    double v = cosine_similarity(((Numbers*)val_v)->liste, ((Numbers*)valb)->liste);
+                    return lisp->provideNumber(v);
+                }
+                throw new Error("Error: Incompatible types, expected 'floats' or 'numbers'");
+            }
         }
         return zero_;
     }
@@ -9101,6 +9153,9 @@ public:
         switch (m) {
             case math_fabs: {
                 return L"compute the absolute value of a float type number";
+            }
+            case math_iabs: {
+                return L"compute the absolute value of an integer type number";
             }
             case math_acos: {
                 return L"compute the arc cosine";
@@ -9205,6 +9260,9 @@ public:
             case math_degree: {
                 return L"convert a value in 'radian' into 'degree'";
             }
+            case math_cosine: {
+                return L"Returns the cosine similarity between two vectors";
+            }
         }
         return L"";
     }
@@ -9253,6 +9311,8 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib trunc (val)", new Math(lisp, math_trunc));
     lisp->extension("deflib radian (val)", new Math(lisp, math_radian));
     lisp->extension("deflib degree (val)", new Math(lisp, math_degree));
+    
+    lisp->extension("deflib cosine (val valb)", new Math(lisp, math_cosine));
     
     u_ustring nom = U"_pi";
     Element* value = lisp->provideNumber(M_PI);

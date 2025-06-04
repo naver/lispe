@@ -38,7 +38,7 @@ bool Listargumentquote::unify(LispE* lisp, Element* value, bool record) {
     return liste[1]->unify(lisp, value, false);
 }
 
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 bool Listargumentfunction::unify(LispE* lisp, Element* value, bool record) {
     //If it is a function embedding: (flip (in 'str x))
     liste.object = value;

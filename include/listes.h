@@ -41,6 +41,10 @@ public:
     int16_t label() {
         return function_label;
     }
+    
+    List* asBody() {
+        return (List*)body;
+    }
 };
 
 class ITEM {
@@ -1063,8 +1067,9 @@ public:
         return (liste.size());
     }
     
-    Element* eval_pattern(LispE* lisp, int16_t function_name);
-    Element* eval_predicate(LispE* lisp, int16_t function_name);
+    Element* eval_pattern(LispE* lisp, List* body);
+    Element* eval_predicate(LispE* lisp, List* body);
+    Element* eval_prolog(LispE* lisp, List* body);
     
     void evalthread(LispE*, List* body);
     Element* evalfunction(LispE*, Element* body);
@@ -1348,6 +1353,7 @@ public:
     Element* evall_defmacro(LispE* lisp);
     Element* evall_defpat(LispE* lisp);
     Element* evall_defpred(LispE* lisp);
+    Element* evall_defprol(LispE* lisp);
     Element* evall_defspace(LispE* lisp);
     Element* evall_defun(LispE* lisp);
     Element* evall_divide(LispE* lisp);
@@ -1360,6 +1366,10 @@ public:
     Element* evall_ife(LispE* lisp);
     Element* evall_index_zero(LispE* lisp);
     Element* evall_input(LispE* lisp);
+#ifdef LISPE_WASM
+    Element* evall_js(LispE* lisp);
+    Element* evall_js_sync(LispE* lisp);
+#endif
     Element* evall_lambda(LispE* lisp);
     Element* evall_last(LispE* lisp);
     Element* evall_leftshiftequal(LispE* lisp);
@@ -1469,32 +1479,32 @@ public:
     
     inline Element* evalt_function(LispE* lisp) {
         //In this case, it must be a function call (t_function)
-        return eval_function(lisp, (List*)((Atomefonction*)liste[0])->body);
+        return eval_function(lisp, ((Atomefonction*)liste[0])->asBody());
     }
     
     inline Element* evalt_library_function(LispE* lisp) {
         //In this case, it must be a function call (t_function)
-        return eval_library_function(lisp, (List*)((Atomefonction*)liste[0])->body);
+        return eval_library_function(lisp, ((Atomefonction*)liste[0])->asBody());
     }
     
     inline Element* evalt_pattern(LispE* lisp) {
         //In this case, it must be a pattern function call (t_pattern)
-        return eval_pattern(lisp, ((Atomefonction*)liste[0])->function_label);
+        return eval_pattern(lisp, ((Atomefonction*)liste[0])->asBody());
     }
 
     inline Element* evalt_predicate(LispE* lisp) {
         //In this case, it must be a pattern function call (t_predicate)
-        return eval_predicate(lisp, ((Atomefonction*)liste[0])->function_label);
+        return eval_predicate(lisp, ((Atomefonction*)liste[0])->asBody());
     }
 
     inline Element* evalt_lambda(LispE* lisp) {
         //In this case, it must be a self call (t_self)
-        return eval_lambda(lisp, (List*)((Atomefonction*)liste[0])->body);
+        return eval_lambda(lisp, ((Atomefonction*)liste[0])->asBody());
     }
     
     inline Element* evalt_thread(LispE* lisp) {
         //In this case, it must be a self call (t_self)
-        return eval_thread(lisp, (List*)((Atomefonction*)liste[0])->body);
+        return eval_thread(lisp, ((Atomefonction*)liste[0])->asBody());
     }
     
     inline Element* evalt_data(LispE* lisp) {
@@ -4511,11 +4521,10 @@ public:
         function_label = body->liste[1]->label();
     }
 
-    List_pattern_eval(List* b, int16_t flabel) : body(b) {
-        liste.push_element(b);
-        type = t_eval;
+    List_pattern_eval(List* l, List* b) : body(b), Listincode(l) {
+        type = t_call;
         status = s_constant;
-        function_label = flabel;
+        function_label = body->liste[1]->label();
     }
 
     bool eval_Boolean(LispE* lisp, int16_t instruction);
@@ -4549,11 +4558,47 @@ public:
         function_label = body->liste[1]->label();
     }
 
-    List_predicate_eval(List* b, int16_t flabel) : body(b) {
+    List_predicate_eval(List* l, List* b) : body(b), Listincode(l) {
+        type = t_call;
+        status = s_constant;
+        function_label = body->liste[1]->label();
+    }
+
+    bool eval_Boolean(LispE* lisp, int16_t instruction);
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    int16_t label() {
+        return t_call;
+    }
+    
+};
+
+class List_prolog_eval : public Listincode {
+public:
+    List* body;
+    int16_t function_label;
+    
+    List_prolog_eval(Listincode* l, List* b) : body(b), Listincode(l) {
+        type = t_call;
+        status = s_constant;
+        function_label = body->liste[1]->label();
+    }
+    
+    List_prolog_eval(List* b) : body(b) {
         liste.push_element(b);
         type = t_eval;
         status = s_constant;
-        function_label = flabel;
+        function_label = body->liste[1]->label();
+    }
+
+    List_prolog_eval(List* l, List* b) : body(b), Listincode(l) {
+        type = t_call;
+        status = s_constant;
+        function_label = body->liste[1]->label();
     }
 
     bool eval_Boolean(LispE* lisp, int16_t instruction);
@@ -9218,7 +9263,7 @@ public:
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
-        return (liste.empty()?t_floats:v_null);
+        return (liste.empty()?v_null:t_floats);
     }
     
     Element* reverse(LispE*, bool duplique = true);
@@ -9717,7 +9762,7 @@ public:
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
-        return (liste.empty()?t_numbers:v_null);
+        return (liste.empty()?v_null:t_numbers);
     }
     
     Element* reverse(LispE*, bool duplique = true);
@@ -10211,7 +10256,7 @@ public:
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
-        return (liste.empty()?t_integers:v_null);
+        return (liste.empty()?v_null:t_integers);
     }
     
     Element* reverse(LispE*, bool duplique = true);
@@ -10657,7 +10702,7 @@ public:
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
-        return (liste.empty()?t_integers:v_null);
+        return (liste.empty()?v_null:t_integers);
     }
     
     Element* reverse(LispE*, bool duplique = true);
@@ -11166,7 +11211,7 @@ public:
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
-        return (liste.empty()?t_strings:v_null);
+        return (liste.empty()?v_null:t_strings);
     }
     
     Element* reverse(LispE*, bool duplique = true);
@@ -11677,7 +11722,7 @@ public:
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
-        return (liste.empty()?t_stringbytes:v_null);
+        return (liste.empty()?v_null:t_stringbytes);
     }
     
     Element* reverse(LispE*, bool duplique = true);

@@ -49,6 +49,9 @@ Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long
             case l_defpred:
                 function = new List_predicate_eval((List*)function);
                 break;
+            case l_defprol:
+                function = new List_prolog_eval((List*)function);
+                break;
             case l_defpat:
                 function = new List_pattern_eval((List*)function);
                 break;
@@ -297,7 +300,7 @@ Element* List_library_eval::eval(LispE* lisp) {
         lisp->pop();
         return lisp->check_error(this, err, idxinfo);
     }
-#ifndef LISPE_WASM
+#ifndef LISPE_WASM_NO_EXCEPTION
     catch (void* x) {
         lisp->pop();
         if (((Error*)x)->type == t_error)
@@ -554,7 +557,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         arguments->release();
-#ifndef LISPE_WASM
+#ifndef LISPE_WASM_NO_EXCEPTION
         err->release();
 #endif
         return null_;
@@ -662,7 +665,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             }
         }
         catch (Error* err) {
-#ifndef LISPE_WASM
+#ifndef LISPE_WASM_NO_EXCEPTION
         err->release();
 #endif
             success = false;
@@ -698,17 +701,209 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     lisp->pop(null_);
     lisp->resetStack();
     lisp->check_end_trace(tr);
-    return null_;
+    wstring message = L"Error: Could not find a match for function: '";
+    message += lisp->asString(function_label);
+    message += L"'";
+    throw new Error(message);
 }
 
 /*
  ------------------------------------------------------------------------
- Evaluation of defpat rule  in a eval
+ Evaluation of defprol rules
  ------------------------------------------------------------------------
 */
 
-Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
-    List_pattern_eval lpe(this, function_label);
+Element* List_prolog_eval::eval(LispE* lisp) {
+    List* arguments = lisp->provideList();
+    Element* element;
+    Element* body;
+    
+    long i;
+    //We calculate our values in advance, in the case of a recursive call, we must
+    //use current values on the stack
+    long nbarguments = liste.size()-1;
+    int16_t ilabel = -1;
+    int16_t sublabel = -1;
+    char match;
+    char depth = lisp->depths[function_label] - 1;
+
+    try {
+        lisp->checkState(this);
+        for (i = 1; i <= nbarguments; i++) {
+            element = liste[i]->eval(lisp);
+            
+            ilabel = lisp->extractdynamiclabel(element, depth);
+            if (ilabel > l_final && element->type != t_data) {
+                match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
+                if (match != check_ok) {
+                    arguments->clear();
+                    throw &lisp->delegation->predicate_error;
+                }
+            }
+            //We keep the track of the first element as it used as an index to gather pattern methods
+            if (i == 1)
+                sublabel = ilabel;
+            arguments->append(element->duplicate_constant(lisp));
+        }
+    }
+    catch (Error* err) {
+        arguments->release();
+#ifndef LISPE_WASM_NO_EXCEPTION
+        err->release();
+#endif
+        return null_;
+    }
+
+    char tr = lisp->check_trace_in_function();
+
+    body = NULL;
+    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
+    auto subfunction = functions.find(sublabel);
+    if (subfunction == functions.end()) {
+        sublabel = v_null;
+        //We check, if we have a rollback function
+        subfunction = functions.find(sublabel);
+        if (subfunction == functions.end()) {
+            arguments->release();
+            lisp->resetStack();
+            return null_;
+        }
+    }
+
+    body = subfunction->second[0];
+
+    ilabel = 1;
+    match = 0;
+    long sz = subfunction->second.size();
+    lisp->push(body);
+    Element* copying;
+    Element* ele;
+    
+    List* final_result = lisp->provideList();
+    bool end_of_execution = false;
+    
+    while (body != NULL) {
+        match = false;
+        while (!match && body != NULL) {
+            element = body->index(2);
+            if (element->size() == nbarguments) {
+                match = true;
+                copying = null_;
+                for (i = 0; i < nbarguments && match; i++) {
+                    ele = element->index(i);
+                    if (ele->isUnifiable()) {
+                        copying = arguments->liste[i]->fullcopy();
+                        match = ele->unify(lisp, copying, true);
+                    }
+                    else {
+                        copying = null_;
+                        match = ele->unify(lisp,arguments->liste[i], true);
+                    }
+                }
+                
+                if (match) {
+                    lisp->setstackfunction(body);
+                    break;
+                }
+                copying->release();
+                lisp->clear_top_stack();
+            }
+            body = NULL;
+            if (ilabel < sz)
+                body = subfunction->second[ilabel++];
+            else {
+                if (sublabel != v_null) {
+                    sublabel = v_null;
+                    ilabel = 1;
+                    //We check, if we have a rollback function
+                    subfunction = functions.find(sublabel);
+                    if (subfunction != functions.end()) {
+                        body = subfunction->second[0];
+                        sz = subfunction->second.size();
+                    }
+                }
+            }
+        }
+        if (!match) {
+            lisp->pop();
+            arguments->release();
+            lisp->resetStack();
+            return final_result;
+        }
+        
+        bool success = true;
+        element = true_;
+        try {
+            long nbinstructions = body->size();
+            if (nbinstructions == 4) {
+                element = body->index(3)->eval(lisp);
+                success = element->Boolean();
+            }
+            else {
+                element = true_;
+                success = true;
+                for (i = 3; i < nbinstructions && element->type != l_return && success; i++) {
+                    element->release();
+                    element = body->index(i)->eval(lisp);
+                    if (element->label() == v_cut)
+                        end_of_execution = true;
+                    else
+                        success = element->Boolean();
+                }
+            }
+            if (element->type == l_return) {
+                body = element->eval(lisp);
+                element->release();
+                element = body;
+                break;
+            }
+        }
+        catch (Error* err) {
+#ifndef LISPE_WASM_NO_EXCEPTION
+        err->release();
+#endif
+            success = false;
+        }
+        if (success)
+            final_result->append(element);
+        else
+            element->release();
+        if (end_of_execution)
+            break;
+        body = NULL;
+        if (ilabel < sz) {
+            lisp->clear_top_stack();
+            body = subfunction->second[ilabel++];
+        }
+        else {
+            if (sublabel != v_null) {
+                sublabel = v_null;
+                ilabel = 1;
+                //We check, if we have a rollback function
+                subfunction = functions.find(sublabel);
+                if (subfunction != functions.end()) {
+                    lisp->clear_top_stack();
+                    body = subfunction->second[0];
+                    sz = subfunction->second.size();
+                }
+            }
+        }
+    }
+    arguments->release();
+    lisp->pop(null_);
+    lisp->resetStack();
+    lisp->check_end_trace(tr);
+    return final_result;
+}
+
+/*
+ ------------------------------------------------------------------------
+ Evaluation of defpat rule  in an eval
+ ------------------------------------------------------------------------
+*/
+
+Element* List::eval_pattern(LispE* lisp, List* body) {
+    List_pattern_eval lpe(this, body);
     return lpe.eval(lisp);
 }
 
@@ -718,13 +913,26 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
  ------------------------------------------------------------------------
 */
 
-Element* List::eval_predicate(LispE* lisp, int16_t function_label) {
-    List_predicate_eval lpe(this,function_label);
+Element* List::eval_predicate(LispE* lisp, List* body) {
+    //if (lisp->delegation->function_pool[lisp->current_space]->check(function_label)) {
+    List_predicate_eval lpe(this, body);
+    return lpe.eval(lisp);
+}
+
+/*
+ ------------------------------------------------------------------------
+ Evaluation of defprol rule in an eval
+ ------------------------------------------------------------------------
+*/
+
+Element* List::eval_prolog(LispE* lisp, List* body) {
+    //if (lisp->delegation->function_pool[lisp->current_space]->check(function_label)) {
+    List_prolog_eval lpe(this, body);
     return lpe.eval(lisp);
 }
 
 //------------------------------------------------------------------------------------------
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 void List::evalthread(LispE* lisp, List* body) {
     Element* element = terminal_;
     
@@ -1490,9 +1698,11 @@ Element* List::evalfunction(LispE* lisp, Element* body) {
     int16_t label = body->function_label(lisp);
     switch(label) {
         case l_defpat:
-            return eval_pattern(lisp, ((List*)body)->liste[1]->label());
+            return eval_pattern(lisp, (List*)body);
         case l_defpred:
-            return eval_predicate(lisp, ((List*)body)->liste[1]->label());
+            return eval_predicate(lisp, (List*)body);
+        case l_defprol:
+            return eval_prolog(lisp, (List*)body);
         case l_dethread:
             return eval_thread(lisp, (List*)body);
         case l_deflib:
@@ -1513,7 +1723,7 @@ Element* List::eval_call_function(LispE* lisp) {
         //We also retrieve its label (which is l_defun or l_defpat or...)
         int16_t label = body->index(0)->label();
         char tr = debug_next;
-        if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred) {
+        if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred || label == l_defprol) {
             if (lisp->trace == debug_inside_function)
                 lisp->stop_at_next_line(debug_next);
             else {
@@ -1544,7 +1754,7 @@ Element* Listincode::eval_call_function(LispE* lisp) {
             //We also retrieve its label (which is l_defun or l_defpat or...)
             int16_t label = body->index(0)->label();
             char tr = debug_next;
-            if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred) {
+            if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred || label == l_defprol) {
                 if (lisp->trace == debug_inside_function)
                     lisp->stop_at_next_line(debug_next);
                 else {
@@ -1571,6 +1781,10 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     switch(label) {
         case l_defpred:
             liste[0] = new List_predicate_eval(this, (List*)body);
+            lisp->storeforgarbage(liste[0]);
+            return liste[0]->eval(lisp);
+        case l_defprol:
+            liste[0] = new List_prolog_eval(this, (List*)body);
             lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         case l_defpat:
@@ -1605,7 +1819,7 @@ Element* Listincode::eval_call_self(LispE* lisp) {
             //We also retrieve its label (which is l_defun or l_defpat or...)
             int16_t label = body->index(0)->label();
             char tr = debug_next;
-            if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred) {
+            if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred || label == l_defprol) {
                 if (lisp->trace == debug_inside_function)
                     lisp->stop_at_next_line(debug_next);
                 else {
@@ -1694,6 +1908,13 @@ bool List_call_lambda::eval_Boolean(LispE* lisp, int16_t instruction) {
 }
 
 bool List_predicate_eval::eval_Boolean(LispE* lisp, int16_t instruction) {
+    Element* e = eval(lisp);
+    bool b = e->Boolean();
+    e->release();
+    return b;
+}
+
+bool List_prolog_eval::eval_Boolean(LispE* lisp, int16_t instruction) {
     Element* e = eval(lisp);
     bool b = e->Boolean();
     e->release();

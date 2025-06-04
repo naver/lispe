@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2025.3.31.14.0";
+static std::string version = "1.2025.5.9.11.39";
 string LispVersion() {
     return version;
 }
@@ -33,28 +33,70 @@ extern "C" {
 }
 
 #ifdef LISPE_WASM
-static LispE* global_lispe_interpreter = NULL;
-
-void clean_global_lispe() {
-    if (global_lispe_interpreter != NULL)
-        delete global_lispe_interpreter;
-    global_lispe_interpreter = NULL;
+static vector<LispE*> global_lispe_interpreter;
+bool clean_global_lispe(long i) {
+    if (i >= 0 && i < global_lispe_interpreter.size() && global_lispe_interpreter[i] != NULL) {
+        delete global_lispe_interpreter[i];
+        global_lispe_interpreter[i] = NULL;
+        for (i = global_lispe_interpreter.size()-1 ; i >= 0; i--) {
+            if (global_lispe_interpreter[i] == NULL)
+                global_lispe_interpreter.pop_back();
+            else
+                break;
+        }
+        return true;
+    }
+    return false;
 }
 
-void reset_global_lispe() {
-    if (global_lispe_interpreter != NULL)
-        delete global_lispe_interpreter;
-    global_lispe_interpreter = new LispE();
+bool reset_global_lispe(long i) {
+    if (i < 0)
+        return false;
+    
+    if (i < global_lispe_interpreter.size()) {
+        if (global_lispe_interpreter[i] != NULL)
+            delete global_lispe_interpreter[i];
+        global_lispe_interpreter[i] = new LispE();
+        return true;
+    }
+    
+    long j = global_lispe_interpreter.size();
+    while (j < i) {
+        global_lispe_interpreter.push_back(NULL);
+        j++;
+    }
+    global_lispe_interpreter.push_back(new LispE());
+    return true;
 }
 
-void create_global_lispe() {
-    global_lispe_interpreter = new LispE();
+long create_global_lispe() {
+    long i = 0;
+    for (; i < global_lispe_interpreter.size(); i++) {
+        if (global_lispe_interpreter[i] == NULL)
+            break;
+    }
+    if (i == global_lispe_interpreter.size())
+        global_lispe_interpreter.push_back(new LispE());
+    else
+        global_lispe_interpreter[i] = new LispE();
+    return i;
 }
 
-LispE* global_lispe() {
-    return global_lispe_interpreter;
+LispE* global_lispe(long i) {
+    if (i >= 0 && i < global_lispe_interpreter.size())
+        return global_lispe_interpreter[i];
+    return NULL;
 }
 
+void clean_all_global_lispe() {
+    for (long i = 0; i < global_lispe_interpreter.size(); i++) {
+        if (global_lispe_interpreter[i] != NULL)
+            delete global_lispe_interpreter[i] ;
+    }
+    global_lispe_interpreter.clear();
+}
+
+#ifdef LISPE_WASM_NO_EXCEPTION
 //In this case, errors are no longer treated as exceptions.
 Element* Element::EVAL(LispE* lisp) {
     if (thrown_error)
@@ -65,7 +107,7 @@ Element* Element::EVAL(LispE* lisp) {
 Element* Error::check_if_error(LispE* lisp) {
     return lisp->delegation->set_error(this);
 }
-
+#endif
 #endif
 
 //------------------------------------------------------------------------------------------
@@ -199,7 +241,7 @@ Delegation::~Delegation() {
     function_pool.cleaning();
     method_pool.cleaning();
     for (auto& a : thread_pool)
-        a.second.clear();
+        a.second->decrement();
 
     for (const auto& a: locks)
         delete a.second;
@@ -350,6 +392,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_defmacro, "defmacro", P_FOUR, &List::evall_defmacro);
     set_instruction(l_defpat, "defpat", P_ATLEASTFOUR, &List::evall_defpat);
     set_instruction(l_defpred, "defpred", P_ATLEASTFOUR, &List::evall_defpred);
+    set_instruction(l_defprol, "defprol", P_ATLEASTFOUR, &List::evall_defprol);
     set_instruction(l_defspace, "defspace", P_TWO, &List::evall_defspace);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
@@ -399,7 +442,10 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife, new List_ife_eval());
     set_instruction(l_in, "in", P_THREE,  new List_in_eval());
     set_instruction(l_infix, "infix", P_TWO, &List::evall_infix, new List_infix_eval());
-#ifndef LISPE_WASM
+#ifdef LISPE_WASM 
+    set_instruction(l_evaljs, "evaljs", P_TWO, &List::evall_js);
+    set_instruction(l_evaljssync, "asyncjs", P_ATLEASTTWO, &List::evall_js_sync);
+#else
     set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
 #endif
@@ -749,7 +795,8 @@ void Delegation::initialisation(LispE* lisp) {
 
     code_to_string[v_null] = U"nil";
     code_to_string[v_true] = U"true";
-    
+    code_to_string[v_cut] = U"cut_";
+
     code_to_string[v_mainspace] = U"mainspace_";
 
     code_to_string[c_opening] = U"(";
@@ -777,9 +824,11 @@ void Delegation::initialisation(LispE* lisp) {
     _ERROR = (Atome*)lisp->provideAtomOrInstruction(t_error);
     _TERMINAL = (Atome*)lisp->provideAtomOrInstruction(l_terminal);
     _TRUE = (Atome*)lisp->provideAtomOrInstruction(v_true);
+    _CUT = (Atome*)lisp->provideAtomOrInstruction(v_cut);
     _EMPTYATOM = (Atome*)lisp->provideAtomOrInstruction(v_emptyatom);
     _DEFPAT = (Atome*)lisp->provideAtomOrInstruction(l_defpat);
     _DEFPRED = (Atome*)lisp->provideAtomOrInstruction(l_defpred);
+    _defprol = (Atome*)lisp->provideAtomOrInstruction(l_defprol);
 
     _DICO_STRING = (Atome*)lisp->provideAtomOrInstruction(l_dictionary);
     _DICO_INTEGER = (Atome*)lisp->provideAtomOrInstruction(l_dictionaryi);
@@ -805,6 +854,7 @@ void Delegation::initialisation(LispE* lisp) {
     //rest separator in a pattern matching operation
     u_ustring w = U"$";
     _LISTSEPARATOR = (Atome*)lisp->provideAtom(w);
+
 
     // Special case, they are now part of the default values
     w = U"";
@@ -835,6 +885,7 @@ void Delegation::initialisation(LispE* lisp) {
     //We create our constant values
     lisp->recordingunique(_TRUE, v_true);
     lisp->recordingunique(_NULL, v_null);
+    lisp->recordingunique(_CUT, v_cut);
     lisp->recordingunique(_ERROR, t_error);
 
     //These types are all basic data structures
@@ -990,6 +1041,10 @@ void Delegation::initialisation(LispE* lisp) {
     w = U"false";
     string_to_code[w] = v_null;
 
+    //But also 'fail_', which is a substitute to nil as well (see cut_)
+    w = U"fail_";
+    string_to_code[w] = v_null;
+
     // We introduce \ and λ (Unicode: 955) as a substitute to lambda...
     w = U"\\";
     string_to_code[w] = l_lambda;
@@ -1140,7 +1195,7 @@ void LispE::cleaning() {
                 a->second->decrement();
             }
         }
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
         //In this case, errors are no longer treated as exceptions.
         //We need to clean if an error still lurks around
         delegation->reset_error();
@@ -1859,6 +1914,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 return element;
             }
             case l_defpred:
+            case l_defprol:
             case l_defpat: {
                 Element* arguments = element->index(2);
                 Element* a;
@@ -1880,7 +1936,13 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
             }
             case l_format: {
                 if (element->size() == 2) {
+                    u_ustring op_rep(U" ");
+                    u_ustring cl_rep(U" ");
+                    op_rep[0] = 1;
+                    cl_rep[0] = 2;
                     u_ustring u = element->index(1)->asUString(this);
+                    u = s_ureplacestring(u, U"%{", op_rep);
+                    u = s_ureplacestring(u, U"%}", cl_rep);
                     long posinit = 0;
                     long posbeg = u.find(U"{");
                     long posend;
@@ -1926,6 +1988,8 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                             }
                         }
                         else {
+                            s = s_ureplacestring(s, op_rep, U"{");
+                            s = s_ureplacestring(s, cl_rep, U"}");
                             element->append(provideConststring(s));
                         }
                         first = false;
@@ -2094,7 +2158,10 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 if (body->index(0)->label() == l_defpred)
                     body = new List_predicate_eval((Listincode*)element, (List*)body);
                 else
-                    body = new List_pattern_eval((Listincode*)element, (List*)body);
+                    if (body->index(0)->label() == l_defprol)
+                        body = new List_prolog_eval((Listincode*)element, (List*)body);
+                    else
+                        body = new List_pattern_eval((Listincode*)element, (List*)body);
             
             storeforgarbage(body);
             removefromgarbage(element);
@@ -2463,9 +2530,15 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     if (current_program->size() == 1 &&
                         (current_program->index(0)->label() == l_defun ||
                          current_program->index(0)->label() == l_defpred ||
+                         current_program->index(0)->label() == l_defprol ||
                          current_program->index(0)->label() == l_dethread ||
                          current_program->index(0)->label() == l_defpat)) {
                         //We are defining a function, we can record it now...
+                        if (delegation->instructions.check(element->label())) {
+                            stringstream st;
+                            st << "Error: '" << delegation->instructions[element->label()] << "' is a reserved keyword.";
+                            throw new Error(st.str());
+                        }
                         parse.defun_functions[element->label()] = current_program;
                     }
                     current_program->append(element);
@@ -2851,7 +2924,7 @@ Element* LispE::compile_eval(u_ustring& code) {
 Element* LispE::compile_string(u_ustring& code) {
     clearStop();
     
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
     //In this case, errors are no longer treated as exceptions.
     delegation->reset_error();
 #endif
@@ -2894,19 +2967,13 @@ Element* LispE::compile_string(u_ustring& code) {
         throw err;
     }
 
-    Element* e = courant.liste[0];
-    
-    if (e->size() == 2) {
-        //The block contains only one element that can be evaluated immediately
-        e = e->index(1);
-    }
-    return e;
+    return courant.liste[0];
 }
 
 Element* LispE::compile_lisp_code(u_ustring& code) {
     clearStop();
     
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
     //In this case, errors are no longer treated as exceptions.
     delegation->reset_error();
 #endif
@@ -3311,6 +3378,10 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
+
+
 
 
 

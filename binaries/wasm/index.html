@@ -76,7 +76,7 @@
             <span>DATA (Create a "DATA" variable with the content of the window below)</span>
             <textarea type="text" name="data" id="set_data"></textarea>
         </div>
-    </div>
+    </div>    
     <!-- We load our WASM library -->
     <script type="text/javascript">
         //The initialisation below makes it possible to catch the print and println in your LispE code
@@ -117,7 +117,7 @@
     <script async type="text/javascript" src="lispe.js"></script>
     <script async type="text/javascript" src="lispe_functions.js"></script>
 
-    <script>
+    <script>        
         const fileSelector = document.getElementById('file-selector');
         fileSelector.addEventListener('change', (event) => {
             const fileList = event.target.files;
@@ -228,7 +228,7 @@
         //This method is systematically called before any execution to reset DATA with the right values
         function set_data() {
             var code_data = document.getElementById('set_data');
-            callSetqString("DATA", code_data.value);
+            callSetqString(0, "DATA", code_data.value);
         }
 
         //Execution of the code from the beginning of the window
@@ -238,7 +238,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callEval(code_text.value);
+                    res = await callEval(0, code_text.value);
                 }
                 catch (e) {
                     res = e;
@@ -275,7 +275,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callEval(code);
+                    res = await callEval(0, code);
                 }
                 catch (e) {
                     res = e;
@@ -299,7 +299,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callSetqInts("myInts", ints, 10);
+                    res = await callSetqInts(0, "myInts", ints, 10);
                 }
                 catch (e) {
                     res = e;
@@ -322,7 +322,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callSetqFloats("myFloats", floats, 10);
+                    res = await callSetqFloats(0, "myFloats", floats, 10);
                 }
                 catch (e) {
                     res = e;
@@ -346,7 +346,7 @@
             lastposition = txt.value.length;
             (async () => {
                 await set_data();
-                var res = await callEvalToStrings(code);
+                var res = await callEvalToStrings(0, code);
 
                 let eval_output = document.getElementById('display_evaluation')
                 eval_output.value += res + "\n";
@@ -369,7 +369,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callEvalToInts(code);
+                    res = await callEvalToInts(0, code);
                 }
                 catch (e) {
                     res = e;
@@ -395,7 +395,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callEvalToFloats(code);
+                    res = await callEvalToFloats(0, code);
                 }
                 catch (e) {
                     res = e;
@@ -410,7 +410,7 @@
         function reset_run_code() {
             //We reset our code
             (async () => {
-                await callResetLispE();
+                await callResetLispE(0);
                 await run_code();
             })();
         };
@@ -429,7 +429,9 @@
             document.getElementById('display_evaluation').value = ""
             document.getElementById('set_data').value = ""
             lastposition = 0
-        };</script>
+        };
+
+    </script>
 </body>
 
 </html>

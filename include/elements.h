@@ -40,7 +40,7 @@ class Stringbytes;
 class ITEM;
 
 
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
 #define sent_error(e) return lisp->delegation->set_error(new Error(e))
 #define sent_error_0(e) {lisp->delegation->set_error(new Error(e)); return 0;}
 #define sent_error_e(e) {lisp->delegation->set_error(new Error(e)); return;}
@@ -55,7 +55,7 @@ class ITEM;
 
 typedef enum {
     //Default values
-    v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, 
+    v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, v_cut, 
     
     //Default types
     t_emptystring, t_operator, t_atom,
@@ -84,7 +84,10 @@ typedef enum {
     
     //Recording in the stack or in memory
     l_sleep, l_wait, l_infix,
-    l_lambda, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
+#ifdef LISPE_WASM
+    l_evaljs, l_evaljssync,
+#endif
+    l_lambda, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defprol, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
     l_set_const, l_setq, l_setqv, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
     l_block, l_root, l_elapse, l_code,
     l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
@@ -610,6 +613,15 @@ public:
     virtual wstring jsonString(LispE* lisp) {
         return stringInList(lisp);
     }
+
+#ifdef LISPE_WASM
+    string jsonify(LispE* lisp) {
+        wstring w = jsonString(lisp);
+        string s;
+        s_unicode_to_utf8(s, w);
+        return s;
+    }
+#endif
     
     virtual string toString(LispE* lisp) {
         string s;
@@ -732,7 +744,7 @@ public:
     
     //-----------------
     
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
     Element* EVAL(LispE* lisp);
     virtual Element* check_if_error(LispE*) {
         return this;
@@ -1075,7 +1087,7 @@ public:
         return false;
     }
     
-#ifdef LISPE_WASM
+#ifdef LISPE_WASM_NO_EXCEPTION
     Element* check_if_error(LispE*);
 #endif
     

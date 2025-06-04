@@ -324,6 +324,13 @@ public:
                         action = a;
                         return this;
                     }
+                    case l_defprol: {
+                        List* a = new List_prolog_eval((List*)body);
+                        lisp->storeforgarbage(a);
+                        a->append(var);
+                        action = a;
+                        return this;
+                    }
                 }
             }
         }
@@ -1320,7 +1327,7 @@ Element* List::transformargument(LispE* lisp) {
                         }
                     }
                     if (!element->isAtom())
-                        throw new Error("Error: Missing argument in defpat/defpred function");
+                        throw new Error("Error: Missing argument in defpat/defpred/defprol function");
                 }
                 element = new Listargumentfunction(this, element);
             }
