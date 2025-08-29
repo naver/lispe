@@ -1764,6 +1764,15 @@ public:
     }
 };
 
+class List_run_linear : public Listincode {
+public:
+    List components;
+    List_run_linear(int idx) : Listincode(idx) {}
+
+    void compose(LispE* lisp);
+    Element* eval(LispE*);
+};
+
 class List_switch_eval : public Listincode {
 public:
     std::unordered_map<u_ustring, List*> cases;

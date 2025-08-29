@@ -4900,6 +4900,17 @@ Element* List_elapse_eval::eval(LispE* lisp) {
     return lisp->provideNumber(diff);
 }
 
+//(tan . sqrt . sum . integers 10 20 30 40 50)
+//(tan . sqrt . sum . map '(2 /) . floats 10 20 1)
+Element* List_run_linear::eval(LispE* lisp) {
+    Element* e = null_;
+    //cout << components.toString(lisp) << endl;
+    for (long i = 0; i < components.size(); i++) {
+        e = components.liste[i]->eval(lisp);
+    }
+    
+    return e;
+}
 
 Element* List_eval_eval::eval(LispE* lisp) {
     Element* code = liste[1]->eval(lisp);
