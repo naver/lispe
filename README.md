@@ -148,6 +148,32 @@ __LispE__ provides also some interesting properties such as: [Data Structures](h
 (dimension (Square 20))
 ```
 
+__LispE__ provides also some OOP such as: [Classes](https://github.com/naver/lispe/wiki/6.21-Classes)
+
+```Lisp
+; Defines a class named 'truc' with fields x, y, and z
+(class truc (x y z)
+
+   (defun appel(u)
+      (setq x 100)
+      (println x y z)
+      (+ x y z u)
+   )
+)
+
+; Defines a class named 'machin' with fields x, y, and z (with a default value of 1).
+
+(class machin (x y (z 1))
+    ; Defines a method 'appel' that takes one argument 'u'.
+    (defun appel(u)
+       (println 'machin)(+ x y z u)) 
+
+    ; Defines a method 'configure' that takes one argument 'e'.
+    (defun configure(e)
+        (setqi x e)
+        (setqi v 100))) ; add a new field: `v`
+```
+
 ## But also array language capabilities
 
 Thanks to an internal structure implemented with [arrays](https://github.com/naver/lispe/wiki/2.3-Lists), we also provide some array operators.
