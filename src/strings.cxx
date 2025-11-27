@@ -1719,6 +1719,6 @@ void moduleChaines(LispE* lisp) {
     
     lisp->extension("deflib json_read (filename)", new Stringmethod(lisp, str_read_json));
     lisp->extension("deflib json_write (data filename)", new Stringmethod(lisp, str_write_json));
-    lisp->extension("deflibpat json_parse ( [string_ str] )", new Stringmethod(lisp, str_parse_json));
+    lisp->extension("deflib json_parse (str)", new Stringmethod(lisp, str_parse_json));
     lisp->extension("deflib json (element)", new Stringmethod(lisp, str_string_json));
 }
