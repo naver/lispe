@@ -61,7 +61,7 @@ public:
     }
 
     void initialize(LispE* lisp) {
-        Element* e;
+        Element* e = NULL;
         try {
             for (long i = 1; i < code->size(); i++) {
                 e = code->index(i)->eval(lisp);
@@ -139,7 +139,7 @@ public:
             throw new Error("Error: Expecting a list");
         }
         vector<std::future<Element*> > futurs;
-        Element* e;
+        Element* e = NULL;
         try {
             for (long i = 0; i < codes->size(); i++) {
                 e = codes->index(i);
@@ -152,6 +152,7 @@ public:
         }
         catch(Error* err) {
             for (long i = 0; i < codes->size(); i++) {
+                e = codes->index(i);
                 ((LispE_async_element*)e)->clean(lisp);
             }
             throw err;
