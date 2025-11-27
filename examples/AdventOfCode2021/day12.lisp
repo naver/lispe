@@ -13,13 +13,13 @@
       (setq x (car ch))
       (setq y (cadr ch))
       (if (neq y "start")
-         (if (key paths x)
+         (if (key@ paths x)
             (push (@ paths x) y)
             (set@ paths x (strings y))
          )
       )
       (if (neq x "start")
-         (if (key paths y)
+         (if (key@ paths y)
             (push (@ paths y) x)
             (set@ paths y (strings x))
          )
@@ -33,7 +33,7 @@
       (block
          (+= alls 1)
       )
-      (loop c (key paths clef)
+      (loop c (key@ paths clef)
          (if (lowerp c) 
             (if (in visite c) 
                (if utilise
@@ -55,5 +55,7 @@
 (setq alls 0)
 (traverse "start" (set) alls true)
 (println 'part2 alls)
+
+
 
 

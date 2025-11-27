@@ -57,7 +57,7 @@ Element* Set_spool::newInstance() {
 }
 
 Element* Set_spool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Set_s(ensemble);
     else
         return lisp->provideSet_s(this);
@@ -68,10 +68,10 @@ Element* Set_spool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Set_s(ensemble);
     else
         return lisp->provideSet_s(this);
@@ -118,7 +118,7 @@ Element* Set_ipool::newInstance() {
 }
 
 Element* Set_ipool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Set_i(ensemble);
     else
         return lisp->provideSet_i(this);
@@ -129,10 +129,10 @@ Element* Set_ipool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Set_i(ensemble);
     else
         return lisp->provideSet_i(this);
@@ -179,7 +179,7 @@ Element* Set_npool::newInstance() {
 }
 
 Element* Set_npool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Set_n(ensemble);
     else
         return lisp->provideSet_n(this);
@@ -190,10 +190,10 @@ Element* Set_npool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Set_n(ensemble);
     else
         return lisp->provideSet_n(this);
@@ -233,7 +233,7 @@ Element* Set_s::fullcopy() {
 }
 
 Element* Set_s::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
+    if (exchange_value.provide && exchange_value.lisp->create_no_pool_element)
         return new Set_s(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -416,9 +416,9 @@ Element* Set_s::replace_all_elements(LispE* lisp, Element* a_value, Element* rem
     if (ensemble.count(keyvalue)) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asUString(lisp));
-        return one_;
+        return one_value;
     }
-    return zero_;
+    return zero_value;
 }
 
 Element* Set_s::search_all_elements(LispE* lisp, Element* a_value, long ix) {
@@ -433,8 +433,8 @@ Element* Set_s::search_all_elements(LispE* lisp, Element* a_value, long ix) {
 Element* Set_s::count_all_elements(LispE* lisp, Element* a_value, long ix) {
     u_ustring keyvalue = a_value->asUString(lisp);
     if (!ensemble.count(keyvalue))
-        return zero_;
-    return one_;
+        return zero_value;
+    return one_value;
 }
 
 Element* Set_s::list_and(LispE* lisp, Element* value) {
@@ -811,7 +811,7 @@ Element* Set_i::fullcopy() {
 }
 
 Element* Set_i::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
+    if (exchange_value.provide && exchange_value.lisp->create_no_pool_element)
         return new Set_i(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -959,9 +959,9 @@ Element* Set_i::replace_all_elements(LispE* lisp, Element* a_value, Element* rem
     if (ensemble.count(keyvalue)) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asInteger());
-        return one_;
+        return one_value;
     }
-    return zero_;
+    return zero_value;
 }
 
 Element* Set_i::search_all_elements(LispE* lisp, Element* a_value, long ix) {
@@ -976,8 +976,8 @@ Element* Set_i::search_all_elements(LispE* lisp, Element* a_value, long ix) {
 Element* Set_i::count_all_elements(LispE* lisp, Element* a_value, long ix) {
     long keyvalue = a_value->asInteger();
     if (!ensemble.count(keyvalue))
-        return zero_;
-    return one_;
+        return zero_value;
+    return one_value;
 }
 
 Element* Set_i::search_reverse(LispE* lisp, Element* a_value, long ix) {
@@ -1055,7 +1055,7 @@ Element* Set_n::fullcopy() {
 }
 
 Element* Set_n::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
+    if (exchange_value.provide && exchange_value.lisp->create_no_pool_element)
         return new Set_n(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -1225,9 +1225,9 @@ Element* Set_n::replace_all_elements(LispE* lisp, Element* a_value, Element* rem
     if (ensemble.count(keyvalue)) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asNumber());
-        return one_;
+        return one_value;
     }
-    return zero_;
+    return zero_value;
 }
 
 Element* Set_n::search_all_elements(LispE* lisp, Element* a_value, long ix) {
@@ -1242,8 +1242,8 @@ Element* Set_n::search_all_elements(LispE* lisp, Element* a_value, long ix) {
 Element* Set_n::count_all_elements(LispE* lisp, Element* a_value, long ix) {
     double keyvalue = a_value->asNumber();
     if (!ensemble.count(keyvalue))
-        return zero_;
-    return one_;
+        return zero_value;
+    return one_value;
 }
 
 Element* Set_n::list_and(LispE* lisp, Element* value) {
@@ -1593,9 +1593,9 @@ Element* Set::replace_all_elements(LispE* lisp, Element* a_value, Element* remp)
         it->second->decrement();
         dictionary[keyvalue] = remp;
         remp->increment();
-        return one_;
+        return one_value;
     }
-    return zero_;
+    return zero_value;
 }
 
 Element* Set::search_all_elements(LispE* lisp, Element* a_value, long ix) {
@@ -1610,7 +1610,7 @@ Element* Set::search_all_elements(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set::count_all_elements(LispE* lisp, Element* a_value, long ix) {
     u_ustring keyvalue = a_value->asUString(lisp);
-    return (dictionary.count(keyvalue))?one_:zero_;
+    return (dictionary.count(keyvalue))?one_value:zero_value;
 }
 
 Element* Set::list_and(LispE* lisp, Element* value) {
@@ -1818,7 +1818,7 @@ Element* Setpool::newInstance() {
 }
 
 Element* Setpool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Set(dictionary, true);
     else
         return lisp->provideSet(this);
@@ -1829,10 +1829,10 @@ Element* Setpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Set(dictionary, true);
     else
         return lisp->provideSet(this);
@@ -2633,9 +2633,27 @@ void Avl::to_llist(LispE* lisp, LList* l) {
         left->to_llist(lisp, l);
 }
 
-void Avl::jsonString(LispE* lisp, wstring& w) {
+void Avl::jsonStream(LispE* lisp, std::ostream& os) {
     if (left != NULL) {
-        left->jsonString(lisp, w);
+        left->jsonStream(lisp, os);
+        os << ',';
+    }
+    Avl* e = this;
+    while (e != NULL) {
+        if (e != this)
+            os << ',';
+        e->value->jsonStream(lisp, os);
+        e = e->same;
+    }
+    if (right != NULL) {
+        os << ',';
+        right->jsonStream(lisp, os);
+    }
+}
+
+void Avl::wjsonString(LispE* lisp, wstring& w) {
+    if (left != NULL) {
+        left->wjsonString(lisp, w);
         w += ',';
     }
     Avl* e = this;
@@ -2647,7 +2665,7 @@ void Avl::jsonString(LispE* lisp, wstring& w) {
     }
     if (right != NULL) {
         w += ',';
-        right->jsonString(lisp, w);
+        right->wjsonString(lisp, w);
     }
 }
 
@@ -2885,6 +2903,18 @@ Element* Heap::asLList(LispE* lisp) {
     return l;
 }
 
+void Heap::jsonStream(LispE* lisp, std::ostream& os) {
+    wstring r;
+    if (root == NULL) {
+        os << "[]";
+    }
+    else {
+        os << '[';
+        root->jsonStream(lisp, os);
+        r += ']';
+    }
+}
+
 wstring Heap::jsonString(LispE* lisp) {
     wstring r;
     if (root == NULL) {
@@ -2892,7 +2922,7 @@ wstring Heap::jsonString(LispE* lisp) {
     }
     else {
         r = '[';
-        root->jsonString(lisp, r);
+        root->wjsonString(lisp, r);
         r += ']';
     }
     return r;

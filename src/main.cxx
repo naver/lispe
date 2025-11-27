@@ -197,8 +197,7 @@ int main(int argc, char *argv[]) {
     bool darkmode = false;
     bool vt100 = false;
     bool mouse_on = false;
-    
-    
+    bool check_file = false;
     
 #ifdef __apple_build_version__
     char path[2048];
@@ -210,7 +209,7 @@ int main(int argc, char *argv[]) {
 #ifdef WIN32
     mouse_on = true;
 #endif
-    
+
     long i;
     for (i = 1; i < argc; i++) {
         args = argv[i];
@@ -240,6 +239,7 @@ int main(int argc, char *argv[]) {
             cout << "        - lispe -a: " << coloring << "gives back the hand in the interactive interpreter"<< m_current << endl;
             cout << "        - lispe filename -a: " << coloring << "execute 'filename' with _args containing the output of the 'pipe'"<< m_current << endl << endl;
             cout << m_red << "    Execution of 'code' on a pipe output: ls -al | lisp -p '(+ l2 l3)'" << m_current << endl;
+            cout << "    lispe -c 'code':"<< coloring << "execute code" << endl;
             cout << "    lispe -pb/-pe/-p 'code' arg1 arg2:"<< endl;
             cout << "        - '-pb' " << coloring << "makes it possible to execute an initial code (must be placed before '-p')" << m_current << endl;
             cout << "        - '-pe' " << coloring << "makes it possible to execute a final code (must be placed before '-p')" << m_current << endl;
@@ -320,6 +320,11 @@ int main(int argc, char *argv[]) {
             vt100 = true;
             continue;
         }
+
+        if (args == "-check") {
+            check_file = true;
+            continue;
+        }
         
         if (args == "-mg") {
             if (i >= argc - 1) {
@@ -350,7 +355,20 @@ int main(int argc, char *argv[]) {
             coloring = m_blueblack;
             continue;
         }
-        
+
+        if (args == "-c") {
+            if (i >= argc - 1) {
+                cerr << "Missing code for option '-pb'" << endl;
+                exit(-1);
+            }
+            code = argv[++i];
+            LispE lisp(&special_characters);
+            Element* e = lisp.eval(code);
+    
+            std::cout << e->toString(&lisp) << endl;
+            exit(-1);
+        }
+
         if (args == "-pb") {
             if (i >= argc - 1) {
                 cerr << "Missing code for option '-pb'" << endl;
@@ -491,6 +509,13 @@ int main(int argc, char *argv[]) {
         LispE lisp(&special_characters);
         lisp.arguments(arguments);
         string the_file = file_name;
+        if (check_file) {
+            Element* e = lisp.check_file(the_file);
+            cout << e->toString(&lisp) << endl;
+            e->release();
+            return 0;
+        }
+
         Element* e = lisp.n_null;
 #ifdef LISPE_WASM
         e = lisp.load(the_file);

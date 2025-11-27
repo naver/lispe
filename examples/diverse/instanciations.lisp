@@ -5,7 +5,7 @@
 )
 
 (defun tstd(xd)
-   (keyn xd 20 30)
+   (keyn@ xd 20 30)
 )
 
 (setq l ())
@@ -18,5 +18,6 @@
 (tstd d)
 (println d)
  
+
 
 

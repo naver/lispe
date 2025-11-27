@@ -32,7 +32,7 @@
 
 (setq compte 0)
 (loop c codes
-   (+= compte (sum (maplist (\(x) (if (keyn faciles (size x)) 1 0)) c)))
+   (+= compte (sum (maplist (\(x) (if (keyn@ faciles (size x)) 1 0)) c)))
 )
 
 (println 'Facile compte)
@@ -92,6 +92,7 @@
 )
 
 (println 'Compliqué (sum resultat))
+
 
 
 

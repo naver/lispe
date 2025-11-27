@@ -7,10 +7,10 @@
 ; either it is a rule or it its lexical rule
 ; lexical rules are not LIST
 (defpat generate([POS $ current_pos] tree)
-   (setq r (key grammar POS))
+   (setq r (key@ grammar POS))
    (if (consp r)
       (generate (nconcn (random_choice 1 r 30) current_pos) tree)
-      (generate current_pos (nconc tree (random_choice 1 (key grammar r) 30)))
+      (generate current_pos (nconc tree (random_choice 1 (key@ grammar r) 30)))
    )
 )  
 
@@ -35,7 +35,7 @@
 ; Otherwise, we take the rule and replace the current POS
 ; with its rule description.
 (defpat match ( [POS $ current_pos] [w $ sentence] consume)
-   (setq rule (key grammar POS))
+   (setq rule (key@ grammar POS))
    (if (consp rule)
       ; Stop at the first non-null value
       (scanlist (λ(r) (match (nconcn r current_pos) (cons w sentence) consume)) rule)
@@ -44,10 +44,12 @@
 
 ; POS is the first rule we start our analysis with
 (defun parse (s POS tree) 
-   (setq r (key grammar POS))
+   (setq r (key@ grammar POS))
    (match (car r) s ()))
 
 (defun analyse(sentence)
    (setq sentence (parse (segment sentence) "S" ()))
    (@@ sentence 0 -1))
+
+
 

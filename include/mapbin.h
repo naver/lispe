@@ -914,6 +914,40 @@ template <class Z> class binHash {
         return table[i][r];
     }
 
+    void push(uint16_t r, Z e) {
+        if (base == -1) {
+            base = r >> binBits;
+            r &= binMin;
+            table[0] = new Z[binSize];
+            indexes[0] |= binVal64[r];
+            table[0][r] = e;
+            return;
+        }
+        
+        uint16_t i = r >> binBits;
+        r &= binMin;
+        if (i < base) {
+            insert(i);
+            table[0] = new Z[binSize];
+            indexes[0] |= binVal64[r];
+            table[0][r] = e;
+            return;
+        }
+
+        i -= base;
+        if (i >= tsize) {
+            resize(i + (i >> 1) + 1);
+            table[i] = new Z[binSize];
+            indexes[i] |= binVal64[r];
+            table[i][r] = e;
+            return;
+        }
+        if (table[i] == NULL)
+            table[i] = new Z[binSize];
+        indexes[i] |= binVal64[r];
+        table[i][r] = e;
+    }
+
     //intersection
     //We only copy elements that are not in t
     void andnot(binHash<Z>& t) {

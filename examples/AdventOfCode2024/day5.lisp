@@ -32,7 +32,7 @@
    (loop c couples
       (check
          (and
-            (key interdits (@ c 0))
+            (key@ interdits (@ c 0))
             (in (@ interdits (@ c 0)) (@ c 1))
          )
          (setq error true)
@@ -58,7 +58,7 @@
          (setq c (@ cl 1))
          (check
             (and
-               (key interdits (@ c 0))
+               (key@ interdits (@ c 0))
                (in (@ interdits (@ c 0)) (@ c 1))
             )
             (swap p (@ cl 0))
@@ -70,6 +70,8 @@
 )
 
 (println (+ r))
+
+
 
 
 

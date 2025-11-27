@@ -53,6 +53,23 @@ char List::check_match(LispE* lisp, Element* value) {
     return check_ok;
 }
 
+char List_instance::check_match(LispE* lisp, Element* value) {
+    if (!value->isList() || liste.size() != value->size() || value->label() != type)
+        return check_mismatch;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    for (long i = 0; i < liste.size(); i++) {
+        //In this case, we skip it, no constraints...
+        if (liste[i] == null_)
+            continue;
+        if (liste[i]->check_match(lisp, value->index(i)) != check_ok)
+            return i;
+    }
+    return check_ok;
+}
+
+
 char LList::check_match(LispE* lisp, Element* value) {
     if (!value->isList() || liste.size() != value->size())
         return check_mismatch;
@@ -176,8 +193,8 @@ Element* List::evalthreadspace(LispE* lisp, long listsize, long i) {
     //We might need to mark the last element as being terminal
     //the block might belong to an if
     liste.back()->setterminal(terminal);
-    bool previous_context = lisp->create_in_thread;
-    lisp->create_in_thread = true;
+    bool previous_context = lisp->create_no_pool_element;
+    lisp->create_no_pool_element = true;
         
     Element* element = null_;
     
@@ -188,12 +205,12 @@ Element* List::evalthreadspace(LispE* lisp, long listsize, long i) {
         }
     }
     catch (Error* err) {
-        lisp->create_in_thread = previous_context;
+        lisp->create_no_pool_element = previous_context;
         lisp->check_thread_stack = false;
         lisp->delegation->lock.unlocking();
         throw err;
     }
-    lisp->create_in_thread = previous_context;
+    lisp->create_no_pool_element = previous_context;
     lisp->check_thread_stack = check;
     lisp->delegation->lock.unlocking();
     return element;
@@ -547,13 +564,12 @@ Element* LispE::eval(u_ustring& code) {
     //eval can be called when threads are active, we need then to protect
     //the access to the inner dictionaries
     Element* e = NULL;
+    Element* element = NULL;
     try {
-        e = compile_lisp_code(code);
+        element = compile_string(code);
         e = e->eval(this);
     }
     catch (Error* err) {
-        if (e != NULL)
-            e->release();
         e = err;
     }
 
@@ -571,21 +587,20 @@ Element* LispE::eval(u_ustring& code) {
     
     //temporary keeps track of the elements that will be stored back in the
     //garbage...
-    Element* element;
-    temporary.clear();
-    for (long index = garbage_size; index < garbages.size(); index++) {
-        element = garbages[index];
+
+    vector<Element*> temporary;
+    while (garbages.size() != garbage_size) {
+        element = garbages.back();
         // Unprotected elements are destroyed
-        if (garbages[index]->status == s_constant) {
-            delete garbages[index];
+        if (element->status == s_constant) {
+            delete element;
         }
         else //This is the returned value, we want to be able to destroy it later.
-            if (garbages[index]->status != s_protect)
-                temporary.push_back(garbages[index]);
+            if (element->status != s_protect)
+                temporary.push_back(element);
+        garbages.pop_back();
     }
     
-    //Delete section from pick-up
-    garbages.erase(garbages.begin()+garbage_size, garbages.end());
     //Then we add temporary, this way we avoid holes in the structure.
     for (const auto& a: temporary)
         garbages.push_back(a);
@@ -605,19 +620,18 @@ Element* LispE::eval(u_ustring& code) {
     //eval can be called when threads are active, we need then to protect
     //the access to the inner dictionaries
     Element* e = NULL;
+    Element* element = NULL;
     bool locked = false;
     try {
         lock();
-        e = compile_lisp_code(code);
+        element = compile_string(code);
         locked = true;
         unlock();
-        e = e->eval(this);
+        e = element->eval(this);
     }
     catch (Error* err) {
         if (!locked)
             unlock();
-        if (e != NULL)
-            e->release();
         e = err;
     }
 
@@ -635,21 +649,23 @@ Element* LispE::eval(u_ustring& code) {
     
     //temporary keeps track of the elements that will be stored back in the
     //garbage...
-    Element* element;
-    temporary.clear();
-    for (long index = garbage_size; index < garbages.size(); index++) {
-        element = garbages[index];
+    vector<Element*> temporary;
+    long nb = garbages.size();
+    
+    while (nb != garbage_size) {
+        element = garbages.back();
         // Unprotected elements are destroyed
-        if (garbages[index]->status == s_constant) {
-            delete garbages[index];
+        if (element->status == s_constant) {
+            delete element;
         }
         else //This is the returned value, we want to be able to destroy it later.
-            if (garbages[index]->status != s_protect)
-                temporary.push_back(garbages[index]);
+            if (element->status != s_protect)
+                temporary.push_back(element);
+        garbages.pop_back();
+        nb--;
     }
     
     //Delete section from pick-up
-    garbages.erase(garbages.begin()+garbage_size, garbages.end());
     //Then we add temporary, this way we avoid holes in the structure.
     for (const auto& a: temporary)
         garbages.push_back(a);
@@ -689,16 +705,26 @@ Element* Listreturn::eval(LispE* lisp) {
 }
 
 Element* Listreturnelement::eval(LispE* lisp) {
-    action->setterminal(terminal);
-    return lisp->provideReturn(action->eval(lisp));
+    return lisp->provideReturn(action->eval_terminal(lisp, terminal));
 }
+
+Element* List::evall_toclean(LispE* lisp) {
+    if (lisp->current_instance == NULL)
+        throw new Error("Error: this function can only be called from within a class instance");
+    Element* e = liste[1]->eval(lisp);
+    if (lisp->current_instance->clean != NULL)
+        delete lisp->current_instance->clean;
+    
+    lisp->current_instance->clean = new group_instance_clean(lisp, e, lisp->current_instance->space);
+    return True_;
+}
+
 
 Element* List::evall_return(LispE* lisp) {
     if (liste.size() == 1)
         return lisp->provideReturn(null_);
     
-    liste[1]->setterminal(terminal);
-    return lisp->provideReturn(liste[1]->eval(lisp));
+    return lisp->provideReturn(liste[1]->eval_terminal(lisp, terminal));
 }
 
 Element* List::evall_atomise(LispE* lisp) {
@@ -1142,11 +1168,22 @@ Element* List::evall_deflibpat(LispE* lisp) {
         throw new Error(L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
         throw new Error(L"Error: List of missing parameters in a function declaration");
+    
+    Element* arguments = liste[2];
+    Element* a;
+    Element* idx;
+    for (long i = 0; i < arguments->size(); i++) {
+        idx = arguments->index(i);
+        a = idx->transformargument(lisp);
+        if (a != idx)
+            ((List*)arguments)->liste.put(i, a);
+    }
+
     return lisp->recordingMethod(this, label);
 }
 
 Element* List::evall_defmacro(LispE* lisp) {
-    if (liste._size() != 4)
+    if (liste._size() < 4)
         throw new Error("Error: wrong number of arguments");
     //We declare a function
     int16_t label = liste[1]->label();
@@ -1235,6 +1272,34 @@ Element* List::evall_defspace(LispE* lisp) {
     return True_;
 }
 
+//(class name (x y z)
+Element* List::evall_class(LispE* lisp) {
+    //if the function was created on the fly, we need to store its contents
+    //in the garbage
+    int16_t label = liste[1]->label();
+    if (liste.size() == 2) {
+        if (label == l_thread)
+            throw new Error("Error: 'thread' is a reserved space name");
+        
+        lisp->create_name_space(label);
+        return True_;
+    }
+    if (!liste[2]->isList())
+        throw new Error(L"Error: List of missing parameters in a function declaration");
+
+    if (lisp->globalDeclaration()) {
+        if (lisp->delegation->class_pool.check(label)) {
+            wstring nm =L"Error: Function '";
+            nm += lisp->asString(label);
+            nm += L"' already declared";
+            throw new Error(nm);
+        }
+        return this;
+    }
+    return lisp->recordingunique(this, label);
+}
+
+
 Element* List::evall_defun(LispE* lisp) {
     //if the function was created on the fly, we need to store its contents
     //in the garbage
@@ -1279,8 +1344,7 @@ Element* List::evall_if(LispE* lisp) {
     if (test >= liste.size())
         return null_;
     
-    liste[test]->setterminal(terminal);
-    return liste[test]->eval(lisp);
+    return liste[test]->eval_terminal(lisp, terminal);
 }
 
 Element* List::evall_ife(LispE* lisp) {
@@ -1288,8 +1352,7 @@ Element* List::evall_ife(LispE* lisp) {
 
     if (element->Boolean()) {
         element->release();
-        liste[2]->setterminal(terminal);
-        return liste[2]->eval(lisp);
+        return liste[2]->eval_terminal(lisp, terminal);
     }
 
     long listsize = liste.size();
@@ -1329,7 +1392,7 @@ Element* List::evall_index_zero(LispE* lisp) {
             container->release();
             if (the_type == t_string || the_type == t_strings || the_type == t_sets)
                 return emptystring_;
-            return zero_;
+            return zero_value;
         }
         
         if (!container->element_container(result))
@@ -1350,81 +1413,110 @@ Element* List::evall_set_at(LispE* lisp) {
     return m.eval(lisp);
 }
 
-//Infix Expressions: x op y op z op u
-Element* Listincode::eval_infix(LispE* lisp) {
+//Infix Expressions: (• x op y op z op u)
+Element* List::eval_infix(LispE* lisp) {
     long listsize = liste.size();
-    if (listsize % 2)
-        throw new Error("Error: Infix expression is malformed");
-    
-    //In this case, we will evaluate this expression in the code itself...
-    if (listsize == 2)
+    if (!listsize)
         return this;
-    
-    //We use this instruction to read infix structures such as:
-    Listincode* operations = new Listincode(idxinfo);
-    Listincode* root = operations;
-    Listincode* inter;
-    Element* op;
 
-    lisp->storeforgarbage(operations);
-    
-    long iop = 4;
-    long ival = 1;
+    Element* e;
+    Element* oper = NULL;
+    Listincode* root;
 
-    //First we gather all our ops, there should one be every two elements
-    op = liste[2];
-    operations->append(op);
-    
-    while (ival < listsize) {
-        
-        //We check the sequence of operators of the same kind
-        for (; iop < listsize - 1; iop+=2) {
-            if (!liste[iop]->isAtom())
-                throw new Error("Error: Expecting an operator in this infix expression");
-            if (op != liste[iop]) {
-                op = liste[iop];
-                break;
+    long beg = 1;
+    if (liste[0]->label() != l_infix) {
+        if (liste[0]->isExecutable(lisp)) {
+            //we need to check for lists in the arguments, we are still under the infix hood...
+            for (long i = 1; i < listsize; i++) {
+                e = liste[i];
+                if (e->isList()) {
+                    oper = ((List*)e)->eval_infix(lisp);
+                    if (oper != e) {
+                        liste[i] = oper;
+                        lisp->removefromgarbage(e);
+                    }
+                }
             }
+            return this;
         }
-        
-        //we then push all the values up to the operator that is different
-        for (;ival < iop; ival += 2)
-            operations->append(liste[ival]);
-        
-        if (iop < listsize -1) {
-            //If this operator is + or -, we create on level up
-            char comp = lisp->delegation->checkComparator(op->type, root->index(0)->type);
-            if (comp == -1) {
-                operations = root;
-                iop += 2;
-                continue;
-            }
-            
-            if (comp) {
-                inter = new Listincode(idxinfo);
-                lisp->storeforgarbage(inter);
-                inter->append(op);
-                inter->append(root);
-                root = inter;
-                //In all cases, operations points to the top level
-                operations = root;
+        beg = 0;
+    }
+
+    int16_t label;
+    Listincode* operations = new Listincode(((Listincode*)this)->idxinfo);
+    lisp->storeforgarbage(operations);
+    bool addtolast = false;
+    bool checkoperator = false;
+    for (long i = beg; i < listsize; i++) {
+        oper = liste[i];
+        if (oper->isOperator()) { //10 + -> first operator
+            if (!checkoperator)
+                throw new Error("Error: Infix expression is malformed");
+
+            if (operations->size() == 1) {
+                e = operations->liste[0];
+                operations->liste[0] = oper;
+                operations->append(e);
+                addtolast = false;
             }
             else {
-                //We create one level down.
-                //We feed this new List with the last element of the current list
-                inter = new Listincode(idxinfo);
-                lisp->storeforgarbage(inter);
-                inter->append(op);
-                Element* last = operations->liste.back();
-                inter->append(last);
-                operations->pop();
-                operations->append(inter);
-                operations = inter;
+                label = oper->label();
+                if (label == operations->liste[0]->label()) {
+                    addtolast = false;
+                }
+                else {
+                    if (label == l_plus || label == l_minus || label == l_and || label == l_xor || label == l_or) { // go up; this is how the operator priority is maintained.
+                        root = new Listincode(((Listincode*)this)->idxinfo);
+                        lisp->storeforgarbage(root);
+                        root->append(oper);
+                        root->append(operations);
+                        operations = root;
+                        addtolast = false;
+                    }
+                    else {
+                        e = operations->last(lisp);
+                        addtolast = true;
+                        if (!e->isList() || e->index(0)->label() != label || e->size() == 2) { //go in next time
+                            root = new Listincode(((Listincode*)this)->idxinfo);
+                            lisp->storeforgarbage(root);
+                            root->append(oper);
+                            root->append(e);
+                            operations->liste[operations->size() - 1] = root;
+                        }
+                        else {
+                            oper = e->change_to_n();
+                            if (oper != e) {
+                                lisp->removefromgarbage(e);
+                                operations->liste[operations->size() - 1] = oper;
+                            }
+                        }
+                    }
+                }
             }
+            checkoperator = false;
+            continue;
         }
-        iop += 2;
+    
+        if (checkoperator)
+            throw new Error("Error: Infix expression is malformed");
+    
+        checkoperator = true;
+        e = oper->eval_infix(lisp);
+        if (e != oper)
+            lisp->removefromgarbage(oper);
+        
+        if (addtolast) {
+            operations->last(lisp)->append(e);
+        }
+        else
+            operations->append(e);
+        //cout << operations->toString(lisp) << endl;
     }
-    return root;
+
+    if (!checkoperator)
+        throw new Error("Error: Infix expression is malformed");
+
+    return operations;
 }
 
 Element* List::evall_input(LispE* lisp) {
@@ -1636,6 +1728,29 @@ Element* List::evall_setqv(LispE* lisp) {
     return element;
 }
 
+Element* List::evall_setqi(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    int16_t label = liste[1]->label();
+    List_instance* instance = lisp->current_instance;
+    if (instance != NULL) {
+        long i = instance->names.search(label);
+        if (i != -1) {
+            //In this case, we force the value onto the existing variable...
+            if (element != instance->liste[i]) {
+                instance->liste[i]->decrement();
+                instance->liste[i] = element;
+                element->increment();
+            }
+        }
+        else {
+            instance->names.push_back(label);
+            instance->append(element);
+        }
+    }
+    lisp->storing_variable(element, liste[1]->label());
+    return element;
+}
+
 Element* List::evall_seth(LispE* lisp) {
     if (lisp->check_thread_stack) {
         Element* element = liste[2]->eval(lisp);
@@ -1763,10 +1878,10 @@ Element* List::evall_threadstore(LispE* lisp) {
     
     Element* value = liste[2]->eval(lisp);
 
-    bool previous_context = lisp->create_in_thread;
-    lisp->create_in_thread = true;
+    bool previous_context = lisp->create_no_pool_element;
+    lisp->create_no_pool_element = true;
     lisp->delegation->thread_store(key, value);
-    lisp->create_in_thread = previous_context;
+    lisp->create_no_pool_element = previous_context;
 
     value->release();
 
@@ -1930,10 +2045,22 @@ Element* Enumlist::eval(LispE* lisp) {
     return l;
 }
 
+Element* List::evall_this(LispE* lisp) {
+    if (lisp->current_instance != NULL)
+        return lisp->current_instance;
+    return null_;
+}
+
 #ifdef MACDEBUG
 //This is a stub function, which is used to focus on specific function debugging
 Element* List::evall_debug_function(LispE* lisp) {
-    return true_;
+    long occupation = 0;
+    for (const auto& a: __indexes) {
+        if (a != NULL) {
+            occupation++;
+        }
+    }
+    return lisp->provideInteger(occupation);
 }
 #endif
 

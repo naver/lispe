@@ -398,22 +398,71 @@ public:
     long sz;
     long status;
 
+#ifdef __APPLE
+    //for the moment we deactivate it. The problem is with the realloc buffer
+    inline void recreate_buffer(long esz) {
+        Z* localbuf;
+        size_t aligned_size = ((sizeof(Z) * esz + 15) / 16) * 16;
+        int ret = posix_memalign((void**)&localbuf, 16, aligned_size);
+        if (!ret) {
+            memcpy(localbuf, buffer, sizeof(Z)*last);
+            free(buffer);
+            buffer = localbuf;
+        }
+        else {
+            // Fallback sur malloc si échec
+            buffer = (Z*)realloc(buffer, sizeof(Z)*esz);
+        }
+    }
+    
+    inline void create_buffer(long esz) {
+        size_t aligned_size = ((sizeof(Z) * esz + 15) / 16) * 16;
+        int ret = posix_memalign((void**)&buffer, 16, aligned_size);
+        if (ret != 0) {
+            // Fallback sur malloc si échec
+            buffer = (Z*)malloc(esz);
+        }
+    }
+#else
+    inline void recreate_buffer(long esz) {
+        buffer = (Z*)realloc(buffer, sizeof(Z)*esz);
+    }
+    
+    inline void create_buffer(long esz) {
+        buffer = (Z*)malloc(sizeof(Z)*esz);
+    }
+#endif
+    
     item_a(long t) {
         status = 0; //this is the reference counter
         last = 0; //this is the last element
         sz = t; //this is the size
         //We always create one more element
         //to handle some room for exchange
-        buffer = (Z*)malloc(sizeof(Z)*(sz + 1));
+        // Arrondir au multiple de 16
+        
+        create_buffer(sz + 1);
         //hence buffer[sz] does exist even though
         //it cannot be accessed through normal means
     }
     
+    inline Z* borrow() {
+        if (!status) {
+            Z* b = buffer;
+            last = 0;
+            sz = 3;
+            create_buffer(sz + 1);
+            return b;
+        }
+        else
+            return NULL;
+    }
+
     inline void reserve(long t) {
         if (t > sz) {
             sz = t;
             //We reallocate our vecteur
-            buffer = (Z*)realloc(buffer, sizeof(Z)*(sz + 1));
+            recreate_buffer(sz + 1);
         }
     }
 
@@ -421,7 +470,7 @@ public:
         if (t >= sz) {
             sz = t << 1;
             //We reallocate our vecteur
-            buffer = (Z*)realloc(buffer, sizeof(Z)*(sz + 1));
+            recreate_buffer(sz + 1);
         }
     }
     
@@ -470,7 +519,7 @@ public:
         if (sz < (nb + last)) {
             sz = (nb + last) << 1;
             //We reallocate our vecteur
-            buffer = (Z*)realloc(buffer, sizeof(Z)*sz + 1);
+            recreate_buffer(sz + 1);
             memset(buffer+last, NULL, sizeof(Z)*(sz-last));
         }
     }
@@ -479,7 +528,7 @@ public:
         if (sz < (nb + last)) {
             sz = (nb + last) << 1;
             //We reallocate our vecteur
-            buffer = (Z*)realloc(buffer, sizeof(Z)*sz + 1);
+            recreate_buffer(sz + 1);
             for (nb = last; nb < sz; nb++)
                 buffer[nb] = v;
         }
@@ -693,6 +742,10 @@ public:
             items->status--;
     }
 
+    inline Z* borrow() {
+        return items->borrow();
+    }
+
     inline void reserve(long t) {
         items->reserve(t);
     }
@@ -729,13 +782,18 @@ public:
         home = 0;
         if (items->status) {
             //In this case it is a shared buffer
-            //We have no right to it anymore
-            //We need to provide a new one
             items->status--;
-            items = new item_a<Z>(8);
+            items = new item_a<Z>(3);
         }
-        else
-            items->last = 0;
+        else {
+            if (items->sz > 10) {
+                //We clean it anyway, to avoid cluttering memory
+                delete items;
+                items = new item_a<Z>(3);
+            }
+            else
+                items->last = 0;
+        }
     }
 
     void clean() {
@@ -1197,13 +1255,18 @@ public:
         home = 0;
         if (items->status) {
             //In this case it is a shared buffer
-            //We have no right to it anymore
-            //We need to provide a new one
             items->status--;
-            items = new item_n<Z>(8);
+            items = new item_n<Z>(3);
         }
-        else
-            items->last = 0;
+        else {
+            if (items->sz > 10) {
+                //We clean it anyway, to avoid cluttering memory
+                delete items;
+                items = new item_n<Z>(3);
+            }
+            else
+                items->last = 0;
+        }
     }
 
     void clean() {

@@ -45,22 +45,29 @@ long create_global_lispe();
 //------------------------------------------------------------
 // The main class to handle the Lisp Interpreter
 //------------------------------------------------------------
+class List_instance;
+class LispE;
+
+class Thread_Function {
+public:
+    List* current_thread;
+    List* current_body;
+    LispE* thread_ancestor;
+    
+    Thread_Function(LispE* ancestor, List* current, List* body) : current_thread(current), current_body(body), thread_ancestor(ancestor) {}
+    void initialize(LispE* thread_lisp);
+};
+
 
 class LispE {
-    vector<Element*> garbages;
-    vector<Element*> temporary;
+    vector<Element*> garbages;    
     vecte<Stackelement*> stack_pool;
 
     vecte<Stackelement*> execution_stack;
-    long max_stack_size;
-
-public:
-    Element* _BOOLEANS[2][2];
-    tokenizer_result<u_ustring> r_parse;
     
-    bool select_bool_as_one;
-    bool macro_mode;
-
+public:
+    
+    Element* fast_variables[16];
 
     vecte<Floatpool*> float_pool;
     vecte<Numberpool*> number_pool;
@@ -107,21 +114,16 @@ public:
     unordered_map<double, Number*> const_number_pool;
     
     unordered_map<short, char> depths;
-    
-    segmenter_automaton segmenter;
 
-    long depth_stack;
-    
+    std::atomic<int16_t> nbjoined;
+
     //Delegation is a class that records any data
     //related to compilation
     Delegation* delegation;
     UTF8_Handler* handlingutf8;
+    List_instance* current_instance;
+    Thread_Function* thread_body;
 
-    List* current_thread;
-    List* current_body;
-    List* void_function;
-    LispE* thread_ancestor;
-    
     Element* n_null;
     Element* n_emptylist;
     Element* n_true;
@@ -130,23 +132,27 @@ public:
     Element* n_compose;
     
     
-    std::atomic<int16_t> nbjoined;
-
+    long depth_stack;
     long id_thread;
+    long max_stack_size;
+
+    uint16_t current_space;
     uint16_t max_size;
     uint16_t larger_max_size;
-    uint16_t current_space;
-    
+
     char trace;
     bool isThread;
     bool hasThread;
     bool check_arity_on_fly;
-    bool create_in_thread;
+    bool create_no_pool_element;
     bool clean_utf8;
     bool check_thread_stack;
 	bool current_path_set;
-    
-    LispE(UTF8_Handler* hnd = NULL) : segmenter(hnd) {
+    bool select_bool_as_one;
+    bool macro_mode;
+
+    LispE(UTF8_Handler* hnd = NULL) {
+        current_instance = NULL;
         macro_mode = false;
         max_size = 50;
         larger_max_size = 200;
@@ -156,7 +162,7 @@ public:
         current_space = 0;
         initpoolsize();
         initpools();
-        create_in_thread = false;
+        create_no_pool_element = false;
         check_arity_on_fly = false;
         id_thread = 0;
 #ifdef LISPE_WASM
@@ -165,16 +171,14 @@ public:
         max_stack_size = 50000;
 #endif
         trace = debug_none;
-        delegation = new Delegation;
+        delegation = new Delegation(hnd);
         isThread = false;
         hasThread = false;
-        thread_ancestor = NULL;
+        thread_body = NULL;
         nbjoined = 0;
-        current_thread = NULL;
-        current_body = NULL;
         if (hnd == NULL) {
             handlingutf8 = new UTF8_Handler;
-            segmenter.access = handlingutf8;
+            delegation->segmenter.access = handlingutf8;
             clean_utf8 = true;
         }
         else {
@@ -188,6 +192,8 @@ public:
         n_true = delegation->_TRUE;
         n_zero = delegation->_ZERO;
         n_one = delegation->_ONE;
+        for (int i = 0; i < 16; i++)
+            fast_variables[i] = n_null;
     }
     
     inline void initpoolsize() {
@@ -241,7 +247,8 @@ public:
     }
     
     LispE(LispE*, List* function, List* body);
-    
+    LispE(LispE*);
+
     ~LispE() {
         cleaning();
     }
@@ -258,12 +265,14 @@ public:
         return s;
     }
     
+    Element* tensor_to_lispe(Element* e, vecte<long>& shape);
+    
     inline Element* isTrue() {
-        return _BOOLEANS[select_bool_as_one][1];
+        return delegation->_BOOLEANS[select_bool_as_one][1];
     }
     
     inline Element* isFalse() {
-        return _BOOLEANS[select_bool_as_one][0];
+        return delegation->_BOOLEANS[select_bool_as_one][0];
     }
 
     inline void push(Element* fonction) {
@@ -353,9 +362,10 @@ public:
         return 0;
     }
     
-    inline void check_end_trace(char tr) {
+    inline void check_end_trace(char tr, char localtrace) {
         if (tr && trace && trace != debug_goto)
             stop_at_next_line(tr);
+        trace = localtrace;
     }
     
     void add_pathname(string pathname);
@@ -536,12 +546,20 @@ public:
     Element* compile_string(u_ustring& code);
 
     Element* load(string chemin);
+    Element* check_file(string chemin);
     void precompile(string chemin);
     lisp_code segmenting(string& code, Tokenizer& s);
     lisp_code segmenting(u_ustring& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
-    Element* tokenize(u_ustring& code, bool keepblanks, short decimalpoint);
-    Element* tokenize(string& code, bool keepblanks, short decimalpoint);
+    
+    Element* tokenize(u_ustring& code, bool keepblanks, short decimalseparator) {
+        return delegation->tokenize(this, code, keepblanks, decimalseparator, threaded());
+    }
+    
+    Element* tokenize(string& code, bool keepblanks, short decimalseparator) {
+        return delegation->tokenize(code, keepblanks, decimalseparator, threaded());
+    }
+    
     Element* compileLocalStructure(Element* current_program, Element* element, Tokenizer& parse, Element*& check_composition_depth, uint16_t currentspace, bool& cont);
     Element* for_composition(Element* current_program, Element* element, Tokenizer& parse);
     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index, long quoting);
@@ -658,8 +676,10 @@ public:
         Element* res;
         check_existing_error(&res) ||
         execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.back()->get_instance_variable(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
         (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
+        delegation->class_pool.search(label, &res) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
         unboundAtomError(label, &res);
@@ -672,7 +692,9 @@ public:
         Element* res;
         check_existing_error(&res) ||
         execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.back()->get_instance_variable(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
+        delegation->class_pool.search(label, &res) ||
         (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
@@ -686,7 +708,9 @@ public:
         Element* res;
         check_existing_error(&res) ||
         execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.back()->get_instance_variable(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
+        delegation->class_pool.search(label, &res) ||
         (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
@@ -727,11 +751,17 @@ public:
         return res;
     }
 
+    inline void check_space(int16_t function_space) {
+        execution_stack.back()->check_space(function_space, current_space);
+    }
+    
     inline Element* get(u_ustring name) {
         int16_t label = encode(name);
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.back()->get_instance_variable(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
+        delegation->class_pool.search(label, &res) ||
         (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
@@ -744,7 +774,9 @@ public:
         int16_t label = encode(name);
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.back()->get_instance_variable(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
+        delegation->class_pool.search(label, &res) ||
         (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
@@ -757,7 +789,9 @@ public:
     inline Element* get(int16_t label) {
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.back()->get_instance_variable(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
+        delegation->class_pool.search(label, &res) ||
         (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
@@ -900,7 +934,19 @@ public:
                 v_atoms.push_back(delegation->provideAtom(labels[i]));
         }
     }
-    
+
+    inline Element* checkOnAllStack(wstring& var) {
+        int16_t code = delegation->get_code(var);
+        if (code == -1)
+            return NULL;
+        
+        for (long i = execution_stack.size() - 1; i >= 0; i++) {
+            if (execution_stack[i]->variables.check(code))
+                return execution_stack[i]->variables[code];
+        }
+        return NULL;
+    }
+
     string stackImage() {
         string the_stack;
         long sz;
@@ -943,6 +989,7 @@ public:
     }
     
     inline void pushing(Stackelement* s) {
+        s->instance = current_instance;
         execution_stack.push_back(s);
     }
     
@@ -963,12 +1010,7 @@ public:
         return execution_stack.back();
     }
     
-    inline Element* pop(Element* e) {
-        e->increment();
-        removeStackElement();
-        e->decrementkeep();
-        return e;
-    }
+    Element* pop(Element* e);
 
     //We clear the stack up to upto
     inline Element* pop(Element* e, long upto) {
@@ -1183,10 +1225,11 @@ public:
     }
 
     inline Element* recording_back(Element* e, int16_t label) {
-        bool g = execution_stack.back()->variables.check(label)?false:execution_stack.vecteur[0]->variables.check(label);
+        bool g = execution_stack.back()->check_with_instance(label)?false:execution_stack.vecteur[0]->variables.check(label);
         if (g)
             return execution_stack[0]->recording_variable(e->duplicate_constant(this), label);
-        return execution_stack.back()->recording_variable(e->duplicate_constant(this), label);
+                
+        return execution_stack.back()->recording_variable_with_instance(e->duplicate_constant(this), label);
     }
 
     inline void storing_global(wstring label, Element* e) {
@@ -1216,9 +1259,13 @@ public:
     }
 
     inline void setstackfunction(Element* f) {
-        execution_stack.back()->function = f;
+        execution_stack.back()->set(f, current_instance);
     }
-    
+
+    inline void setstackfunction(Element* f, int16_t space) {
+        execution_stack.back()->set(f, current_instance, space, current_space);
+    }
+
     inline void remove_sub_stack(Stackelement* sta) {
         //We simply remove the element under the top of the stack
         //execution_stack[-2] = execution_stack[-1]
@@ -1298,6 +1345,31 @@ public:
         return execution_stack.back()->get(label);
     }
 
+    char setSpaceIf(int16_t label) {
+        if (delegation->class_pool.check(label)) {
+            current_space = ((List_class_definition*)delegation->class_pool[label])->space;
+            return 1;
+        }
+        if (delegation->namespaces.check(label)) {
+            current_space = delegation->namespaces[label];
+            return 2;
+        }
+        return 0;
+    }
+
+    void resetSpaceIf(int16_t label, int16_t space) {
+        if (delegation->class_pool.check(label)) {
+            current_space = space;
+        }
+    }
+
+    inline Element* returnBody(Element* l) {
+        int16_t label = l->index(0)->label();
+        if (delegation->function_pool[current_space]->check(label))
+            return delegation->function_pool[current_space]->at(label);
+        throw new Error("Error: Unknown function");
+    }
+    
     inline bool checkFunctionLabel(int16_t label) {
         return delegation->function_pool[current_space]->check(label);
     }

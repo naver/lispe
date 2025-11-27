@@ -64,7 +64,7 @@
 
 (while dedans
    (setq caret (@ carte x y))
-   (if (key moves caret)
+   (if (key@ moves caret)
       (setq actions (@ moves caret))
    )
    (setq xx (+ x (@ actions 0)))
@@ -128,4 +128,6 @@
    )
 )
 (println nbloop temps)
+
+
 

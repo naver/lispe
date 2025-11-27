@@ -193,10 +193,106 @@ List_call_lambda::List_call_lambda(LispE* lisp, Listincode* l) : Listincode(l) {
     }
 }
 
-List_function_eval::List_function_eval(LispE* lisp, Listincode* l, List* b) : body(b), Listincode(l) {
+List_class_definition::List_class_definition(LispE* lisp, List* body) : Listincode(body) {
+    type = t_class;
+    status = s_constant;
+    //the third element is the argument list .
+    //we need our body to be the same number
+    class_label = body->liste[1]->label();
+    space = lisp->delegation->namespaces[class_label];
+    
+    long from = -1;
+    if (body->size() >= 3) {
+        if (body->liste[2]->size() > 0 && body->liste[2]->index(0)->label() == l_from)
+            from = 2;
+        else {
+            if (body->size() >= 4) {
+                if (body->liste[3]->size() > 0 && body->liste[3]->index(0)->label() == l_from)
+                    from = 3;
+            }
+        }
+    }
+
+    long i;
+
+    if (from != -1) {
+        int16_t label = body->liste[from]->index(1)->label();
+        if (!lisp->delegation->class_pool.check(label)) {
+            wstring inside_class = L"Error: Unknown class: '";
+            inside_class += body->liste[from]->asString(lisp);
+            inside_class += L"'";
+            throw new Error(inside_class);
+        }
+        
+        List_class_definition* mother = (List_class_definition*)lisp->delegation->class_pool[label];
+        if (from == 3) {
+            parameters = new Listincode();
+            lisp->storeforgarbage(parameters);
+            for (i = 0; i < body->liste[2]->size(); i++) {
+                parameters->append(body->liste[2]->index(i));
+            }
+            for (i = 0; i < mother->parameters->size(); i++) {
+                parameters->append(mother->parameters->index(i));
+            }
+        }
+        else {
+            parameters = mother->parameters->copying(true);
+            lisp->storeforgarbage(parameters);
+        }
+        
+        //We check if the function pool exists for this space...
+        binHash<Element*>::iterator it(*lisp->delegation->function_pool[mother->space]);
+        for (;!it.end();it++) {
+            if (!lisp->delegation->function_pool[space]->check(it->first))
+                lisp->delegation->function_pool[space]->push(it->first,it->second);
+        }
+    }
+    else
+        parameters = body->liste[2];
+    
+    same = true;
+    Element* element;
+    for (i = 0; i < parameters->size(); i++) {
+        element = parameters->index(i);
+        if (element->isList()) {
+            same = false;
+            if (element->size() && element->index(0)->label() > l_final)
+                names.push_back(element->index(0)->label());
+            else
+                throw new Error(L"Error: Wrong parameter description");
+        }
+        else
+            names.push_back(element->label());
+    }
+}
+
+List_function_eval::List_function_eval(LispE* lisp, Listincode* l, List* b, int16_t s) : body(b), Listincode(l) {
     type = t_call;
+    space = s;
     status = s_constant;
     nbarguments = liste.size() - 1;
+    //the third element is the argument list .
+    //we need our body to be the same number
+    parameters = body->liste[2];
+    defaultarguments = parameters->argumentsize(nbarguments);
+    if (defaultarguments == -1) {
+        wstring inside_class = L"Error: Wrong number of arguments in call to: '(";
+        inside_class += body->liste[1]->asString(lisp);
+        inside_class += L" ";
+        inside_class += body->liste[2]->asString(lisp);
+        inside_class += L"...)'";
+        Error* err = new Error(inside_class);
+        lisp->delegation->set_error_context(err, l->idxinfo);
+        throw err;
+    }
+    same = (defaultarguments == parameters->size());
+}
+
+List_function_eval::List_function_eval(LispE* lisp, List* b, int16_t nb) : body(b) {
+    liste.push_element(b);
+    type = t_eval;
+    status = s_constant;
+    nbarguments = nb;
     //the third element is the argument list .
     //we need our body to be the same number
     parameters = body->liste[2];
@@ -212,7 +308,29 @@ List_function_eval::List_function_eval(LispE* lisp, Listincode* l, List* b) : bo
     same = (defaultarguments == parameters->size());
 }
 
-List_function_eval::List_function_eval(LispE* lisp, List* b, long nb) : body(b) {
+List_thread_eval::List_thread_eval(LispE* lisp, Listincode* l, List* b, int16_t s) : body(b), Listincode(l) {
+    type = t_call;
+    space = s;
+    status = s_constant;
+    nbarguments = liste.size() - 1;
+    //the third element is the argument list .
+    //we need our body to be the same number
+    parameters = body->liste[2];
+    defaultarguments = parameters->argumentsize(nbarguments);
+    if (defaultarguments == -1) {
+        wstring inside_class = L"Error: Wrong number of arguments in call to: '(";
+        inside_class += body->liste[1]->asString(lisp);
+        inside_class += L" ";
+        inside_class += body->liste[2]->asString(lisp);
+        inside_class += L"...)'";
+        Error* err = new Error(inside_class);
+        lisp->delegation->set_error_context(err, l->idxinfo);
+        throw err;
+    }
+    same = (defaultarguments == parameters->size());
+}
+
+List_thread_eval::List_thread_eval(LispE* lisp, List* b, int16_t nb) : body(b) {
     liste.push_element(b);
     type = t_eval;
     status = s_constant;
@@ -284,7 +402,7 @@ Element* Listpool::fullcopy() {
     if (liste.marking)
         return liste.object;
     liste.marking = true;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         liste.object = new List;
     else
         liste.object = lisp->provideList();
@@ -312,7 +430,7 @@ Element* Listpool::copying(bool duplicate) {
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
     List* l;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         l = new List;
     else {
         if (!is_protected() && !duplicate)
@@ -366,7 +484,7 @@ Element* Floatspool::newInstance(Element* v) {
 }
 
 Element* Floatspool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Floats(this);
     
     return lisp->provideFloats(this);
@@ -377,7 +495,7 @@ Element* Floatspool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Floats(this);
     
     if (!is_protected() && !duplicate)
@@ -417,7 +535,7 @@ Element* Numberspool::newInstance(Element* v) {
 }
 
 Element* Numberspool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Numbers(this);
     
     return lisp->provideNumbers(this);
@@ -428,7 +546,7 @@ Element* Numberspool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Numbers(this);
     
     if (!is_protected() && !duplicate)
@@ -476,7 +594,7 @@ Element* Integerspool::newInstance(Element* v) {
 }
 
 Element* Integerspool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Integers(this);
     
     return lisp->provideIntegers(this);
@@ -487,7 +605,7 @@ Element* Integerspool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Integers(this);
     
     //If it is a CDR, we need to copy it...
@@ -532,7 +650,7 @@ Element* Stringspool::newInstance() {
 }
 
 Element* Stringspool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Strings(this);
     
     return lisp->provideStrings(this);
@@ -543,7 +661,7 @@ Element* Stringspool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Strings(this);
     
     //If it is a CDR, we need to copy it...
@@ -565,8 +683,8 @@ Element* Stringspool::copyatom(LispE* lsp, uint16_t s) {
 //--------------------------------------------------------------------------------
 
 inline bool LIST::compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j) {
-    comparison->in_quote(1, item->buffer[i]);
-    comparison->in_quote(2, item->buffer[j]);
+    comparison->in_quote(1, items->buffer[i]);
+    comparison->in_quote(2, items->buffer[j]);
     return comparison->eval_Boolean(lisp, instruction);
 }
 
@@ -590,7 +708,7 @@ void LIST::sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin
         
         if (j == 2) {
             if (compare(lisp, comparison, instruction, rmax, rmin))
-                item->swap(rmax, rmin);
+                items->swap(rmax, rmin);
             return;
         }
         
@@ -600,14 +718,14 @@ void LIST::sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin
                     return;
             }
             else {
-                item->swap(rmin, rmin + 1);
+                items->swap(rmin, rmin + 1);
                 if (compare(lisp, comparison, instruction, rmin + 1, rmax))
                     return;
             }
-            item->swap(rmax, rmin + 1);
+            items->swap(rmax, rmin + 1);
             if (compare(lisp, comparison, instruction, rmin, rmin + 1))
                 return;
-            item->swap(rmin, rmin + 1);
+            items->swap(rmin, rmin + 1);
             return;
         }
         
@@ -616,11 +734,11 @@ void LIST::sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin
             sz = rmin;
             for (j = rmin; j < rmax; j++) {
                 if (compare(lisp, comparison, instruction, j + 1, j)) {
-                    item->swap(j, j + 1);
+                    items->swap(j, j + 1);
                     sz = j;
                     pivot = j;
                     while (pivot > rmin && compare(lisp, comparison, instruction, pivot, pivot - 1))
-                        item->swap(pivot, pivot - 1);
+                        items->swap(pivot, pivot - 1);
                 }
             }
             rmax = sz;
@@ -629,16 +747,16 @@ void LIST::sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin
     }
     
     pivot = rmin - 1;
-    comparison->in_quote(2, item->buffer[rmax]);
+    comparison->in_quote(2, items->buffer[rmax]);
     for (j = rmin; j < rmax; j++) {
-        comparison->in_quote(1, item->buffer[j]);
+        comparison->in_quote(1, items->buffer[j]);
         if (comparison->eval_Boolean(lisp, instruction)) {
             pivot++;
-            item->swap(pivot,j);
+            items->swap(pivot,j);
         }
     }
     pivot++;
-    item->swap(pivot, rmax);
+    items->swap(pivot, rmax);
     
     sorting(lisp, comparison, instruction, rmin, pivot-1);
     sorting(lisp, comparison, instruction, pivot+1, rmax);
@@ -646,11 +764,11 @@ void LIST::sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin
 
 void LIST::sorting(LispE* lisp, List* comparison) {
     //We sort between home and last...
-    long sz = item->last - home;
+    long sz = items->last - home;
     if (sz <= 1)
         return;
     
-    sorting(lisp, comparison, comparison->liste[0]->type, home, item->last - 1);
+    sorting(lisp, comparison, comparison->liste[0]->type, home, items->last - 1);
 }
 
 //------------------------------------------------------------------------------------------
@@ -975,7 +1093,6 @@ Element* LList::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
-    Element* element;
     long sz = code->liste.size();
     for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         lisp->replacestackvalue(a->value, label);
@@ -998,7 +1115,6 @@ Element* List::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
-    Element* element;
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
         lisp->replacestackvalue(liste[i], label);
@@ -1624,6 +1740,80 @@ Element* List::rotate(LispE* lisp, long nb) {
     for (i = nb; i < sz; i++)
         reverse->append(liste[i-nb]->copying(false));
     return reverse;
+}
+
+void group_instance_clean::call_clean(List_instance* li) {
+    if (lisp->delegation->function_pool[space]->check(clean_function->label())) {
+        List_function_eval b(lisp, (List*)lisp->delegation->function_pool[space]->at(clean_function->label()), 0);
+        int16_t sp = lisp->current_space;
+        lisp->current_space = space;
+        List_instance* current = lisp->current_instance;
+        lisp->current_instance = li;
+        try {
+            b.eval(lisp);
+        }
+        catch (Error* err) {
+            if (err->not_protected())
+                delete err;
+        }
+        lisp->current_space = sp;
+        lisp->current_instance = current;
+    }
+}
+
+Element* List_instance::replace(LispE* lisp, Element* k, Element* e) {
+    if (k->isScalar()) {
+        long i = k->checkInteger(lisp);
+        if (i < 0 || i >= size())
+            throw new Error("Error: index out of bounds");
+        if (e != liste[i]) {
+            liste[i]->decrement();
+            liste[i] = e;
+            e->increment();
+        }
+        return this;
+    }
+    u_ustring u = k->asUString(lisp);
+    unordered_map<u_ustring, int16_t>::iterator it = lisp->delegation->string_to_code.find(u);
+    if (it != lisp->delegation->string_to_code.end()) {
+        int16_t label = it->second;
+        long i = 0;
+        for (;i < names.size(); i++) {
+            if (names[i] == label)
+                break;
+        }
+        if (i < names.size()) {
+            if (e != liste[i]) {
+                liste[i]->decrement();
+                liste[i] = e;
+                e->increment();
+            }
+            return this;
+        }
+    }
+    throw new Error("Error: index out of bounds");
+}
+
+Element* List_instance::protected_index(LispE* lisp, Element* k) {
+    if (k->isScalar()) {
+        long i = k->checkInteger(lisp);
+        if (i < 0 || i >= size())
+            throw new Error("Error: index out of bounds");
+        return liste[i];
+    }
+    u_ustring u = k->asUString(lisp);
+    unordered_map<u_ustring, int16_t>::iterator it = lisp->delegation->string_to_code.find(u);
+    if (it != lisp->delegation->string_to_code.end()) {
+        int16_t label = it->second;
+        long i = 0;
+        for (;i < names.size(); i++) {
+            if (names[i] == label)
+                break;
+        }
+        if (i < names.size())
+            return liste[i];
+    }
+    throw new Error("Error: index out of bounds");
 }
 
 Element* List::protected_index(LispE* lisp,long i) {

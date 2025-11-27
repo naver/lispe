@@ -2,9 +2,9 @@
 
 ; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
-(defmacro remove(o k v) (pop (key o k) v))
+(defmacro remove(o k v) (pop (key@ o k) v))
 
-(data (Move _) (Break _ _) (Open _ _) (Kill _ _) (Pick _ _) (Take _) (Drop _))
+(data@ (Move _) (Break _ _) (Open _ _) (Kill _ _) (Pick _ _) (Take _) (Drop _))
 
 ; pick up is the same as take with one more parameter
 (defpat action ( (Pick 'up x))
@@ -28,7 +28,7 @@
    (if
       (check_belongings x)
       (block
-         (key objects (keystr position) x)
+         (key@ objects (keystr position) x)
          (pop belongings (find belongings x))
          (println "Ok! We have dropped" x " on the ground")
          (display_position position)
@@ -44,7 +44,7 @@
             (eq x 'stone))
          (block
             (update_direction (keystr position) "0:2")
-            (key castlemap "1:2" "You are standing in front of a broken window")
+            (key@ castlemap "1:2" "You are standing in front of a broken window")
             (println "Window is broken")
          )
          (println "Cannot break a window with that" x)
@@ -61,7 +61,7 @@
          (block
             (update_direction (keystr position) "0:1")
             (update_direction "0:1" "0:0")
-            (key castlemap "1:1" "You are standing in front of an open gate")
+            (key@ castlemap "1:1" "You are standing in front of an open gate")
             (println "The door opens")
          )
          (println "Cannot open a door with that" x)
@@ -143,7 +143,7 @@
 
 ; check if a path is within the description in 'moving'
 (defun check_valid_path(p)
-   (if (belong p (key moving (keystr position)))
+   (if (belong p (key@ moving (keystr position)))
       p
       position
    )
@@ -151,13 +151,13 @@
 
 ; update valid directions in both ways
 (defun update_direction (current_position direction)
-   (key moving current_position (cons direction (key moving current_position)))
+   (key@ moving current_position (cons direction (key@ moving current_position)))
    (cond
-      ((key moving direction)
-         (key moving direction (cons current_position (key moving direction)))
+      ((key@ moving direction)
+         (key@ moving direction (cons current_position (key@ moving direction)))
       )
       (true
-         (key moving direction (cons current_position ()))
+         (key@ moving direction (cons current_position ()))
       )
    )
 )
@@ -184,7 +184,7 @@
 (defun check_object(p x)
    (setq k (keystr p))
    (check
-      (in (key objects k) x)
+      (in (key@ objects k) x)
       (remove objects k x)
       true
    )
@@ -204,8 +204,8 @@
 ; display a description of where we are at current position
 (defun display_position(p)
    (setq k (keystr p))
-   (println k (select (key castlemap k) "Nothing to see"))
-   (println (if (key objects k) (+ "There is a " (key objects k)) ""))
+   (println k (select (key@ castlemap k) "Nothing to see"))
+   (println (if (key@ objects k) (+ "There is a " (key@ objects k)) ""))
    (println "You own: " belongings)
 )
 
@@ -298,7 +298,7 @@
 
 (while (neq (car commands) 'End)
    (print "Your order sire? ")
-   (setq dialog (input))
+   (setq dialog (input@))
    (check (eq dialog "end")
       (println "Ok... Bye...")
       (break)
@@ -306,10 +306,10 @@
 
    (setq dialog (lower dialog))
    (setq dialog (+ (upper (at dialog 0)) (extract dialog 1 (size dialog))))
-   (setq commands (map (\ (x) (select (key synonyms x) x)) (split dialog " ")))
+   (setq commands (map (\ (x) (select (key@ synonyms x) x)) (split dialog " ")))
    ; we transform each of our strings into atoms, for match sake
    ;we remove useless words: the, a etc..
-   (setq commands (filter (\ (x) (not (key stopwords x))) (map 'atom commands)))
+   (setq commands (filter (\ (x) (not (key@ stopwords x))) (map 'atom commands)))
    ; our commands is now a list of atoms that should match a data structure
 
    (maybe
@@ -328,4 +328,5 @@
 )
 
 (print "The end")
+
 

@@ -1,6 +1,6 @@
 
-(data (Truc _) (Machin _))
-(data test (truc _) (machin _))
+(data@ (Truc _) (Machin _))
+(data@ test (truc _) (machin _))
 
 
 (defpat action ( (test x) )
@@ -19,6 +19,7 @@
 (action (machin 'machin))
 (action (Truc 'Truc))
 (action (Machin 'Machin))
+
 
 
 

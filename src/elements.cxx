@@ -129,30 +129,31 @@ Element* String::chargebin(LispE* lisp, string chemin) {
     
 //------------------------------------------------------------------------------------------
 Element* Float::duplicate_constant(LispE* lisp) {
-    return !status?this:lisp->provideFloat(content);
+    return status!=s_constant?this:lisp->provideFloat(content);
 }
 
 Element* Number::duplicate_constant(LispE* lisp) {
-    return !status?this:lisp->provideNumber(content);
+    return status!=s_constant?this:lisp->provideNumber(content);
 }
 
 Element* Short::duplicate_constant(LispE* lisp) {
-    return !status?this:new Short(content);
+    return status!=s_constant?this:new Short(content);
 }
 
 Element* Complexe::duplicate_constant(LispE* lisp) {
-    return !status?this:lisp->provideComplex(content);
+    return status!=s_constant?this:lisp->provideComplex(content);
 }
 
 Element* Integer::duplicate_constant(LispE* lisp) {
-    return !status?this:lisp->provideInteger(content);
+    return status!=s_constant?this:lisp->provideInteger(content);
 }
+
 Element* String::duplicate_constant(LispE* lisp) {
-    return !status?this:lisp->provideString(content);
+    return status!=s_constant?this:lisp->provideString(content);
 }
 
 Element* Stringbyte::duplicate_constant(LispE* lisp) {
-    return !status?this:new Stringbyte(content);
+    return status!=s_constant?this:new Stringbyte(content);
 }
 
 //------------------------------------------------------------------------------------------
@@ -567,7 +568,7 @@ void Stringpool::release() {
 }
 
 Element* Floatpool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Number(content);
     return lisp->provideFloat(content);
 }
@@ -581,7 +582,7 @@ Element* Floatpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Float(content);
     
     if (!status)
@@ -590,7 +591,7 @@ Element* Floatpool::copying(bool duplicate) {
 }
 
 Element* Numberpool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Number(content);
     return lisp->provideNumber(content);
 }
@@ -604,7 +605,7 @@ Element* Numberpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Number(content);
     
     if (!status)
@@ -613,7 +614,7 @@ Element* Numberpool::copying(bool duplicate) {
 }
 
 Element* Integerpool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Integer(content);
     return lisp->provideInteger(content);
 }
@@ -627,7 +628,7 @@ Element* Integerpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Integer(content);
     
     if (!status)
@@ -637,7 +638,7 @@ Element* Integerpool::copying(bool duplicate) {
 }
 
 Element* Complexepool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Complexe(content);
     return lisp->provideComplex(content);
 }
@@ -651,7 +652,7 @@ Element* Complexepool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new Complexe(content);
     
     if (!status)
@@ -661,13 +662,13 @@ Element* Complexepool::copying(bool duplicate) {
 }
 
 Element* Constfloat::copying(bool duplicate) {
-    if (!provide || lisp->create_in_thread)
+    if (!provide || lisp->create_no_pool_element)
         return new Number(content);
     return lisp->provideFloat(content);
 }
 
 Element* Constfloat::fullcopy() {
-    if (!provide || lisp->create_in_thread)
+    if (!provide || lisp->create_no_pool_element)
         return new Number(content);
     return lisp->provideFloat(content);
 }
@@ -681,13 +682,13 @@ Element* Constfloat::duplicate_constant(LispE* lisp) {
 }
 
 Element* Constnumber::copying(bool duplicate) {
-    if (!provide || lisp->create_in_thread)
+    if (!provide || lisp->create_no_pool_element)
         return new Number(content);
     return lisp->provideNumber(content);
 }
 
 Element* Constnumber::fullcopy() {
-    if (!provide || lisp->create_in_thread)
+    if (!provide || lisp->create_no_pool_element)
         return new Number(content);
     return lisp->provideNumber(content);
 }
@@ -701,7 +702,7 @@ Element* Constnumber::duplicate_constant(LispE* lisp) {
 }
 
 Element* Constinteger::fullcopy() {
-    if (!provide || lisp->create_in_thread)
+    if (!provide || lisp->create_no_pool_element)
         return new Integer(content);
     return lisp->provideInteger(content);
 }
@@ -715,7 +716,7 @@ Element* Constinteger::duplicate_constant(LispE* lisp) {
 }
 
 Element* Constinteger::copying(bool duplicate) {
-    if (!provide || lisp->create_in_thread)
+    if (!provide || lisp->create_no_pool_element)
         return new Integer(content);
     return lisp->provideInteger(content);
 }
@@ -737,13 +738,13 @@ Element* Constshort::copying(bool duplicate) {
 }
 
 Element* Conststring::copying(bool duplicate) {
-    if (!provide || lisp->create_in_thread)
+    if (!provide || lisp->create_no_pool_element)
         return new String(content);
     return lisp->provideString(content);
 }
 
 Element* Conststring::fullcopy() {
-    if (!provide || lisp->create_in_thread)
+    if (!provide || lisp->create_no_pool_element)
         return new String(content);
     return lisp->provideString(content);
 }
@@ -773,7 +774,7 @@ Element* Conststringbyte::duplicate_constant(LispE* lisp) {
 }
 
 Element* Stringpool::fullcopy() {
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new String(content);
     return lisp->provideString(content);
 }
@@ -787,7 +788,7 @@ Element* Stringpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         return new String(content);
     
     if (!status)
@@ -1604,11 +1605,11 @@ Element* s_findall(LispE* lisp, u_ustring& s, u_ustring& sub, long from) {
 Element* s_count(LispE* lisp, string& s, string& sub, long from) {
     long sz = sub.size();
     if (!sz)
-        return zero_;
+        return zero_value;
     
     long pos = s.find(sub, from);
     if (pos == -1)
-        return zero_;
+        return zero_value;
     long nb = 0;
     while (pos != -1) {
         nb++;
@@ -1620,11 +1621,11 @@ Element* s_count(LispE* lisp, string& s, string& sub, long from) {
 Element* s_count(LispE* lisp, u_ustring& s, u_ustring& sub, long from) {
     long sz = sub.size();
     if (!sz)
-        return zero_;
+        return zero_value;
     
     long pos = s.find(sub, from);
     if (pos == -1)
-        return zero_;
+        return zero_value;
     long nb = 0;
     while (pos != -1) {
         nb++;
@@ -1984,7 +1985,7 @@ Element* Element::checkkey(LispE* lisp, Element* e) {
 
 //------------------------------------------------------------------------------------------
 Element* Element::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
-    return zero_;
+    return zero_value;
 }
 
 Element* String::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
@@ -2020,7 +2021,7 @@ Element* Stringbyte::search_all_elements(LispE* lisp, Element* valeur, long ix) 
 
 //------------------------------------------------------------------------------------------
 Element* Element::count_all_elements(LispE* lisp, Element* valeur, long ix) {
-    return zero_;
+    return zero_value;
 }
 
 Element* String::count_all_elements(LispE* lisp, Element* valeur, long ix) {

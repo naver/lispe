@@ -18,15 +18,16 @@
 #include "tools.h"
 #include "rgx.h"
 #include "tokens.h"
+#include <fstream>
 
 //------------------------------------------------------------
 //String method implementation
 //------------------------------------------------------------
 
 typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
-    str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
+    str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_chrbyte, str_is_punctuation,
     str_format, str_padding, str_fill, str_getstruct, str_startwith, str_endwith, str_sprintf,
-    str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
+    str_edit_distance, str_read_json, str_write_json, str_parse_json, str_string_json, str_ngrams,
     str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main,
     str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter, str_indent
     
@@ -333,7 +334,7 @@ public:
         if (!json.compile(lisp, w)) {
             std::wstringstream wstr;
             wstr << "Error: JSON' structure contains errors line: ";
-            wstr << json.line;
+            wstr << json.line << " at position: " << json.i;
             throw new Error(wstr.str());
         }
         return json.compiled_result;
@@ -344,7 +345,14 @@ public:
         ch.charge(lisp, name);
         return parse_json(lisp, ch.content);
     }
-    
+
+    Element* write_json(LispE* lisp, string name, Element* data) {
+        std::wstring w = data->jsonString(lisp);
+        std::ofstream save(name, std::ios::binary);
+        data->jsonStream(lisp, save);
+        return True_;
+    }
+
     Element* methodFormat(LispE* lisp, Element* val) {
         string sformat =  val->toString(lisp);
         string v("n%");
@@ -1301,19 +1309,53 @@ public:
             case str_endwith:
                 return method_endwith(lisp);
             case str_ord: {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
-                if (strvalue.size() == 0)
-                    return emptylist_;
-                
+                Element* str = lisp->get_variable(v_str);
                 Integers* liste =  lisp->provideIntegers();
-                for (long i = 0; i < strvalue.size(); i++) {
-                    liste->liste.push_back(strvalue[i]);
+                if (str->label() == t_stringbyte) {
+                    Stringbyte* s = (Stringbyte*)str;
+                    for (long i = 0; i < s->content.size(); i++) {
+                        liste->liste.push_back((uchar)s->content[i]);
+                    }
+                }
+                else {
+                    u_ustring strvalue =  str->asUString(lisp);
+                    for (long i = 0; i < strvalue.size(); i++) {
+                        liste->liste.push_back(strvalue[i]);
+                    }
                 }
                 return liste;
             }
             case str_chr: {
-                u_uchar c = (u_uchar)lisp->get_variable(v_nb)->asInteger();
+                Element* str = lisp->get_variable(v_nb);
+                if (str->isList()) {
+                    u_ustring s;
+                    long v;
+                    for (long i = 0; i < str->size(); i++) {
+                        v = str->index(i)->asInteger();
+                        s += (u_uchar)v;
+                    }
+                    return lisp->provideString(s);
+                }
+                u_uchar c = (u_uchar)str->asInteger();
                 return lisp->provideString(c);
+            }
+            case str_chrbyte: {
+                Element* str = lisp->get_variable(v_nb);
+                long v;
+                if (str->isList()) {
+                    string s;
+                    for (long i = 0; i < str->size(); i++) {
+                        v = str->index(i)->asInteger();
+                        if (v < 0 || v > 255)
+                            throw new Error("Error: cannot convert this value to a stringbyte");
+                        s += (uchar)v;
+                    }
+                    return new Stringbyte(s);
+                }
+                v = str->asInteger();
+                if (v < 0 || v > 255)
+                    throw new Error("Error: cannot convert this value to a stringbyte");
+                return new Stringbyte((uchar)v);
             }
             case str_is_punctuation: {
                 u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
@@ -1322,6 +1364,11 @@ public:
             case str_read_json: {
                 string filename = lisp->get_variable(U"filename")->toString(lisp);
                 return read_json(lisp, filename);
+            }
+            case str_write_json: {
+                string filename = lisp->get_variable(U"filename")->toString(lisp);
+                Element* data = lisp->get_variable(U"data");
+                return write_json(lisp, filename, data);
             }
             case str_parse_json: {
                 u_ustring str = lisp->get_variable(U"str")->asUString(lisp);
@@ -1533,7 +1580,10 @@ public:
                 return L"Returns the Unicode codes of each 'str' character";
             }
             case str_chr: {
-                return L"Returns the Unicode character corresponding to the code 'nb'";
+                return L"Returns the Unicode character corresponding to the code 'nb' or a list of integers";
+            }
+            case str_chrbyte: {
+                return L"Returns the byte character corresponding to the code 'nb' or a list of integers";
             }
             case str_is_punctuation: {
                 return L"Checks if the string contains only punctuation marks";
@@ -1542,6 +1592,8 @@ public:
                 return L"Builds a list of ngrams of size nb";
             case str_read_json:
                 return L"Reads a JSON file";
+            case str_write_json:
+                return L"Writes in JSON file";
             case str_parse_json:
                 return L"Parse a JSON string";
             case str_string_json:
@@ -1622,6 +1674,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib splite (str (fnd))", new Stringmethod(lisp, str_split_empty));
     lisp->extension("deflib ord (str)", new Stringmethod(lisp, str_ord));
     lisp->extension("deflib chr (nb)", new Stringmethod(lisp, str_chr));
+    lisp->extension("deflib chrbyte (nb)", new Stringmethod(lisp, str_chrbyte));
     lisp->extension("deflib padding (str c nb)", new Stringmethod(lisp, str_padding));
     lisp->extension("deflib fill (str nb)", new Stringmethod(lisp, str_fill));
     lisp->extension("deflib editdistance (str strbis)", new Stringmethod(lisp, str_edit_distance));
@@ -1665,6 +1718,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib set_tokenizer_operators (rules a_set)", new Stringmethod(lisp, str_set_operators));
     
     lisp->extension("deflib json_read (filename)", new Stringmethod(lisp, str_read_json));
-    lisp->extension("deflib json_parse (str)", new Stringmethod(lisp, str_parse_json));
+    lisp->extension("deflib json_write (data filename)", new Stringmethod(lisp, str_write_json));
+    lisp->extension("deflibpat json_parse ( [string_ str] )", new Stringmethod(lisp, str_parse_json));
     lisp->extension("deflib json (element)", new Stringmethod(lisp, str_string_json));
 }

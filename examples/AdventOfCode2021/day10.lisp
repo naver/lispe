@@ -23,7 +23,7 @@
    (setq consomme (strings))
    (maplist 
       (\(ref)
-         (if (key equivalence ref)
+         (if (key@ equivalence ref)
             (push consomme ref)
             (ncheck (neq (@ equivalence (last consomme)) ref)
                (pop consomme)
@@ -55,6 +55,8 @@
 
 (setq res (sort '< (maplist 'compte ajouts)))
 (println 'part2 (@ res (/ (size res) 2)))
+
+
 
 
 

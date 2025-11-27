@@ -722,16 +722,18 @@ const char* Inputtext(const char* msg) {
 
 -(void)rappel: (const char*)code {
     NSString* txt;
-    if (code[0]!='\r') {
-        txt=@"\r";
-        txt = [txt stringByAppendingString: [NSString stringWithUTF8String:code]];
+    NSString* converted = [NSString stringWithUTF8String:code];
+    if (converted == nil)
+        txt=@"\rError: Wrong encoding...\r";
+    else {
+        if (code[0]!='\r') {
+            txt=@"\r";
+            txt = [txt stringByAppendingString: converted];
+        }
+        else
+            txt = converted;
     }
-    else
-        txt=[NSString stringWithUTF8String:code];
-    
-    if (txt == nil)
-        txt=@"@#&...";
-    
+
     [self displayinconsole: txt];
 }
 

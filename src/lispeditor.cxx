@@ -277,7 +277,8 @@ string lispe_editor::coloringline(string line_of_code, long current_pos, bool th
                     nb++;
                     root = colors[0] + line_of_code.substr(0, nb);
                     root += m_current;
-                    line = line.substr(nb,line.size());
+                    if (nb < line.size())
+                        line = line.substr(nb,line.size());
                 }
             }
         }
@@ -1563,6 +1564,7 @@ void lispe_editor::initialize_breakpoints() {
 //-------------------------------------------------------------------------------------------
 // Debug Functions
 //-------------------------------------------------------------------------------------------
+bool display_one_variable(LispE* lisp, wstring& variable, lispe_editor* editor, bool full);
 
 bool lispe_editor::check_debug_command(string& buff) {
     if (buff == "$") {
@@ -1661,14 +1663,18 @@ bool lispe_editor::check_debug_command(string& buff) {
             char tr = lispe->trace;
             lispe->trace = debug_none;
             string var = "%";
-            if (line.find(L"(") == -1) {
-                var = "";
-                s_unicode_to_utf8(var, line);
-                line = L"(string " + line + L")";
+            if (!display_one_variable(lispe, line, this, displaying_print)) {
+                if (line.find(L"(") == -1) {
+                    var = "";
+                    s_unicode_to_utf8(var, line);
+                    line = L"(string " + line + L")";
+                }
+                
+                Element* e = lispe->eval(line);
+                cout << endl << endl << colors[2] << var << ": " <<  e->toString(lispe) << m_red << endl << endl;
+                e->release();
             }
-            Element* e = lispe->eval(line);
-            cout << endl << endl << colors[2] << var << ": " <<  e->toString(lispe) << m_red << endl << endl;
-            e->release();
+            
             lispe->trace = tr;
             line = L"";
             displaygo(true);
@@ -1744,6 +1750,29 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
         }
     }
     cout << endl;
+}
+
+bool display_one_variable(LispE* lisp, wstring& variable, lispe_editor* editor, bool full) {
+
+    int16_t code = lisp->delegation->get_code(variable);
+    if (code == -1)
+        return false;
+    
+    string name = lisp->toString(code);
+    try {
+        Element* value = lisp->get(code);
+        string thevalue =  value->toString(lisp);
+        if (!full && thevalue.size() > 80) {
+            thevalue = thevalue.substr(0,80);
+            thevalue += "...";
+        }
+        cout << endl << endl << editor->colors[2] << name << ":" << m_red << thevalue << m_current << endl;
+    }
+    catch(Error* err) {
+        err->release();
+        return false;
+    }
+    return true;
 }
 
 void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor, bool full) {

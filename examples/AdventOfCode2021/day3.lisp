@@ -26,7 +26,7 @@
 (setq nb (size (@ codes 0)))
 
 (setq l "")
-(setq gamma (integer (+ "0b" (join (maplist (\(x) (integer (>= (sum x) (nb0 x)))) (irank codes -1)) ""))))
+(setq gamma (integer (+ "0b" (join (maplist (\(x) (integer (>= (sum x) (nb0 x)))) (irank@ codes -1)) ""))))
 
 (setq epsilon (& (~ gamma) 4095))
 
@@ -35,7 +35,7 @@
 (defun calcul(op s)
    (loop i (iota0 nb)
       (if (eq (size s) 1) (break))
-      (setq keep (rank s -1 i))
+      (setq keep (rank@ s -1 i))
       (if (apply op (list (sum keep) (nb0 keep))) (setq keep (maplist (\(x) (- 1 x)) keep)))
       (setq s (matrix (// keep s)))
    )
@@ -45,6 +45,8 @@
 (setq r (calcul '< codes))
 (setq v (calcul '>= codes))
 (println 'part2 (* r v))
+
+
 
 
 

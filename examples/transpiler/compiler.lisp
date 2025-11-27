@@ -441,7 +441,7 @@
    (setq code (replace code "\r" ""))
    (setg error_id '(0))
    (setg do_not_stop true)
-   (key error_messages 0 "Syntax Error")
+   (key@ error_messages 0 "Syntax Error")
    ; The magic of LIsp. A one-liner to get rid of lines that starts with REM
    (setq code (join (filterlist (\(x) (neq (lower (@@ (trim x) 0 4)) "rem ")) (split code "\n")) "\n"))
    (setq tokens (tokenize_rules parser_tok (+ code "\n")))
@@ -463,6 +463,8 @@
 
 ; We check if the code is well-formed LispE program.
 ;(eval the_code)
+
+
 
 
 

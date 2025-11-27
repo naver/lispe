@@ -9,7 +9,7 @@
       (loop k (range 1 10 1)
          (setq ak (+ "A" i k))
          (setq bk (+ "B" k j))
-         (if (key m ak)
+         (if (key@ m ak)
             (push (@ m ak) bk)
             (set@ m ak (list bk))
          )
@@ -18,4 +18,6 @@
 )
 
 (println m)
+
+
 

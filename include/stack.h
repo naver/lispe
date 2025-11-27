@@ -20,16 +20,32 @@ public:
     
     binHash<Element*> variables;
     vecte<int16_t> status;
-    binSet names;
-    binSetIter itn;
     Element* function;
+    List_instance* instance;
 
     Stackelement() {
         function = NULL;
+        instance = NULL;
     }
 
     Stackelement(Element* f) {
         function = f;
+        instance = NULL;
+    }
+
+    inline void set(Element* f, List_instance* i) {
+        function = f;
+        instance = i;
+    }
+    
+    inline void check_space(int16_t space_function, int16_t currentspace) {
+        if (space_function != currentspace)
+            instance = NULL;
+    }
+    
+    inline void set(Element* f, List_instance* i, int16_t space_function, int16_t currentspace) {
+        function = f;
+        instance = (space_function == currentspace)?i:NULL;
     }
 
     Element* called() {
@@ -45,11 +61,8 @@ public:
     bool recordingunique(Element* e, int16_t label) {
         if (variables.check(label))
             return false;
+        e->increment();
         variables[label] = e;
-        if (e->status != s_constant) {
-            e->increment();
-            names.push(label);
-        }
         return true;
     }
 
@@ -59,6 +72,18 @@ public:
             l->append(e);
             l->append(variables.at(label));
         }
+    }
+    
+    bool get_instance_variable(int16_t label, Element** res) {
+        return (instance && instance->get_variable(label, res));
+    }
+
+    inline bool check_instance_variable(int16_t label) {
+        return (instance && instance->check_variable(label));
+    }
+    
+    Element* store_instance_variable(int16_t label, Element* e) {
+        return instance->store_variable(label, e);
     }
 
     bool localsave(Element* e, List* l) {
@@ -75,10 +100,7 @@ public:
     //record a function argument in the stack
     void record_argument(Element* e, int16_t label) {
         variables[label] = e;
-        if (e->status != s_constant) {
-            e->increment();
-            names.push(label);
-        }
+        e->increment();
     }
     
     void recording(Element* e, int16_t label) {
@@ -87,26 +109,40 @@ public:
             if (v == e)
                 return;
             
-            if (names.check(label)) {
-                if (e->status != s_constant)
-                    e->increment();
-                else
-                    names.erase(label);
-                v->decrement();
-                variables.put(label, e);
-                return;
-            }
-            
+            e->increment();
+            v->decrement();
             variables.put(label, e);
         }
         else {
+            e->increment();
+            variables[label] = e;
+        }
+
+    }
+
+    inline bool check_with_instance(int16_t label) {
+        return (variables.check(label) || check_instance_variable(label));
+    }
+    
+    Element* recording_variable_with_instance(Element* e, int16_t label) {
+        Element* v = variables.search(label);
+        if (v != NULL) {
+            if (v == e)
+                return e;
+            
+            e->increment();
+            v->decrement();
+            variables.put(label, e);
+        }
+        else {
+            if (check_instance_variable(label))
+                return store_instance_variable(label, e);
+            
+            e->increment();
             variables[label] = e;
         }
         
-        if (e->status != s_constant) {
-            e->increment();
-            names.push(label);
-        }
+        return e;
     }
 
     Element* recording_variable(Element* e, int16_t label) {
@@ -115,26 +151,15 @@ public:
             if (v == e)
                 return e;
             
-            if (names.check(label)) {
-                if (e->status != s_constant)
-                    e->increment();
-                else
-                    names.erase(label);
-                v->decrement();
-                variables.put(label, e);
-                return e;
-            }
-
+            e->increment();
+            v->decrement();
             variables.put(label, e);
         }
         else {
+            e->increment();
             variables[label] = e;
         }
         
-        if (e->status != s_constant) {
-            e->increment();
-            names.push(label);
-        }
         return e;
     }
 
@@ -143,26 +168,14 @@ public:
         if (v != NULL) {
             if (v == e)
                 return;
-            
-            if (names.check(label)) {
-                if (e->status != s_constant)
-                    e->increment();
-                else
-                    names.erase(label);
-                variables.put(label, e);
-                v->decrement();
-                return;
-            }
 
+            e->increment();
+            v->decrement();
             variables.put(label, e);
         }
         else {
-            variables[label] = e;
-        }
-        
-        if (e->status != s_constant) {
             e->increment();
-            names.push(label);
+            variables[label] = e;
         }
     }
 
@@ -209,42 +222,23 @@ public:
             status.push_back(ret->status);
             ret->increment();
             
-            if (e->status != s_constant)
-                e->increment();
-            else
-                names.erase(label);
+            e->increment();
             variables.put(label, e);
             return ret;
         }
 
         variables[label] = e;
-        
-        if (e->status != s_constant) {
-            e->increment();
-            names.push(label);
-        }
+        e->increment();
         return NULL;
     }
 
     void replace_stack_value(Element* e, int16_t label) {
-        if (names.check(label)) {
-            Element* v = variables.at(label);
-            if (v == e)
-                return;
-
-            if (e->status != s_constant)
-                e->increment();
-            else
-                names.erase(label);
-            v->decrement();
-        }
-        else {
-            if (e->status != s_constant) {
-                e->increment();
-                names.push(label);
-            }
-        }
-
+        Element* v = variables.at(label);
+        if (v == e)
+            return;
+        
+        e->increment();
+        v->decrement();
         variables.put(label, e);
     }
 
@@ -254,10 +248,8 @@ public:
             e->decrementkeep();
         else
             e->decrement();
-        if (v == NULL) {
-            names.erase(label);
+        if (v == NULL)
             variables.erase(label);
-        }
         else {
             v->decrement();
             variables.put(label, v);
@@ -269,26 +261,25 @@ public:
     }
 
     inline void removeonly(int16_t label) {
-        names.erase(label);
         variables.erase(label);
     }
 
     inline void remove(int16_t label) {
-        if (names.checkanderase(label)) {
+        if (variables.check(label)) {
             variables.at(label)->decrement();
+            variables.erase(label);
         }
-        variables.erase(label);
     }
 
     void remove(int16_t label, Element* keep) {
-        if (names.checkanderase(label)) {
+        if (variables.check(label)) {
             Element* local = variables.at(label);
             if (local == keep)
                 local->decrementkeep();
             else
                 local->decrement();
+            variables.erase(label);
         }
-        variables.erase(label);
     }
 
     u_ustring asUString(LispE*);
@@ -308,27 +299,25 @@ public:
     }
     
     void clear() {
-        itn.set(names);
-        while (itn.next())
-            variables.at(itn.first)->decrement();
-        names.clear();
+        binHash<Element*>::iterator itn(variables);
+        for (;!itn.end(); itn++)
+            itn.second->decrement();
         variables.clear();
         status.clear();
         function = NULL;
+        instance = NULL;
     }
 
     void clear(Element* keep) {
-        Element* e;
-        itn.set(names);
-        while (itn.next()) {
-            e = variables.at(itn.first);
-            if (e != keep)
-                e->decrement();
+        binHash<Element*>::iterator itn(variables);
+        for (;!itn.end(); itn++) {
+            if (itn.second != keep)
+                itn.second->decrement();
         }
-        names.clear();
         variables.clear();
         status.clear();
         function = NULL;
+        instance = NULL;
     }
 
     Element* exchange(Element* f) {
@@ -356,9 +345,9 @@ public:
     }
     
     ~Stackelement() {
-        itn.set(names);
-        while (itn.next())
-            variables.at(itn.first)->decrement();
+        binHash<Element*>::iterator itn(variables);
+        for (;!itn.end(); itn++)
+            itn.second->decrement();
     }
 };
 

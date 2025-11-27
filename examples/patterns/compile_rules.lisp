@@ -28,7 +28,7 @@
 
 ; a rule pattern is: POS : POS1 POS2...POSN
 (defpat build( [POS ":" $ rest] gram)
-   (if (key gram POS)
+   (if (key@ gram POS)
       (push (@ gram POS) rest)
       (set@ gram POS (list rest))
    )
@@ -40,5 +40,7 @@
    (setg grammar (dictionary))
    (maplist (\(x) (build x grammar)) rules)
 )
+
+
 
 

@@ -33,13 +33,16 @@ public:
     vector<lisp_code> types;
     vector<long> lines;
     vector<long> positions;
-    binHash<Element*> defun_functions;
+    vector<int16_t> classes;
     
     long current;
     bool asList;
 
+    bool inclass;
+    
     Tokenizer() {
         asList = false;
+        inclass = false;
     }
     
     void clear() {

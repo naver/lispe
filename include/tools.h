@@ -435,7 +435,11 @@ public:
     long to;
     long l;
     u_uchar c;
-    
+
+    Element* compileraw(string& s);
+    Element* compileraw(u_ustring& s);
+    char buildexpressionraw(Element* kf);
+
     bool compile(LispE* lisp, u_ustring& s);
     char buildexpression(LispE*, Element* kf);
 };

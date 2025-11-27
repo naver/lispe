@@ -1,13 +1,13 @@
 ; fibonacci with memoization
-; note that: (key d n v) returns d...
+; note that: (key@ d n v) returns d...
 
 (defun fibo (n (d {1:1}) )
    (select 
-      (keyi d n)
+      (keyi@ d n)
       (if (<= n 1)
          1
          (keyi
-            (keyi d n
+            (keyi@ d n
                (+
                   (fibo (- n 1) d)
                   (fibo (- n 2) d)
@@ -20,6 +20,9 @@
 )
 
 (println (fibo 10))
+
+
+
 
 
 

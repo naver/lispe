@@ -292,7 +292,7 @@ public:
             v = d(gen);
             return booleans_[v];
         }
-        if (booleans_[0] == zero_) {
+        if (booleans_[0] == zero_value) {
             Integers* iv = lisp->provideIntegers();
             for (long i = 0; i < nb; i++) {
                 iv->liste.push_back(d(gen));
@@ -745,8 +745,8 @@ public:
                 
                 long sz = ll->liste.size();
                 long h = ll->liste.home;
-                for (long i = h; i < ll->liste.item->last; i++) {
-                    ll->liste.item->swap(i, (gen()%sz) + h);
+                for (long i = h; i < ll->liste.items->last; i++) {
+                    ll->liste.items->swap(i, (gen()%sz) + h);
                 }
                 return l;
             }

@@ -379,6 +379,7 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
         return false;
     }
     
+    
     long szvalue = value->size();
     long ivalue = 0;
     
@@ -396,6 +397,51 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
     setmark(false);
     return (test && (irule == szrules) && (ivalue >= szvalue));
 }
+
+bool Listargumentclass::unify(LispE* lisp, Element* value, bool record) {
+    long szrules = liste.size();
+    if (!szrules)
+        return value->isEmpty();
+
+    if (mark())
+        return (value == liste.object);
+    
+    setmark(true);
+    liste.object = value;
+    
+    bool rec = true;
+
+    if (!record) {
+        if (value == this) {
+            setmark(false);
+            return true;
+        }
+        rec = (lisp->extractdynamiclabel(liste[0]) == v_null);
+    }
+    
+    if (!value->isList() || value->label() != class_label) {
+        setmark(false);
+        return false;
+    }
+    
+    long szvalue = value->size();
+    long ivalue = 0;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    bool test = true;
+    Element* e;
+    long irule = 1;
+    for (; irule < szrules && test; irule++, ivalue++) {
+        e = liste[irule];
+        test = (e == null_ || e->unify_kleene(lisp, value, this, ivalue, irule, rec));
+        rec = record;
+    }
+    setmark(false);
+    return (test && (irule == szrules) && (ivalue >= szvalue));
+}
+
 
 bool LList::unify(LispE* lisp, Element* value, bool record) {
     if (liste.empty())

@@ -4327,7 +4327,7 @@ Exporting long GetBlankSize() {
 }
 
 
-static const unsigned char _tocheck[] = {'"', '\'', '`', '@', ':', ',','-', '+','0','1','2','3','4','5', '6','7','8', '9','[',']','{', '}', 171, 187, 0};
+static const unsigned char _tocheck[] = {'"', '\'','\\', '`', '@', ':', ',','-', '+','0','1','2','3','4','5', '6','7','8', '9','[',']','{', '}', 171, 187, 0};
 static const char _checkingmore[] = {'\n', '/', '(', ')', '<', '>','=',';', 0};
 
 void split_container(string& src, long lensrc, vector<long>& pos, bool forindent) {
@@ -5520,9 +5520,17 @@ void split_container(u_uchar* src, long lensrc, vector<long>& pos) {
     
     for (long e = 0; e < lensrc; e++) {
         c = src[e];
-        if (strchr((char*)_tocheck, (char)c))
+        if (strchr((char*)_tocheck, (char)c)) {
             pos.push_back(e);
+            if (c == '\\')
+                pos.push_back(++e);
+        }
     }
+}
+
+inline void convhexa(long& u, u_uchar x) {
+    u <<= 4;
+    u += (x < 65)?x- 48:(x ^ 95) - 44;
 }
 
 void replacemetas(u_ustring& sub) {
@@ -5545,6 +5553,15 @@ void replacemetas(u_ustring& sub) {
                 case 't':
                     thestr+=U"\t";
                     break;
+                case 'u': {
+                    long u = 0;
+                    convhexa(u, sub[++i]);
+                    convhexa(u, sub[++i]);
+                    convhexa(u, sub[++i]);
+                    convhexa(u, sub[++i]);
+                    thestr += (u_uchar)u;
+                    break;
+                }
                 default:
                     thestr+=sub[i];
                     
@@ -5576,6 +5593,34 @@ bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s) {
         return false;
     }
     return true;
+}
+
+Element* LispEJsonCompiler::compileraw(string& s) {
+    u_ustring u;
+    s_utf8_to_unicode(u, s, s.size());
+    return compileraw(u);
+}
+
+Element* LispEJsonCompiler::compileraw(u_ustring& s) {
+    s = u_trim(s);
+    if (s[0] == '{')
+        compiled_result = new Dictionary_json;
+    else
+        compiled_result = new List;
+    
+    pos.clear();
+    src = (u_uchar*)s.c_str();
+    split_container(src, s.size(), pos);
+    r = 1;
+    i = 1;
+    line = 0;
+    sz = pos.size();
+    
+    if (!buildexpressionraw(compiled_result) || r != pos.size()) {
+        compiled_result->release();
+        return NULL;
+    }
+    return compiled_result;
 }
 
 static void displaytoken(u_ustring& tok) {
@@ -5630,8 +5675,11 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
                 
                 while (r < sz) {
                     to  = pos[r++];
-                    if (src[to-1] != '\\' && src[to] == '"')
-                        break;
+                    if (src[to] == '\\')
+                        r++;
+                    else
+                        if (src[to] == '"')
+                            break;
                 }
                 c= src[to];
                 src[to] = 0;
@@ -5748,6 +5796,174 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
     return false;
 }
 
+
+char LispEJsonCompiler::buildexpressionraw(Element* container) {
+    bool checknext = false;
+    to = 0;
+    while (r < pos.size()) {
+        c = src[i++];
+        if (c <= 32) {
+            if (c == '\n')
+                line++;
+            continue;
+        }
+        
+        if (i != pos[r] + 1) {
+            if (checknext)
+                return false;
+            
+            to = i;
+            while (src[to] > 32 && to < pos[r]) to++;
+            c = src[to];
+            src[to] = 0;
+            token = (u_uchar*)src+i-1;
+            if (token == U"false")
+                container->append(new Integer(0));
+            else {
+                if (token == U"true")
+                    container->append(new Integer(0));
+                else {
+                    if (token == U"null" || token == U"nil")
+                        container->append(new Atome(v_null, U"nil"));
+                    else
+                        container->append(new String(token));
+                }
+            }
+            checknext = container->verify();
+            src[to] = c;
+            i = to;
+            continue;
+        }
+        
+        r++;
+        switch (c) {
+            case 34:
+                if (checknext)
+                    return false;
+                
+                while (r < sz) {
+                    to  = pos[r++];
+                    if (src[to] == '\\')
+                        r++;
+                    else
+                        if (src[to] == '"')
+                            break;
+                }
+                c= src[to];
+                src[to] = 0;
+                token = (u_uchar*)src+i;
+                replacemetas(token);
+                container->append(new String(token));
+                checknext = container->verify();
+                src[to] = c;
+                i = to + 1;
+                break;
+            case 39: {
+                if (checknext)
+                    return false;
+                
+                while (r < sz) {
+                    to  = pos[r++];
+                    if (src[to] == '\'')
+                        break;
+                }
+                c= src[to];
+                src[to] = 0;
+                u_ustring locstr = (u_uchar*)src+i;
+                container->append(new String(locstr));
+                
+                checknext = container->verify();
+                src[to] = c;
+                i = to + 1;
+                break;
+            }
+            case '+':
+            case '-':
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                if (checknext)
+                    return false;
+                
+                v = convertingfloathexa(src+i-1, l);
+                to =  i + l - 1;
+                while (pos[r] < to) r++;
+                c = src[to];
+                src[to] = 0;
+                
+                if (v == (long)v)
+                    container->append(new Integer(v));
+                else
+                    container->append(new Number(v));
+                
+                checknext = container->verify();
+                src[to] = c;
+                i = to;
+                break;
+            case '{': {
+                if (checknext)
+                    return false;
+                Dictionary_json* local = new Dictionary_json;
+                if (src[i] == '}') {
+                    r++;
+                    i++;
+                }
+                else {
+                    if (!buildexpressionraw(local)) {
+                        local->release();
+                        return false;
+                    }
+                }
+                container->append(local);
+                checknext = container->verify();
+                break;
+            }
+            case '[': {
+                if (checknext)
+                    return false;
+                List* local = new List;
+                if (src[i] == ']') {
+                    r++;
+                    i++;
+                }
+                else {
+                    if (!buildexpressionraw(local)) {
+                        local->release();
+                        return false;
+                    }
+                }
+                container->append(local);
+                checknext=true;
+                break;
+            }
+            case '}':
+                return container->verify();
+            case ']':
+                if (container->isDictionary())
+                    return false;
+                return true;
+            case ':':
+                container->reversechoice();
+                if (!container->isDictionary() || container->verify()) {
+                    return false;
+                }
+                checknext = false;
+                break;
+            case ',':
+                if (!checknext)
+                    return false;
+                checknext = false;
+        }
+    }
+    return false;
+}
 
 //Convert a unicode character into a utf16 character
 Exporting bool c_utf16(u_uchar code) {
@@ -7235,15 +7451,15 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"N:{%- %+}");   //The exponential part of a hexadecimal number
     rules.push_back(U"F:{%d #A-F #a-f}");     //a hexadecimal character is one of these
     rules.push_back(U"P:{pP}(%N)%d+");   //The exponential part of a hexadecimal number
-    rules.push_back(U"D:.%F+(%P)");           //The decimal part of a hexadecimal number
+    rules.push_back(U"D:.%F+");           //The decimal part of a hexadecimal number
     rules.push_back(U"X:{eE}(%N)%d+");   //The exponential part of a decimal number
-    rules.push_back(U"V:.%d+(%X)");          //the decimal part of a number
-    rules.push_back(U"R:%d+(%V)");          //The real part
+    rules.push_back(U"V:.%d+");          //the decimal part of a number
+    rules.push_back(U"R:%d+(%V)(%X)");          //The real part
     rules.push_back(U"I:,(%N)(%R)i");  //Imaginary part of a number
 
     //Hexa decimal rules
-    rules.push_back(U"%N0x%F+(%D)=57");  //hexadecimal: can handle 0x1.16bca4f9165dep-3
-    rules.push_back(U"0x%F+(%D)=57");   //hexadecimal: can handle 0x1.16bca4f9165dep-3
+    rules.push_back(U"%N0x%F+(%D)(%P)=57");  //hexadecimal: can handle 0x1.16bca4f9165dep-3
+    rules.push_back(U"0x%F+(%D)(%P)=57");   //hexadecimal: can handle 0x1.16bca4f9165dep-3
 
     rules.push_back(U"%N0b{1 0}+=57");  //binaires: -0b11011
     rules.push_back(U"0b{1 0}+=57");  //binaires

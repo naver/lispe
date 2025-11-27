@@ -602,13 +602,30 @@ public:
             return false;
         }
         
+        
         movetolastline();
         clearline();
         cout << back << m_redbold << "A plus!!!" << m_current << endl;
         
-        fflush(stdout);
-        resetterminal();
-        exit(0);
+        try {
+            if (debugmode) {
+                debugmode = false;
+                lispe = master_lisp;
+                lispe->stop();
+                lispe->stop_trace();
+                lispe->releasing_trace_lock();
+                return false;
+            }
+
+            if (lispe != NULL)
+                delete lispe;
+            fflush(stdout);
+            resetterminal();
+            exit(0);
+        }
+        catch (...) {
+            cerr << "exiting" << endl;
+        }
         return true;
     }
     

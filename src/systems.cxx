@@ -33,7 +33,7 @@
 #include "lispe.h"
 #include "directorylisting.h"
 
-typedef enum {sys_command, sys_ls, sys_setenv, sys_getenv, sys_isdirectory, sys_fileinfo, sys_realpath} systeme;
+typedef enum {sys_command, sys_ls, sys_setenv, sys_getenv, sys_isdirectory, sys_fileinfo, sys_realpath, sys_exit, sys_os, sys_memory_size, sys_full_memory_size} systeme;
 typedef enum {file_open, file_close, file_eof, file_read, file_readline, file_readlist, file_getchar, file_write, file_writeln, file_seek, file_tell, file_getstruct} file_command;
 typedef enum {date_setdate, date_year, date_month, date_day, date_hour, date_minute, date_second, date_yearday, date_raw, date_weekday } tempus;
 
@@ -719,7 +719,18 @@ public:
         return s;
     }
 
-    wstring stringInList(LispE* lisp) {
+    string stringInList(LispE* lisp) {
+        string s;
+        char buffer[100];
+        long sz;
+        struct tm* ladate = localtime(&the_time);
+        sz = strftime(buffer, 100, "\"%Y/%m/%d %H:%M:%S\"", ladate);
+        for (long i = 0; i < sz; i++)
+            s+= buffer[i];
+        return s;
+    }
+
+    wstring wstringInList(LispE* lisp) {
         wstring s;
         char buffer[100];
         long sz;
@@ -970,7 +981,7 @@ public:
         if (temps->label() == type) {
             return lisp->provideNumber(std::chrono::duration_cast<std::chrono::milliseconds>( chrono_value - ((Chrono*)temps)->chrono_value).count());
         }
-        return zero_;
+        return zero_value;
     }
     
     wstring asString(LispE* lisp) {
@@ -986,6 +997,62 @@ public:
     }
 
 };
+
+  #ifdef __APPLE__
+  #include <mach/mach.h>
+
+    double get_memory_usage_gb() {
+        task_vm_info_data_t vm_info;
+        mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+
+        kern_return_t kr = task_info(mach_task_self(),
+                                      TASK_VM_INFO,
+                                      (task_info_t)&vm_info,
+                                      &count);
+
+        if (kr != KERN_SUCCESS) {
+            throw new Error("Failed to get task VM info");
+        }
+
+        // ✅ phys_footprint inclut la mémoire GPU/Metal unifiée
+        double memory_gb = vm_info.phys_footprint / (1024.0 * 1024.0 * 1024.0);
+        return memory_gb;
+    }
+
+    double get_memory_full_usage_gb() {
+      vm_size_t page_size;
+      mach_port_t host_port = mach_host_self();
+      vm_statistics64_data_t vm_stat;
+      mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+
+      host_page_size(host_port, &page_size);
+
+      kern_return_t kr = host_statistics64(host_port,
+                                           HOST_VM_INFO64,
+                                           (host_info64_t)&vm_stat,
+                                           &count);
+
+      if (kr != KERN_SUCCESS) {
+          throw new Error("Failed to get VM stats");
+      }
+
+      // Mémoire utilisée = active + wired + compressed
+      uint64_t used_memory = ((uint64_t)vm_stat.active_count +
+                              (uint64_t)vm_stat.wire_count +
+                              (uint64_t)vm_stat.compressor_page_count) * page_size;
+
+      double used_gb = used_memory / (1024.0 * 1024.0 * 1024.0);
+      return used_gb;
+  }
+
+  #else
+  double get_memory_full_usage_gb() {
+        return 0;
+  }
+  double get_memory_usage_gb() {
+    return 0;
+  }
+  #endif
 
 class Command : public Element {
 public:
@@ -1164,8 +1231,29 @@ public:
             case sys_realpath: {
                 return fullPath(lisp);
             }
+            case sys_os: {
+                u_ustring os_version;
+#ifdef WIN32
+                os_version = U"WINDOWS";
+#elif __APPLE__
+                os_version = U"MACOS";
+#else
+                os_version = U"LINUX";
+#endif
+                return lisp->provideString(os_version);
+            }
             case sys_fileinfo:
                 return fileinfo(lisp);
+            case sys_exit: {
+                int v = lisp->get_variable(v_value)->asInt();
+                exit(v);
+            }
+            case sys_memory_size: {
+              return lisp->provideNumber(get_memory_usage_gb());
+            }
+            case sys_full_memory_size: {
+              return lisp->provideNumber(get_memory_full_usage_gb());
+            }
         }
 		return null_;
     }
@@ -1176,6 +1264,8 @@ public:
         switch (sys) {
             case sys_command:
                 return L"Executes a system command";
+            case sys_os:
+                return L"Returns the OS";
             case sys_ls:
                 return L"Returns the content of a directory";
             case sys_isdirectory:
@@ -1188,6 +1278,12 @@ public:
                 return L"Returns information about a file";
             case sys_realpath:
                 return L"Returns the full path corresponding to a partial path";
+            case sys_exit:
+                return L"exit the current program";
+            case sys_memory_size:
+                return L"Memory used";
+            case sys_full_memory_size:
+                return L"Full Memory Usage";
         }
 		return L"";
     }
@@ -1198,6 +1294,7 @@ public:
 void moduleSysteme(LispE* lisp) {
     //We first create the body of the function
     lisp->extension("deflib command (cmd)", new Command(lisp, sys_command));
+    lisp->extension("deflib os_version ()", new Command(lisp, sys_os));
     //We also add setenv
     lisp->extension("deflib setenv (name value)", new Command(lisp, sys_setenv));
     //getenv
@@ -1207,7 +1304,9 @@ void moduleSysteme(LispE* lisp) {
     lisp->extension("deflib realpath (path)", new Command(lisp, sys_realpath));
     lisp->extension("deflib ls (path)", new Command(lisp, sys_ls));
     lisp->extension("deflib isdirectory (path)", new Command(lisp, sys_isdirectory));
-
+    lisp->extension("deflib exit(value)", new Command(lisp, sys_exit));
+    lisp->extension("deflib memory_size()", new Command(lisp, sys_memory_size));
+    lisp->extension("deflib memory_full_size()", new Command(lisp, sys_full_memory_size));
     //------------------------------------------
 
     u_ustring w = U"chrono_";

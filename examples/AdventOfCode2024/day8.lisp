@@ -18,7 +18,7 @@
       (setq p (find (@ ligne 1) c))
       (check p
          (setq e (list (@ ligne 0) p))
-         (if (key positions c)
+         (if (key@ positions c)
             (insert (@ positions c) e)
             (set@ positions c (heap (\(x y) (>=< (@ x 0) (@ y 0))) e))
          )
@@ -85,4 +85,6 @@
       )
    )
 )
+
+
 

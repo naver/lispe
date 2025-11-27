@@ -2,7 +2,7 @@
 ; First we define some data structures
 ; nil or _ this is the same value
 
-(data (Point integer_ integer_) (Pixel _ _) (Circle (Point _ _)  nil) (Rectangle (Point _ _)  nil nil))
+(data@ (Point integer_ integer_) (Pixel _ _) (Circle (Point _ _)  nil) (Rectangle (Point _ _)  nil nil))
 
 
 ; Then some pattern methods
@@ -29,7 +29,7 @@
 
 
 
-(data Shape (Triangle _) (Square _))
+(data@ Shape (Triangle _) (Square _))
 
 (defpat dimension ( (Shape x))
    (println 'Dimension x)
@@ -37,6 +37,7 @@
 
 (dimension (Triangle 10))
 (dimension (Square 20))
+
 
 
 

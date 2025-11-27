@@ -52,6 +52,81 @@ Element* apply_op1_op2(LispE* lisp, Element* op1, Element* op2, Element* l1, Ele
 //------------------------------------------------------------------------------------------
 // Matrice template: Function instantiations
 //------------------------------------------------------------------------------------------
+Element* LispE::tensor_to_lispe(Element* e, vecte<long>& shape) {
+    Element* res = n_null;
+
+    if (shape.size() == 2) {
+        long sz1 = shape[0];
+        long sz2 = shape[1];
+        
+        switch (e->type) {
+            case t_shorts:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = new Shorts(1, 0);
+                }
+                res = new Matrice_short(this, e, sz1, sz2);
+                break;
+            case t_integers:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = provideIntegers(1, 0);
+                }
+                res = new Matrice_integer(this, e, sz1, sz2);
+                break;
+            case t_floats:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = provideFloats(1, 0);
+                }
+                res = new Matrice_float(this, e, sz1, sz2);
+                break;
+            case t_numbers:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = provideIntegers(1, 0);
+                }
+                res = new Matrice_number(this, e, sz1, sz2);
+                break;
+        }
+        
+        return res;
+    }
+
+    switch (e->type) {
+        case t_shorts:
+            if (e->isEmpty()) {
+                e->release();
+                e = new Shorts(1, 0);
+            }
+            res = new Tenseur_short(this, e, shape);
+            break;
+        case t_integers:
+            if (e->isEmpty()) {
+                e->release();
+                e = provideIntegers(1, 0);
+            }
+            res = new Tenseur_integer(this, e, shape);
+            break;
+        case t_floats:
+            if (e->isEmpty()) {
+                e->release();
+                e = provideFloats(1, 0);
+            }
+            res = new Tenseur_float(this, e, shape);
+            break;
+        case t_numbers:
+            if (e->isEmpty()) {
+                e->release();
+                e = provideNumbers(1, 0);
+            }
+            res = new Tenseur_number(this, e, shape);
+            break;
+    }
+    return res;
+}
+
+//--------------------------------------------------------------------
 
 Element* Stringbytes::newTensor(LispE* lisp, List* l) {
     return new Matrice_stringbyte(l);
@@ -89,7 +164,7 @@ Element* List::transposed(LispE* lisp) {
     if (sz.size() == 2)
         tenseur = new Matrice_number(lisp, sz[0], sz[1], 0.0);
     else
-        tenseur = new Tenseur_number(lisp, sz, zero_);
+        tenseur = new Tenseur_number(lisp, sz, zero_value);
     
     Element* e;
     for (i = 0; i < sz[1]; i++) {
@@ -1696,7 +1771,7 @@ template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::transpos
     sz.vecteur[0] = sz[1];
     sz.vecteur[1] = i;
     
-    Tenseur<A,T,C>* transposed_matrix = new Tenseur<A,T,C>(lisp, sz, zero_);
+    Tenseur<A,T,C>* transposed_matrix = new Tenseur<A,T,C>(lisp, sz, zero_value);
     long j = 0;
     
     Element* e;
@@ -4176,7 +4251,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
                     throw new Error("Error: Dimension error");
-                res = new Tenseur_string(lisp, sz1, zero_);
+                res = new Tenseur_string(lisp, sz1, zero_value);
                 ((Tenseur_string*)res)->setvalue((Tenseur_string*)first_element);
                 res->concatenate(lisp, second_element);
                 long i = 0;
@@ -4193,7 +4268,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
                     throw new Error("Error: Dimension error");
-                res = new Tenseur_stringbyte(lisp, sz1, zero_);
+                res = new Tenseur_stringbyte(lisp, sz1, zero_value);
                 ((Tenseur_stringbyte*)res)->setvalue((Tenseur_stringbyte*)first_element);
                 res->concatenate(lisp, second_element);
                 long i = 0;
@@ -4210,7 +4285,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
                     throw new Error("Error: Dimension error");
-                res = new Tenseur_number(lisp, sz1, zero_);
+                res = new Tenseur_number(lisp, sz1, zero_value);
                 ((Tenseur_number*)res)->setvalue((Tenseur_number*)first_element);
                 res->concatenate(lisp, second_element);
                 long i = 0;
@@ -4227,7 +4302,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
                     throw new Error("Error: Dimension error");
-                res = new Tenseur_float(lisp, sz1, zero_);
+                res = new Tenseur_float(lisp, sz1, zero_value);
                 ((Tenseur_float*)res)->setvalue((Tenseur_float*)first_element);
                 res->concatenate(lisp, second_element);
                 long i = 0;
@@ -4244,7 +4319,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
                     throw new Error("Error: Dimension error");
-                res = new Tenseur_short(lisp, sz1, zero_);
+                res = new Tenseur_short(lisp, sz1, zero_value);
                 ((Tenseur_short*)res)->setvalue((Tenseur_short*)first_element);
                 res->concatenate(lisp, second_element);
                 long i = 0;
@@ -4261,7 +4336,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
                     throw new Error("Error: Dimension error");
-                res = new Tenseur_integer(lisp, sz1, zero_);
+                res = new Tenseur_integer(lisp, sz1, zero_value);
                 ((Tenseur_integer*)res)->setvalue((Tenseur_integer*)first_element);
                 res->concatenate(lisp, second_element);
                 long i = 0;
@@ -4297,7 +4372,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
 
 Element* List_tensor_number_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     vecte<long> shape;
     long s;
     try {
@@ -4343,12 +4418,12 @@ Element* List_tensor_number_eval::eval(LispE* lisp) {
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
-    return new Tenseur_number(lisp, shape, zero_);
+    return new Tenseur_number(lisp, shape, zero_value);
 }
 
 Element* List_tensor_short_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     vecte<long> shape;
     long s;
     try {
@@ -4394,12 +4469,12 @@ Element* List_tensor_short_eval::eval(LispE* lisp) {
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
-    return new Tenseur_short(lisp, shape, zero_);
+    return new Tenseur_short(lisp, shape, zero_value);
 }
 
 Element* List_tensor_string_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     vecte<long> shape;
     long s;
     try {
@@ -4450,7 +4525,7 @@ Element* List_tensor_string_eval::eval(LispE* lisp) {
 
 Element* List_tensor_stringbyte_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     vecte<long> shape;
     long s;
     try {
@@ -4502,7 +4577,7 @@ Element* List_tensor_stringbyte_eval::eval(LispE* lisp) {
 
 Element* List_tensor_integer_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     vecte<long> shape;
     long s;
     try {
@@ -4548,12 +4623,12 @@ Element* List_tensor_integer_eval::eval(LispE* lisp) {
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
-    return new Tenseur_integer(lisp, shape, zero_);
+    return new Tenseur_integer(lisp, shape, zero_value);
 }
 
 Element* List_tensor_float_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     vecte<long> shape;
     long s;
     try {
@@ -4597,7 +4672,7 @@ Element* List_tensor_float_eval::eval(LispE* lisp) {
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
-    return new Tenseur_float(lisp, shape, zero_);
+    return new Tenseur_float(lisp, shape, zero_value);
 }
 
 Element* List_to_tensor_eval::eval(LispE* lisp) {
@@ -4740,7 +4815,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
 
 Element* List_matrix_string_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     long sx, sy;
     try {
         lisp->checkState(this);
@@ -4783,7 +4858,7 @@ Element* List_matrix_string_eval::eval(LispE* lisp) {
 
 Element* List_matrix_stringbyte_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     long sx, sy;
     try {
         lisp->checkState(this);
@@ -4826,7 +4901,7 @@ Element* List_matrix_stringbyte_eval::eval(LispE* lisp) {
 
 Element* List_matrix_number_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     long sx, sy;
     try {
         lisp->checkState(this);
@@ -4870,7 +4945,7 @@ Element* List_matrix_number_eval::eval(LispE* lisp) {
 
 Element* List_matrix_short_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     long sx, sy;
     try {
         lisp->checkState(this);
@@ -4913,7 +4988,7 @@ Element* List_matrix_short_eval::eval(LispE* lisp) {
 
 Element* List_matrix_integer_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     long sx, sy;
     try {
         lisp->checkState(this);
@@ -4956,7 +5031,7 @@ Element* List_matrix_integer_eval::eval(LispE* lisp) {
 
 Element* List_matrix_float_eval::eval(LispE* lisp) {
     long sz = size();
-    Element* e = zero_;
+    Element* e = zero_value;
     long sx, sy;
     try {
         lisp->checkState(this);
@@ -5183,7 +5258,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     res = lisp->provideList();
                     res->reserve(sz1);
                     if (listsize <= 1) {
-                        Element* v = zero_;
+                        Element* v = zero_value;
                         if (listsize == 1)
                             v = e->index(0);
                         for (long i = 0; i < sz1; i++)
@@ -5202,7 +5277,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     res = new LList(&lisp->delegation->mark);
                     u_link* u = ((LList*)e)->liste.begin();
                     if (u == NULL) {
-                        Element* v = zero_;
+                        Element* v = zero_value;
                         for (long i = 0; i < sz1; i++)
                             ((LList*)res)->push_front(v);
                         break;
@@ -5295,7 +5370,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     if (u == NULL) {
                         e->release();
                         e = new LList(&lisp->delegation->mark);
-                        e->append(zero_);
+                        e->append(zero_value);
                         u = ((LList*)e)->liste.begin();
                     }
                     ((LList*)res)->build(lisp,shape, 0, (LList*)res, (LList*)e, &u);
@@ -5371,7 +5446,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                 if (u == NULL) {
                     e->release();
                     e = new LList(&lisp->delegation->mark);
-                    e->append(zero_);
+                    e->append(zero_value);
                     u = ((LList*)e)->liste.begin();
                 }
                 ((LList*)res)->build(lisp,shape, 0, (LList*)res, (LList*)e, &u);

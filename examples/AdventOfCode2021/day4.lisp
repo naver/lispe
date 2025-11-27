@@ -26,7 +26,7 @@
    (setq v (@ numeros i))
    ; Si v est déjà dans valeurs, on concatène avec la liste existante
    ; (grille x y i)
-   (if (keyn valeurs v)
+   (if (keyn@ valeurs v)
       (set@ valeurs v (cons (list g x y i) (@ valeurs v)))
       (set@ valeurs v (list (list g x y i)))
    )
@@ -42,7 +42,7 @@
          )
       )
       ; on prend les colonnes
-      (loop colonne (irank grille -1)
+      (loop colonne (irank@ grille -1)
          (check (eq (sum colonne) 5)
             (return g)
          )
@@ -71,7 +71,7 @@
 
       ; on prend les colonnes même chose
       (check (not (in grd g))
-         (loop colonne (irank grille -1)
+         (loop colonne (irank@ grille -1)
             (check (eq (sum colonne) 5)
                (push grd g)
                (break)
@@ -108,5 +108,7 @@
 (compute 1)
 ; we have already identified the maximum step...
 (compute 100)
+
+
 
 

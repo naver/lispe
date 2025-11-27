@@ -3,7 +3,7 @@
 ; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
 
-(data
+(data@
    [Aller atom_]
    [Casser atom_ atom_]
    [Ouvrir atom_ atom_]
@@ -24,7 +24,7 @@
 ; Lâcher un objet
 (defpat action ( [Lacher x] )
    (check (check_belongings x)
-      (key objects (keystr position) x)
+      (key@ objects (keystr position) x)
       (pop belongings (find belongings x))
       (println "J'ai déposé" (article x) " sur le sol")
       (display_position position)
@@ -38,7 +38,7 @@
       (ncheck (and (check_belongings x) (eq x 'pierre))
          (println "Je ne vois pas comment casser une fenêtre avec" x)
          (update_direction (keystr position) "0:2")
-         (key castlemap "1:2" "Vous vous tenez devant une fenêtre brisée")
+         (key@ castlemap "1:2" "Vous vous tenez devant une fenêtre brisée")
          (println "La fenêtre est cassée")
       )
    )
@@ -53,7 +53,7 @@
          (println "")
          (update_direction (keystr position) "0:1")
          (update_direction "0:1" "0:0")
-         (key castlemap "1:1" "Vous vous tenez devant un portail grand ouvert")
+         (key@ castlemap "1:1" "Vous vous tenez devant un portail grand ouvert")
          (println "La porte s'ouvre")
       )
    )
@@ -76,7 +76,7 @@
 
 ; Aller d'un lieu à l'autre
 (defpat action ( [Aller direction] )
-   (setq p (checkposition (zipwith '+ position (key directions direction))))
+   (setq p (checkposition (zipwith '+ position (key@ directions direction))))
    (if (= p position)
       (println "Je ne puis me rendre à cet endroit")
       (block
@@ -98,7 +98,7 @@
 
 ; Vérifier la validité de ce chemin
 (defun check_valid_path(p)
-   (if (belong p (key moving (keystr position)))
+   (if (belong p (key@ moving (keystr position)))
       p
       position
    )
@@ -124,7 +124,7 @@
 
 (defun check_object(p x)
    (setq k (keystr p))
-   (cond ((eq (key objects k) x) (pop objects k) true))
+   (cond ((eq (key@ objects k) x) (pop objects k) true))
 )
 
 ; check if we own the object x
@@ -141,9 +141,9 @@
 ; display a description of where we are at current position
 (defun display_position(p)
    (setq k (keystr p))
-   (println k (select (key castlemap k) "Rien à voir"))
-   (check (key objects k)
-      (println (+ "Il y a " (article (key objects k)) " sur le sol"))
+   (println k (select (key@ castlemap k) "Rien à voir"))
+   (check (key@ objects k)
+      (println (+ "Il y a " (article (key@ objects k)) " sur le sol"))
    )
    (println "Vous possédez: " belongings)
 )
@@ -160,7 +160,7 @@
 (defun article(x)
    (+
       (select
-         (key articles x)
+         (key@ articles x)
          "de"
       )
       " "
@@ -273,13 +273,13 @@
 
 ; update valid directions in both ways
 (defun update_direction (current_position direction)
-   (key moving current_position (cons direction (key moving current_position)))
+   (key@ moving current_position (cons direction (key@ moving current_position)))
    (cond
-      ((key moving direction)
-         (key moving direction (cons current_position (key moving direction)))
+      ((key@ moving direction)
+         (key@ moving direction (cons current_position (key@ moving direction)))
       )
       (true
-         (key moving direction (cons current_position ()))
+         (key@ moving direction (cons current_position ()))
       )
    )
 )
@@ -340,7 +340,7 @@
 
 (while (neq (car commands) 'Fin)
    (print "Vos ordres Monseigneur? ")
-   (setq dialog (input))
+   (setq dialog (input@))
    (if (eq dialog "fin")
       (block
          (println "Salut...")
@@ -349,10 +349,10 @@
    )
 
    (setq dialog (+ (upper (at dialog 0)) (deaccentuate (lower (extract dialog 1 (size dialog))))))
-   (setq commands (map (\ (x) (select (key synonyms x) x)) (rgx_split (rgx "{%s%p}") dialog)))
+   (setq commands (map (\ (x) (select (key@ synonyms x) x)) (rgx_split (rgx "{%s%p}") dialog)))
    ; we transform each of our strings into atoms, for match sake
    ;we remove useless words: the, a etc..
-   (setq commands (filter (\ (x) (not (key stopwords x))) (map 'atom commands)))
+   (setq commands (filter (\ (x) (not (key@ stopwords x))) (map 'atom commands)))
 
    ; our commands is now a list of atoms that should match a data structure
    ; if we cannot evaluate it, then we display a random error message
@@ -372,6 +372,7 @@
 )
 
 (println "Fin")
+
 
 
 

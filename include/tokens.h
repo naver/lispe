@@ -132,6 +132,24 @@ public:
         return i;
     }
 
+    void cleaning() {
+        currentchr = 0;
+        line = 0;
+        start = 0;
+        position = 0;
+        sz_read = 0;
+        
+        stacktype.clear();
+        stackln.clear();
+        positions.clear();
+        
+        p_stack.clear();
+        i_stack.clear();
+        r_stack.clear();
+
+        stack.clear();
+        token = U"";
+    }
     
     void clear(STRNG& u) {
         buffer = &u;

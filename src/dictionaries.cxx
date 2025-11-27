@@ -610,7 +610,7 @@ Element* Dictionarypool::fullcopy() {
     
     marking = true;
     Dictionary* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Dictionary;
     else
         d = lisp->provideDictionary();
@@ -644,11 +644,11 @@ Element* Dictionarypool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     
     Dictionary* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Dictionary;
     else
         d = lisp->provideDictionary();
@@ -760,7 +760,7 @@ Element* Dictionary_npool::fullcopy() {
     
     marking = true;
     Dictionary_n* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Dictionary_n;
     else
         d = lisp->provideDictionary_n();
@@ -780,10 +780,10 @@ Element* Dictionary_npool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     Dictionary_n* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Dictionary_n;
     else
         d = lisp->provideDictionary_n();
@@ -863,7 +863,7 @@ Element* Dictionary_ipool::fullcopy() {
     
     marking = true;
     Dictionary_i* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Dictionary_i;
     else
         d = lisp->provideDictionary_i();
@@ -883,10 +883,10 @@ Element* Dictionary_ipool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     Dictionary_i* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Dictionary_i;
     else
         d = lisp->provideDictionary_i();
@@ -1132,7 +1132,7 @@ Element* Dictionary::checkkey(LispE* lisp, Element* e) {
 
 Element* Dictionary::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
     if (remp->equal(lisp, valeur))
-        return zero_;
+        return zero_value;
 
     long nb = 0;
     Element* novel = remp->copying(false);
@@ -1473,7 +1473,7 @@ Element* Dictionary_i::checkkey(LispE* lisp, Element* e) {
 
 Element* Dictionary_i::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
     if (remp->equal(lisp, valeur))
-        return zero_;
+        return zero_value;
     
     long nb = 0;
     Element* novel = remp->copying(false);
@@ -1756,7 +1756,7 @@ Element* Dictionary_n::checkkey(LispE* lisp, Element* e) {
 
 Element* Dictionary_n::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
     if (remp->equal(lisp, valeur))
-        return zero_;
+        return zero_value;
 
     long nb = 0;
     Element* novel = remp->copying(false);
@@ -1937,7 +1937,7 @@ Element* Treepool::fullcopy() {
     
     marking = true;
     Tree* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Tree;
     else
         d = lisp->provideTree();
@@ -1971,11 +1971,11 @@ Element* Treepool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     
     Tree* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Tree;
     else
         d = lisp->provideTree();
@@ -2077,7 +2077,7 @@ Element* Tree_npool::fullcopy() {
     
     marking = true;
     Tree_n* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Tree_n;
     else
         d = lisp->provideTree_n();
@@ -2097,10 +2097,10 @@ Element* Tree_npool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     Tree_n* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Tree_n;
     else
         d = lisp->provideTree_n();
@@ -2180,7 +2180,7 @@ Element* Tree_ipool::fullcopy() {
     
     marking = true;
     Tree_i* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Tree_i;
     else
         d = lisp->provideTree_i();
@@ -2200,10 +2200,10 @@ Element* Tree_ipool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->create_in_thread && !is_protected() && !duplicate)
+    if (!lisp->create_no_pool_element && !is_protected() && !duplicate)
         return this;
     Tree_i* d;
-    if (lisp->create_in_thread)
+    if (lisp->create_no_pool_element)
         d = new Tree_i;
     else
         d = lisp->provideTree_i();
@@ -2449,7 +2449,7 @@ Element* Tree::checkkey(LispE* lisp, Element* e) {
 
 Element* Tree::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
     if (remp->equal(lisp, valeur))
-        return zero_;
+        return zero_value;
 
     long nb = 0;
     Element* novel = remp->copying(false);
@@ -2790,7 +2790,7 @@ Element* Tree_i::checkkey(LispE* lisp, Element* e) {
 
 Element* Tree_i::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
     if (remp->equal(lisp, valeur))
-        return zero_;
+        return zero_value;
     
     long nb = 0;
     Element* novel = remp->copying(false);
@@ -3073,7 +3073,7 @@ Element* Tree_n::checkkey(LispE* lisp, Element* e) {
 
 Element* Tree_n::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
     if (remp->equal(lisp, valeur))
-        return zero_;
+        return zero_value;
 
     long nb = 0;
     Element* novel = remp->copying(false);

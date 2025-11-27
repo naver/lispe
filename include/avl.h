@@ -166,7 +166,8 @@ class Avl {
     void flatten(List* l);
     void flatten(List& l);
 
-    void jsonString(LispE* lisp, wstring& w);
+    void jsonStream(LispE* lisp, std::ostream& os);
+    void wjsonString(LispE* lisp, wstring& w);
     void asString(LispE* lisp, wstring& w);
     void asUString(LispE* lisp, u_ustring& w);
 
@@ -346,6 +347,7 @@ public:
         delete (Iter_heap*)it;
     }
 
+    void jsonStream(LispE* lisp, std::ostream& os);
     wstring jsonString(LispE* lisp);
     wstring asString(LispE* lisp);
     u_ustring asUString(LispE* lisp);

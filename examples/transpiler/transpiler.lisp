@@ -6,7 +6,7 @@
 (setq shapes (dictionary))
 
 (defun checkshape (n idx values)
-   (if (key shapes n)
+   (if (key@ shapes n)
       (nconcn (list 'set@@@ (atom n) (list 'quote (@ shapes n))) idx (list values))
       (nconcn '(set@) (atom n) idx (list values))
    )
@@ -56,9 +56,9 @@
    (setq r (parsing d))
    (if (eq (size r) 1)
       (list 'string (nconcn '(at) (atom (+ n "$")) r))
-      (ncheck (key shapes n)
+      (ncheck (key@ shapes n)
          (throw (+ "Wrong dimension for: " n))
-         (if (eq (size n) (size (key shapes n)))
+         (if (eq (size n) (size (key@ shapes n)))
             (list 'string (nconcn (list 'atshape (atom (+ n "$")) (list 'quote (@ shapes n))) r))
             (nconcn (list 'atshape (atom (+ n "$")) (list 'quote (@ shapes n))) r)
          )
@@ -71,7 +71,7 @@
    (setq r (parsing d))
    (if (eq (size r) 1)
       (nconcn '(at) (atom n) r)
-      (ncheck (key shapes n)
+      (ncheck (key@ shapes n)
          (throw (+ "Wrong dimension for: " n))
          (nconcn (list 'atshape (atom n) (list 'quote (@ shapes n))) r)
       )
@@ -317,5 +317,7 @@
    )
    code
 )
+
+
 
 

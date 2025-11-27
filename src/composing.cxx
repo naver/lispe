@@ -1309,6 +1309,12 @@ Element* List::transformargument(LispE* lisp) {
             return lisp->push_in_garbage(element);
         }
         
+        if (lisp->delegation->class_pool.check(label)) {
+            element = new Listargumentclass(this, label);
+            lisp->removefromgarbage(this);
+            return lisp->push_in_garbage(element);
+        }
+
         //This is an executable...
         //In this case, it could be an embedded list of calls...
         if (liste[0]->isExecutable(lisp)) {
@@ -1456,7 +1462,7 @@ Element* LispE::for_composition(Element* current_program,Element* current_elemen
                 
                 if (popvalue) {
                     //We remove the previous value without deleting it...
-                    ((List*)stack->liste[last])->liste.item->last--;
+                    ((List*)stack->liste[last])->liste.items->last--;
                 }
             }
             else {
@@ -1511,23 +1517,20 @@ Element* LispE::for_composition(Element* current_program,Element* current_elemen
 }
 
 void List_run_linear::compose(LispE* lisp) {
-    static u_uchar idx_var = 48;
-    u_ustring u_content(U"%LNR");
-    u_content += idx_var;
+    static u_uchar idx_var = l_var0;
+    Element* var = lisp->provideAtom(idx_var);
     idx_var++;
-    if (idx_var > 57)
-        idx_var = 48;
-    Element* content = lisp->provideAtom(u_content);
+    if (idx_var > l_varF)
+        idx_var = l_var0;
+    Element* content = lisp->create_instruction(l_getfast, var);
     
-    List* default_init = lisp->create_instruction(l_setq, content, liste[0]);
+    List* default_init = lisp->create_instruction(l_setfast, var, liste[0]);
     List* current;
     components.append(default_init);
     for (long i = 1; i < size(); i++) {
         List* l = (List*)liste[i];
         l->liste.exchangelast(content);
-        current = lisp->create_instruction(l_setq, content, l);
+        current = lisp->create_instruction(l_setfast, var, l);
         components.append(current);
     }
-    
-    components.append(content);
 }

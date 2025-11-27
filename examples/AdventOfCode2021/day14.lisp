@@ -11,7 +11,7 @@
 (maplist 
    (\(x) 
       (setq r (split x "->"))
-      (key règles (trim (car r)) (trim (cadr r)))
+      (key@ règles (trim (car r)) (trim (cadr r)))
    )
    (split (trim codes) "\n")
 )
@@ -47,6 +47,8 @@
 
 (println 'part1 (- (flip (minmax (values@ (build_polymer 10 code))))))
 (println 'part2 (- (flip (minmax (values@ (build_polymer 40 code))))))
+
+
 
 
 

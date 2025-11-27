@@ -18,7 +18,10 @@
 #include <cmath>
 #include <cstdint>
 
+//#define MACDEBUG 1
+
 #ifdef MACDEBUG
+extern std::recursive_mutex lock_indexes;
 extern vector<Element*> __indexes;
 #endif
 
@@ -70,7 +73,7 @@ typedef enum {
     t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_predicate, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
-    t_call, t_call_lambda, t_eval, t_fileelement,
+    t_call, t_call_lambda, t_eval, t_fileelement, t_class, t_class_instance,
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, 
@@ -87,8 +90,9 @@ typedef enum {
 #ifdef LISPE_WASM
     l_evaljs, l_evaljssync,
 #endif
-    l_lambda, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defprol, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
-    l_set_const, l_setq, l_setqv, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
+    l_withclass, l_lambda, l_class, l_this, l_from, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defprol, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label, l_toclean,
+    l_set_const, l_setq, l_setqv, l_setqi, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
+    l_setfast, l_getfast,
     l_block, l_root, l_elapse, l_code,
     l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
     l_catch, l_throw, l_maybe,
@@ -152,6 +156,7 @@ typedef enum {
     l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     
     l_zip, l_zipwith, l_version,
+    l_var0, l_var1, l_var2, l_var3, l_var4, l_var5, l_var6, l_var7, l_var8, l_var9, l_varA, l_varB, l_varC, l_varD, l_varE, l_varF,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon, c_point,
     e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
     t_comment, l_final
@@ -212,11 +217,11 @@ inline const unsigned long _arity(long sz) {
 #define emptydictionary_ lisp->delegation->_EMPTYDICTIONARY
 
 #define minusone_ lisp->delegation->_MINUSONE
-#define zero_ lisp->n_zero
-#define one_ lisp->n_one
-#define two_ lisp->delegation->_TWO
+#define zero_value lisp->n_zero
+#define one_value lisp->n_one
+#define two_value lisp->delegation->_TWO
 
-#define booleans_ lisp->_BOOLEANS[lisp->select_bool_as_one]
+#define booleans_ lisp->delegation->_BOOLEANS[lisp->select_bool_as_one]
 #define numbools_ lisp->delegation->_NUMERICAL_BOOLEANS
 
 #define terminal_ lisp->delegation->_TERMINAL
@@ -252,8 +257,10 @@ public:
 
 #ifdef MACDEBUG
         __lc = (lisp_code)type;
+        lock_indexes.lock();
         __idx = __indexes.size();
         __indexes.push_back(this);
+        lock_indexes.unlock();
 #endif
     }
     
@@ -263,14 +270,18 @@ public:
 
 #ifdef MACDEBUG
         __lc = (lisp_code)type;
+        lock_indexes.lock();
         __idx = __indexes.size();
         __indexes.push_back(this);
-#endif 
+        lock_indexes.unlock();
+#endif
     }
     
     virtual ~Element() {
 #ifdef MACDEBUG
+        lock_indexes.lock();
         __indexes[__idx] = NULL;
+        lock_indexes.unlock();
 #endif
     }
     
@@ -279,6 +290,10 @@ public:
         return true;
     }
     
+    virtual bool incode() {
+        return false;
+    }
+
     void generate_body_from_macro(LispE* lisp, Listincode* code, binHash<Element*>& dico_variables);
     void replaceVariableNames(LispE* lisp, binHash<Element*>& names);
     bool replaceVariableNames(LispE* lisp);
@@ -315,21 +330,23 @@ public:
         status += not_protected();
     }
 
+    virtual void incrementstatus(uint16_t nb) {
+        status += nb * not_protected();
+    }
+    
     virtual void decrement() {
         status -= not_protected();
         if (!status)
             delete this;
     }
 
-    virtual void incrementstatus(uint16_t nb) {
-        status += nb * not_protected();
-    }
-    
     virtual void decrementstatus(uint16_t nb) {
         status -= nb * not_protected();
         if (!status)
             delete this;
     }
+    
+    virtual void check_body(LispE* lisp, Element** e) {}
     
     //The status is decremented without destroying the element.
     virtual void decrementkeep() {
@@ -427,7 +444,15 @@ public:
     virtual void append(LispE* lisp, u_ustring& k) {}
     virtual void append(LispE* lisp, double v) {}
     virtual void append(LispE* lisp, long v) {}
-    
+    virtual Element* eval_infix(LispE* lisp) {
+        return this;
+    }
+    virtual Element* evall_infix(LispE* lisp) {
+        return this;
+    }
+    virtual Element* change_to_n() {
+        return this;
+    }
     virtual Element* negate(LispE* lisp);
     
     virtual void push_element(LispE* lisp, List* l);
@@ -602,7 +627,11 @@ public:
     
     virtual Element* loop(LispE* lisp, int16_t label,  List* code);
 
-    virtual wstring stringInList(LispE* lisp) {
+    virtual string stringInList(LispE* lisp) {
+        return toString(lisp);
+    }
+
+    virtual wstring wstringInList(LispE* lisp) {
         return asString(lisp);
     }
 
@@ -611,7 +640,11 @@ public:
     }
 
     virtual wstring jsonString(LispE* lisp) {
-        return stringInList(lisp);
+        return wstringInList(lisp);
+    }
+    
+    virtual void jsonStream(LispE* lisp, std::ostream& os) {
+        os << stringInList(lisp);
     }
 
 #ifdef LISPE_WASM
@@ -752,7 +785,12 @@ public:
 #endif
     
     virtual Element* eval_lambda_min(LispE*);
-    
+
+    inline Element* eval_terminal(LispE* lisp, char terminal) {
+        setterminal(terminal);
+        return eval(lisp);
+    }
+
     virtual Element* eval(LispE*) {
         return this;
     }
@@ -806,6 +844,10 @@ public:
     }
     
     virtual bool isList() {
+        return false;
+    }
+
+    virtual bool isScalar() {
         return false;
     }
 
@@ -870,8 +912,7 @@ public:
                 status = s_destructible;
         }
     }
-    
-    
+        
     virtual void release() {
         if (!status)
             delete this;
@@ -1058,6 +1099,55 @@ public:
     virtual Element* argumentvalue() {
         return NULL;
     }
+};
+
+class Callfromlib : public Element {
+public:
+    static int16_t idval;
+    int16_t id;
+    
+    Callfromlib(int16_t ty) : Element(ty) {
+        id = idval++;
+    }
+    
+    void increment() {
+        status += not_protected();
+        cerr << id << ": Incrément:" << status << endl;
+    }
+
+    void incrementstatus(uint16_t nb) {
+        status += nb * not_protected();
+        cerr << id << ": Incrément Status:" << status << endl;    }
+    
+    void decrement() {
+        status -= not_protected();
+        cerr << id << ": Décrément:" << status << endl;
+        if (!status) {
+            cerr << id << ": Destruction" << endl;
+            delete this;
+        }
+    }
+
+    void decrementstatus(uint16_t nb) {
+        status -= nb * not_protected();
+        cerr << id << ": Décrément status:" << status << endl;
+        if (!status) {
+            cerr << id << ": Destruction" << endl;
+            delete this;
+        }
+    }
+    
+    void release() {
+        if (!status) {
+            cerr << id << ": Destruction par release" << endl;
+            delete this;
+        }
+    }
+    
+    int16_t label() {
+        return id;
+    }
+
 };
 
 class Error : public Element {
@@ -1258,6 +1348,22 @@ public:
         }
     }
     
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        switch (atome) {
+            case v_null:
+                os << "false";
+                break;
+            case v_emptylist:
+                os << "[]";
+                break;
+            case v_true:
+                os << "true";
+                break;
+            default:
+                os << jsonstring(toString(lisp));
+        }
+    }
+    
     Element* eval(LispE* lisp);
     
     int16_t label() {
@@ -1380,6 +1486,10 @@ public:
         return wjsonstring(name);
     }
 
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        os << jsonstring(toString(lisp));
+    }
+    
     bool isAtom() {
         return true;
     }
@@ -1445,6 +1555,10 @@ public:
 
     wstring jsonString(LispE* lisp) {
         return wjsonstring(name);
+    }
+
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        os << jsonstring(toString(lisp));
     }
 
     bool isInstruction() {
@@ -1616,6 +1730,10 @@ public:
         return (v == content);
     }
     
+    bool isScalar() {
+        return true;
+    }
+
     Element* duplicate_constant(LispE* lisp);
 
     Element* newTensor(LispE* lisp, List* l);
@@ -1774,6 +1892,10 @@ public:
     
     bool equalvalue(double v) {
         return (v == content);
+    }
+
+    bool isScalar() {
+        return true;
     }
 
     bool isEmpty() {
@@ -1992,6 +2114,10 @@ public:
         return (content == n);
     }
 
+    bool isScalar() {
+        return true;
+    }
+
     Element* newTensor(LispE* lisp, List* l);
     
     bool isEmpty() {
@@ -2137,6 +2263,10 @@ public:
     Complexe(std::complex<double>& cmp) : Element(t_complex), content(cmp) {}
     Complexe(double d, double imaginary) : Element(t_complex), content(d, imaginary) {}
     Complexe(double d, double imaginary, uint16_t s) : content(d, imaginary), Element(t_short, s) {}
+
+    bool isScalar() {
+        return true;
+    }
 
     Element* duplicate_constant(LispE* lisp);
     
@@ -2344,6 +2474,10 @@ public:
     Element* newTensor(LispE* lisp, List* l);
     bool isEmpty() {
         return (content == 0);
+    }
+
+    bool isScalar() {
+        return true;
     }
 
     Element* duplicate_constant(LispE* lisp);
@@ -2693,10 +2827,14 @@ public:
     Element* cdr(LispE*);
     
     
-    virtual wstring stringInList(LispE* lisp) {
+    virtual wstring wstringInList(LispE* lisp) {
         return wjsonstring(content);
     }
-    
+
+    virtual string stringInList(LispE* lisp) {
+        return jsonstring(toString(lisp));
+    }
+
     virtual u_ustring stringInUList(LispE* lisp) {
         return ujsonstring(content);
     }
@@ -2960,10 +3098,14 @@ public:
     Element* cdr(LispE*);
     
     
-    virtual wstring stringInList(LispE* lisp) {
+    virtual string stringInList(LispE* lisp) {
+        return jsonstring(toString(lisp));
+    }
+
+    virtual wstring wstringInList(LispE* lisp) {
         return wjsonstring(asUString(lisp));
     }
-    
+
     virtual u_ustring stringInUList(LispE* lisp) {
         return ujsonstring(asUString(lisp));
     }
@@ -3574,7 +3716,40 @@ public:
         for (const auto& a: dictionary)
             a.second->protecting(protection, lisp);
     }
-    
+
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (!dictionary.size()) {
+            os << "{}";
+            return;
+        }
+                
+        if (marking) {
+            os << "#inf";
+            return;
+        }
+        
+        marking = true;
+        os << "{";
+        string s;
+        u_ustring u;
+        bool premier = true;
+        for (const auto& a: dictionary) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            s = "";
+            u = a.first;
+            s_unicode_to_utf8(s, u);
+            os << jsonstring(s);
+            os << ":";
+            a.second->jsonStream(lisp, os);
+        }
+        os << "}";
+        marking = false;
+    }
+
     wstring jsonString(LispE* lisp) {
         if (!dictionary.size())
             return L"{}";
@@ -3622,7 +3797,7 @@ public:
                 premier = false;
             tampon += wjsonstring(a.first);
             tampon += L":";
-            tampon += a.second->stringInList(lisp);
+            tampon += a.second->wstringInList(lisp);
         }
         tampon += L"}";
         marking = false;
@@ -3662,7 +3837,15 @@ public:
         return (dictionary.size());
     }
     
+    Element* on_index(u_ustring k) {
+        auto it = dictionary.find(k);
+        if (it != dictionary.end())
+            return it->second;
+        return NULL;
+    }
+    
     Element* protected_index(LispE*, u_ustring&);
+    
     
     Element* value_on_index(wstring& k, LispE* l);
     Element* value_on_index(u_ustring& k, LispE* l);
@@ -3727,6 +3910,33 @@ public:
         it->second->decrement();
         dictionary.erase(k);
         return true;
+    }
+
+};
+
+class Dictionary_json : public Dictionary {
+public:
+    u_ustring u_key;
+    bool choice;
+    
+    Dictionary_json() : choice(true) {}
+
+    void reversechoice() {
+        choice = 1 - choice;
+    }
+
+    bool verify() {
+        return choice;
+    }
+    
+    void append(Element* e) {
+        if (choice)
+            u_key = e->asUString(NULL);
+        else {
+            dictionary[u_key] = e;
+            e->increment();
+            reversechoice();
+        }
     }
 
 };
@@ -4024,6 +4234,35 @@ public:
     }
     
     
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (!dictionary.size()) {
+            os << "{}";
+            return;
+        }
+                
+        if (marking) {
+            os << "#inf";
+            return;
+        }
+        
+        marking = true;
+        os << "{";
+        bool premier = true;
+        for (const auto& a: dictionary) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            os << a.first;
+            os << ":";
+            a.second->jsonStream(lisp, os);
+        }
+        os << "}";
+        marking = false;
+    }
+
+    
     wstring jsonString(LispE* lisp) {
         if (!dictionary.size())
             return L"{}";
@@ -4076,7 +4315,7 @@ public:
                 premier = false;
             tampon += convertToWString(a.first);
             tampon += L":";
-            tampon += a.second->stringInList(lisp);
+            tampon += a.second->wstringInList(lisp);
         }
         tampon += L"}";
         marking = false;
@@ -4117,6 +4356,13 @@ public:
         return (dictionary.size());
     }
     
+    Element* on_index(double k) {
+        auto it = dictionary.find(k);
+        if (it != dictionary.end())
+            return it->second;
+        return NULL;
+    }
+
     Element* protected_index(LispE*, double k);
 
     Element* value_on_index(double k, LispE* l);
@@ -4437,7 +4683,34 @@ public:
             a.second->protecting(protection, lisp);
     }
     
-    
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (!dictionary.size()) {
+            os << "{}";
+            return;
+        }
+                
+        if (marking) {
+            os << "#inf";
+            return;
+        }
+        
+        marking = true;
+        os << "{";
+        bool premier = true;
+        for (const auto& a: dictionary) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            os << a.first;
+            os << ":";
+            a.second->jsonStream(lisp, os);
+        }
+        os << "}";
+        marking = false;
+    }
+
     wstring jsonString(LispE* lisp) {
         if (!dictionary.size())
             return L"{}";
@@ -4490,7 +4763,7 @@ public:
                 premier = false;
             tampon += convertToWString(a.first);
             tampon += L":";
-            tampon += a.second->stringInList(lisp);
+            tampon += a.second->wstringInList(lisp);
         }
         tampon += L"}";
         marking = false;
@@ -4531,6 +4804,13 @@ public:
         return (dictionary.size());
     }
     
+    Element* on_index(long k) {
+        auto it = dictionary.find(k);
+        if (it != dictionary.end())
+            return it->second;
+        return NULL;
+    }
+
     Element* protected_index(LispE*, long k);
 
     Element* value_on_index(long k, LispE* l);
@@ -4691,6 +4971,31 @@ public:
         return ensemble.size();
     }
             
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (ensemble.empty()) {
+            os << "[]";
+            return;
+        }
+                
+        u_ustring tampon;
+        string s;
+        bool premier = true;
+        os << "[";
+        for (const auto& a: ensemble) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            
+            s = "";
+            tampon = a;
+            s_unicode_to_utf8(s, tampon);
+            os << s;
+        }
+        os << "]";
+    }
+
     wstring jsonString(LispE* lisp) {
         if (ensemble.empty())
             return L"[]";
@@ -4988,6 +5293,27 @@ public:
         return ensemble.size();
     }
             
+    
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (ensemble.empty()) {
+            os << "[]";
+            return;
+        }
+                
+        bool premier = true;
+        os << "[";
+        for (const auto& a: ensemble) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            
+            os << a;
+        }
+        os << "]";
+    }
+
     wstring jsonString(LispE* lisp) {
         if (ensemble.empty())
             return L"[]";
@@ -5267,6 +5593,27 @@ public:
         return ensemble.size();
     }
             
+    
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (ensemble.empty()) {
+            os << "[]";
+            return;
+        }
+                
+        bool premier = true;
+        os << "[";
+        for (const auto& a: ensemble) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            
+            os << a;
+        }
+        os << "]";
+    }
+
     wstring jsonString(LispE* lisp) {
         if (ensemble.empty())
             return L"[]";
@@ -5571,6 +5918,26 @@ public:
         return dictionary.size();
     }
             
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (dictionary.empty()) {
+            os << "[]";
+            return;
+        }
+                
+        bool premier = true;
+        os << "[";
+        for (const auto& a: dictionary) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            
+            a.second->jsonStream(lisp, os);
+        }
+        os << "]";
+    }
+
     wstring jsonString(LispE* lisp) {
         if (dictionary.empty())
             return L"[]";
@@ -6050,7 +6417,42 @@ public:
         for (const auto& a: tree)
             a.second->protecting(protection, lisp);
     }
-    
+
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (!tree.size()) {
+            os << "{}";
+            return;
+        }
+                
+        if (marking) {
+            os << "#inf";
+            return;
+        }
+        
+        marking = true;
+        u_ustring tampon;
+        string s;
+        
+        os << "{";
+        bool premier = true;
+        for (const auto& a: tree) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            
+            tampon = a.first;
+            s = "";
+            s_unicode_to_utf8(s, tampon);
+            os << s;
+            os << ":";
+            a.second->jsonStream(lisp, os);
+        }
+        os << "}";
+        marking = false;
+    }
+
     wstring jsonString(LispE* lisp) {
         if (!tree.size())
             return L"{}";
@@ -6098,7 +6500,7 @@ public:
                 premier = false;
             tampon += wjsonstring(a.first);
             tampon += L":";
-            tampon += a.second->stringInList(lisp);
+            tampon += a.second->wstringInList(lisp);
         }
         tampon += L"}";
         marking = false;
@@ -6498,7 +6900,35 @@ public:
             a.second->protecting(protection, lisp);
     }
     
-    
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (!tree.size()) {
+            os << "{}";
+            return;
+        }
+                
+        if (marking) {
+            os << "#inf";
+            return;
+        }
+        
+        marking = true;
+        os << "{";
+        bool premier = true;
+        for (const auto& a: tree) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            
+            os << a.first;
+            os << ":";
+            a.second->jsonStream(lisp, os);
+        }
+        os << "}";
+        marking = false;
+    }
+
     wstring jsonString(LispE* lisp) {
         if (!tree.size())
             return L"{}";
@@ -6551,7 +6981,7 @@ public:
                 premier = false;
             tampon += convertToWString(a.first);
             tampon += L":";
-            tampon += a.second->stringInList(lisp);
+            tampon += a.second->wstringInList(lisp);
         }
         tampon += L"}";
         marking = false;
@@ -6912,7 +7342,35 @@ public:
             a.second->protecting(protection, lisp);
     }
     
-    
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (!tree.size()) {
+            os << "{}";
+            return;
+        }
+                
+        if (marking) {
+            os << "#inf";
+            return;
+        }
+        
+        marking = true;
+        os << "{";
+        bool premier = true;
+        for (const auto& a: tree) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            
+            os << a.first;
+            os << ":";
+            a.second->jsonStream(lisp, os);
+        }
+        os << "}";
+        marking = false;
+    }
+
     wstring jsonString(LispE* lisp) {
         if (!tree.size())
             return L"{}";
@@ -6965,7 +7423,7 @@ public:
                 premier = false;
             tampon += convertToWString(a.first);
             tampon += L":";
-            tampon += a.second->stringInList(lisp);
+            tampon += a.second->wstringInList(lisp);
         }
         tampon += L"}";
         marking = false;
@@ -7119,7 +7577,7 @@ public:
             else
                 s += keyvalues[i]->asString(lisp);
             s += L":";
-            s += valuevalues[i]->stringInList(lisp);
+            s += valuevalues[i]->wstringInList(lisp);
         }
         s += L"}";
         return s;

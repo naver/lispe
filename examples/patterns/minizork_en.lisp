@@ -5,7 +5,7 @@
 ; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
 
-(data Command   
+(data@ Command
    [Move atom_]
    [Break atom_ atom_]
    [Open atom_ atom_]
@@ -32,7 +32,7 @@
 ; drop it at current position
 (defpat action ( [Drop x] )
    (check (check_belongings x)
-      (key objects (keystr position) x)
+      (key@ objects (keystr position) x)
       (pop belongings (find belongings x))
       (println "Ok! We have dropped" x " on the ground")
       (display_position position)
@@ -46,7 +46,7 @@
       (ncheck (and (check_belongings x) (eq x 'stone))
          (println "Cannot break a window with that" x)
          (update_direction (keystr position) "0:2")
-         (key castlemap "1:2" "You are standing in front of a broken window")
+         (key@ castlemap "1:2" "You are standing in front of a broken window")
          (println "Window is broken")
       )
    )
@@ -61,7 +61,7 @@
          (println "You do not own a key")
          (update_direction (keystr position) "0:1")
          (update_direction "0:1" "0:0")
-         (key castlemap "1:1" "You are standing in front of an open gate")
+         (key@ castlemap "1:1" "You are standing in front of an open gate")
          (println "The door opens")
       )
    )
@@ -84,7 +84,7 @@
 
 ; Moving from one position to another
 (defpat action ( [Move direction] )
-   (setq p (checkposition (zipwith '+ position (key directions direction))))
+   (setq p (checkposition (zipwith '+ position (key@ directions direction))))
    (if (= p position)
       (println "Cannot go in this direction")
       (block
@@ -102,7 +102,7 @@
 
 ; check if a path is within the description in 'moving'
 (defun check_valid_path(p)
-   (if (belong p (key moving (keystr position)))
+   (if (belong p (key@ moving (keystr position)))
       p
       position
    )
@@ -128,7 +128,7 @@
 
 (defun check_object(p x)
    (setq k (keystr p))
-   (cond ((eq (key objects k) x) (pop objects k) true))
+   (cond ((eq (key@ objects k) x) (pop objects k) true))
 )
 
 ; check if we own the object x
@@ -145,9 +145,9 @@
 ; display a description of where we are at current position
 (defun display_position(p)
    (setq k (keystr p))
-   (println k (select (key castlemap k) "Nothing to see"))
-   (check (key objects k)
-      (println (+ "There is a " (key objects k) " on the ground"))
+   (println k (select (key@ castlemap k) "Nothing to see"))
+   (check (key@ objects k)
+      (println (+ "There is a " (key@ objects k) " on the ground"))
    )
    (println "You own: " belongings)
 )
@@ -198,13 +198,13 @@
 
 ; update valid directions in both ways
 (defun update_direction (current_position direction)
-   (key moving current_position (cons direction (key moving current_position)))
+   (key@ moving current_position (cons direction (key@ moving current_position)))
    (cond
-      ((key moving direction)
-         (key moving direction (cons current_position (key moving direction)))
+      ((key@ moving direction)
+         (key@ moving direction (cons current_position (key@ moving direction)))
       )
       (true
-         (key moving direction (cons current_position ()))
+         (key@ moving direction (cons current_position ()))
       )
    )
 )
@@ -268,12 +268,12 @@
    (print "Your order sire? ")
    ; We read the input from the keyboard
    ; Note that on GUI version, we display a small window
-   (setq dialog (input))
+   (setq dialog (input@))
    (check (eq dialog "end")
          (println "Ok... Bye...")
          (break)
    )
-   
+
    ; car and cdr have also been repurposed for strings
    ; GET THE SWORD is transformed into: Get the sword
    (setq dialog (+ (upper . car dialog) . lower . cdr dialog))
@@ -282,10 +282,10 @@
    ; We transform each of our strings into atoms. Note that select returns the first non null value
    ; We remove stopwords (replaced with "~")
    ; We eventually obtain: (Take sword)
-   (setq commands 
-      (filterlist '(neq '~) 
-         (maplist 
-         (λ(x) (atom . select (key filterwords x) x)) . 
+   (setq commands
+      (filterlist '(neq '~)
+         (maplist
+         (λ(x) (atom . select (key@ filterwords x) x)) .
          split dialog " ")))
 
    ; our commands is now a list of atoms that should match a data structure
@@ -307,6 +307,5 @@
 )
 
 (print "The end")
-
 
 
