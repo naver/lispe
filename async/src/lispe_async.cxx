@@ -153,6 +153,8 @@ public:
         catch(Error* err) {
             for (long i = 0; i < codes->size(); i++) {
                 e = codes->index(i);
+                if (e->type != type_async_element)
+                    break;
                 ((LispE_async_element*)e)->clean(lisp);
             }
             throw err;
