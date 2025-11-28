@@ -685,6 +685,14 @@ public:
         return false;
     }
 
+    inline int16_t getPatternMethods(int16_t label, int16_t space) {
+        if (space && space < method_pool.size() && method_pool[space]->find(label) != method_pool[space]->end())
+            return space;
+        if (method_pool[0]->find(label) != method_pool[0]->end())
+            return 0;
+        return -1;
+    }
+    
     inline Element* recordingMethod(Stackelement* stack, Element* e, int16_t label, int16_t sublabel, uint16_t space) {
         //If the first element of e is a data structure: ( (L x x x))
         //We need to extract the second label...

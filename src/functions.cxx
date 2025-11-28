@@ -718,7 +718,7 @@ Element* List_library_pattern_eval::eval(LispE* lisp) {
     char tr = lisp->check_trace_in_function();
 
     current_body = NULL;
-    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
+    auto& functions = lisp->delegation->method_pool[0]->at(function_label);
     auto subfunction = functions.find(sublabel);
     if (subfunction == functions.end()) {
         sublabel = v_null;
@@ -906,7 +906,8 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     char tr = lisp->check_trace_in_function();
 
     current_body = NULL;
-    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
+    int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
+    auto& functions = lisp->delegation->method_pool[space]->at(function_label);
     auto subfunction = functions.find(sublabel);
     if (subfunction == functions.end()) {
         sublabel = v_null;
@@ -1070,7 +1071,8 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     char tr = lisp->check_trace_in_function();
 
     current_body = NULL;
-    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
+    int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
+    auto& functions = lisp->delegation->method_pool[space]->at(function_label);
     auto subfunction = functions.find(sublabel);
     if (subfunction == functions.end()) {
         sublabel = v_null;
@@ -1267,7 +1269,8 @@ Element* List_prolog_eval::eval(LispE* lisp) {
     char tr = lisp->check_trace_in_function();
 
     current_body = NULL;
-    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
+    int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
+    auto& functions = lisp->delegation->method_pool[space]->at(function_label);
     auto subfunction = functions.find(sublabel);
     if (subfunction == functions.end()) {
         sublabel = v_null;
@@ -1429,7 +1432,6 @@ Element* List::eval_pattern(LispE* lisp, List* body) {
 */
 
 Element* List::eval_predicate(LispE* lisp, List* body) {
-    //if (lisp->delegation->function_pool[lisp->current_space]->check(function_label)) {
     List_predicate_eval lpe(this, body);
     return lpe.eval(lisp);
 }
@@ -1441,7 +1443,6 @@ Element* List::eval_predicate(LispE* lisp, List* body) {
 */
 
 Element* List::eval_prolog(LispE* lisp, List* body) {
-    //if (lisp->delegation->function_pool[lisp->current_space]->check(function_label)) {
     List_prolog_eval lpe(this, body);
     return lpe.eval(lisp);
 }
