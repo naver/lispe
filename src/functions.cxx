@@ -907,6 +907,14 @@ Element* List_pattern_eval::eval(LispE* lisp) {
 
     current_body = NULL;
     int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
+    if (space == -1) {
+        arguments->release();
+        wstring message = L"Error: Could not find a match for function: '";
+        message += lisp->asString(function_label);
+        message += L"'";
+        return lisp->check_error(this, new Error(message), idxinfo);
+    }
+    
     auto& functions = lisp->delegation->method_pool[space]->at(function_label);
     auto subfunction = functions.find(sublabel);
     if (subfunction == functions.end()) {
@@ -1072,6 +1080,14 @@ Element* List_predicate_eval::eval(LispE* lisp) {
 
     current_body = NULL;
     int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
+    if (space == -1) {
+        arguments->release();
+        wstring message = L"Error: Could not find a match for function: '";
+        message += lisp->asString(function_label);
+        message += L"'";
+        return lisp->check_error(this, new Error(message), idxinfo);
+    }
+
     auto& functions = lisp->delegation->method_pool[space]->at(function_label);
     auto subfunction = functions.find(sublabel);
     if (subfunction == functions.end()) {
@@ -1270,6 +1286,14 @@ Element* List_prolog_eval::eval(LispE* lisp) {
 
     current_body = NULL;
     int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
+    if (space == -1) {
+        arguments->release();
+        wstring message = L"Error: Could not find a match for function: '";
+        message += lisp->asString(function_label);
+        message += L"'";
+        return lisp->check_error(this, new Error(message), idxinfo);
+    }
+
     auto& functions = lisp->delegation->method_pool[space]->at(function_label);
     auto subfunction = functions.find(sublabel);
     if (subfunction == functions.end()) {
