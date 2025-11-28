@@ -1415,6 +1415,8 @@ public:
         }
     }
     
+    int16_t createNewType(u_ustring name);
+    
     Element* provideOperator(int16_t identifier) {
         return delegation->provideOperator(identifier);
     }

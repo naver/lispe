@@ -303,6 +303,18 @@ Delegation::~Delegation() {
 }
 
 //------------------------------------------------------------
+int16_t LispE::createNewType(u_ustring identifier) {
+    Element* newType = provideAtom(identifier);
+    int16_t label = newType->label();
+    if (delegation->data_pool.check(label))
+        throw new Error("Error: data structure has already been recorded");
+    
+    Element* e = create_instruction(label, delegation->_NULL);
+    delegation->data_pool[label] = e;
+    e->type = t_data;
+    return label;
+}
+//------------------------------------------------------------
 // This is a particular method that is implemented in the form of a deflib (see systems.cxx)
 void moduleSysteme(LispE* lisp);
 void moduleChaines(LispE* lisp);
