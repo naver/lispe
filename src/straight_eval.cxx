@@ -718,8 +718,14 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
 
     if (listsize == 2) {
         Element* d = liste[1]->eval(lisp);
-        if (!d->isDictionary())
+        if (!d->isDictionary()) {
+            if (d->function_label(lisp) == t_class_instance) {
+                Element* dico = d->asDictionary(lisp);
+                d->release();
+                return dico;
+            }
             throw new Error("Error: wrong arguments for 'dictionary'");
+        }
         if (d->type == t_dictionary)
             return d->copying(true);
         void* iter = d->begin_iter();

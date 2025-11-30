@@ -418,6 +418,9 @@ public:
     }
 
     virtual Element* asList(LispE* lisp, List* l);
+    virtual Element* asDictionary(LispE*) {
+        return this;
+    }
     
     virtual void concatenate(LispE* lisp, Element* e) {}
 

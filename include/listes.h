@@ -588,7 +588,7 @@ public:
         terminal |= v;
     }
     
-    Element* asList(LispE* lisp, List* l) {
+    virtual Element* asList(LispE* lisp, List* l) {
         l->release();
         return this;
     }
@@ -4755,6 +4755,8 @@ public:
     void store_variables(Stackelement*);
     void update_variables(LispE*);
     u_ustring asUString(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
+    Element* asDictionary(LispE*);
     
     char check_match(LispE* lisp, Element* value);
 

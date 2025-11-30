@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2025.11.28.15.24";
+static std::string version = "1.2025.11.30.15.52";
 string LispVersion() {
     return version;
 }
@@ -137,6 +137,24 @@ u_ustring List_instance::asUString(LispE* lisp) {
     }
     s += U")";
     return s;
+}
+
+Element* List_instance::asDictionary(LispE* lisp) {
+    u_ustring key;
+    Dictionary* dico = lisp->provideDictionary();
+    for (long i = 0; i < size(); i++) {
+        key = lisp->asUString(names[i]);
+        dico->dictionary[key] = liste[i];
+        dico->dictionary[key]->increment();
+    }
+    return dico;
+}
+
+Element* List_instance::asList(LispE* lisp, List* l) {
+    for (long i = 0; i < size(); i++) {
+        l->append(liste[i]);
+    }
+    return l;
 }
 
 void List_instance::store_variables(Stackelement* s) {
@@ -611,7 +629,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_getfast, "getfast", P_TWO, new List_getfast_eval());
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg, new List_setg_eval());
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq, new List_setq_eval());
-    set_instruction(l_setqv, "setqv", P_THREE, &List::evall_setqv, new List_setqv_eval());
     set_instruction(l_setqv, "setqv", P_THREE, &List::evall_setqv, new List_setqv_eval());
     set_instruction(l_setqi, "setqi", P_THREE, &List::evall_setqi, new List_setqi_eval());
     set_instruction(l_seth, "seth", P_THREE, &List::evall_seth, new List_seth_eval());
@@ -3675,6 +3692,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
