@@ -274,7 +274,7 @@ Element* Fltk_widget::widget_label(LispE* lisp) {
 Element* Fltk_widget::labelwindow(LispE* lisp) {
     if (widget == NULL)
         throw new Error(L"WND(102): wdg not created");
-    Element* lab = lisp->get_variable(U"label");
+    Element* lab = lisp->get_variable(U"alabel");
     string label;
     if (lab == null_) {
         label = widget->label();
@@ -1561,7 +1561,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
             int y = lisp->get_variable(U"y")->asInt();
             int w = lisp->get_variable(U"w")->asInt();
             int h = lisp->get_variable(U"h")->asInt();
-            string label = lisp->get_variable(U"label")->toString(lisp);
+            string label = lisp->get_variable(U"alabel")->toString(lisp);
             Element* function  = lisp->get_variable(U"function");
             Element* object  = lisp->get_variable(U"object");
             return new Fltk_window(lisp,fltk_widget,x,y,w,h, label,function, object);
@@ -1569,7 +1569,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
         case fltk_create_resizable: {
             int x = lisp->get_variable(U"x")->asInt();
             int y = lisp->get_variable(U"y")->asInt();
-            string label = lisp->get_variable(U"label")->toString(lisp);
+            string label = lisp->get_variable(U"alabel")->toString(lisp);
             Element* function  = lisp->get_variable(U"function");
             Element* object  = lisp->get_variable(U"object");
             return new Fltk_window(lisp,fltk_widget,x,y, label,function, object);
@@ -1580,7 +1580,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
             int w = lisp->get_variable(U"w")->asInt();
             int h = lisp->get_variable(U"h")->asInt();
             bool multiline = lisp->get_variable(U"multiline")->Boolean();
-            string label = lisp->get_variable(U"label")->toString(lisp);
+            string label = lisp->get_variable(U"alabel")->toString(lisp);
             Element* function  = lisp->get_variable(U"function");
             Element* object  = lisp->get_variable(U"object");
             Fltk_input* wdg = new Fltk_input(lisp,fltk_widget,x,y,w,h, multiline,label,function, object);
@@ -1593,7 +1593,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
             int w = lisp->get_variable(U"w")->asInt();
             int h = lisp->get_variable(U"h")->asInt();
             bool multiline = lisp->get_variable(U"multiline")->Boolean();
-            string label = lisp->get_variable(U"label")->toString(lisp);
+            string label = lisp->get_variable(U"alabel")->toString(lisp);
             Fltk_output* wdg = new Fltk_output(lisp,fltk_widget,x,y,w,h, multiline,label);
             wnd->push(wdg);
             return wdg;
@@ -1606,7 +1606,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
             int h = lisp->get_variable(U"h")->asInt();
             int thetype = lisp->get_variable(U"button_type")->asInt();
             int shape = lisp->get_variable(U"button_shape")->asInt();
-            string label = lisp->get_variable(U"label")->toString(lisp);
+            string label = lisp->get_variable(U"alabel")->toString(lisp);
             Element* function  = lisp->get_variable(U"function");
             Element* object  = lisp->get_variable(U"object");
             Fltk_button* wdg = new Fltk_button(lisp,fltk_widget,x,y,w,h, thetype, shape, label,function, object);
@@ -1620,7 +1620,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
             int h = lisp->get_variable(U"h")->asInt();
             int align = lisp->get_variable(U"slider_orientation")->asInt();
             bool value_slider = lisp->get_variable(U"slider_value_type")->Boolean();
-            string label = lisp->get_variable(U"label")->toString(lisp);
+            string label = lisp->get_variable(U"alabel")->toString(lisp);
             Element* function  = lisp->get_variable(U"function");
             Element* object  = lisp->get_variable(U"object");
             Fltk_slider* wdg = new Fltk_slider(lisp,fltk_widget,x,y,w,h, align,value_slider,label,function, object);
@@ -2071,8 +2071,8 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->storing_global(U"FL_ALIGN_POSITION_MASK", lisp->provideConstinteger(FL_ALIGN_POSITION_MASK));
     lisp->storing_global(U"FL_ALIGN_IMAGE_MASK", lisp->provideConstinteger(FL_ALIGN_IMAGE_MASK));
 
-    lisp->extension("deflib fltk_create (x y w h label (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create));
-    lisp->extension("deflib fltk_create_resizable (x y label (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create_resizable));
+    lisp->extension("deflib fltk_create (x y w h alabel (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create));
+    lisp->extension("deflib fltk_create_resizable (x y alabel (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create_resizable));
 
     lisp->extension("deflib fltk_resize (widget minw minh maxw maxh)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_resize));
     lisp->extension("deflib fltk_end (widget (timer))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_end));
@@ -2097,7 +2097,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib fltk_rgbcolor(widget r g b)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_rgbcolor));
     lisp->extension("deflib fltk_align(widget align)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_align));
     lisp->extension("deflib fltk_coordinates(widget (x) (y) (w) (h) )", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_coordinates));
-    lisp->extension("deflib fltk_labelwindow(widget (label))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labelwindow));
+    lisp->extension("deflib fltk_labelwindow(widget (alabel))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labelwindow));
     lisp->extension("deflib fltk_labeltype(widget (thetype))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labeltype));
     lisp->extension("deflib fltk_labelcolor(widget (color) )", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labelcolor));
     lisp->extension("deflib fltk_labelfont(widget (font) )", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labelfont));
@@ -2129,17 +2129,17 @@ Exporting bool InitialisationModule(LispE* lisp) {
 
     lisp->extension("deflib fltk_label(widget (name))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_label));
 
-    lisp->extension("deflib fltk_input (widget x y w h label multiline (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_input));
+    lisp->extension("deflib fltk_input (widget x y w h alabel multiline (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_input));
     lisp->extension("deflib fltk_value (widget (val))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_value));
     lisp->extension("deflib fltk_insert (widget val)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_insert));
     lisp->extension("deflib fltk_selection (widget pos nb)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_selection));
 
-    lisp->extension("deflib fltk_output (widget x y w h label multiline)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_output));
+    lisp->extension("deflib fltk_output (widget x y w h alabel multiline)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_output));
     lisp->extension("deflib fltk_wrap (widget mode)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_wrap));
 
-    lisp->extension("deflib fltk_button (widget x y w h label function (button_type) (button_shape) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_button));
+    lisp->extension("deflib fltk_button (widget x y w h alabel function (button_type) (button_shape) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_button));
 
-    lisp->extension("deflib fltk_slider (widget x y w h label slider_orientation slider_value_type function (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_slider));
+    lisp->extension("deflib fltk_slider (widget x y w h alabel slider_orientation slider_value_type function (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_slider));
     lisp->extension("deflib fltk_step (widget stp)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_step));
     lisp->extension("deflib fltk_boundaries (widget low high)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_boundaries));
 

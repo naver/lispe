@@ -535,20 +535,25 @@ Element* List_function_eval::eval(LispE* lisp) {
     //When it corresponds to a function call, then it is processed here
     //We do not create any new stack element and we store our arguments back into the stack
     //with their new values in case of terminal recursion.
-    if (terminal && lisp->called() == body) {
-        if (same)
-            sameSizeTerminalArguments(lisp, (List*)parameters);
-        else
-            differentSizeTerminalArguments(lisp, (List*)parameters, nbarguments, defaultarguments);
-        lisp->check_end_trace(lisp->check_trace_in_function(), lisp->trace);
-        return terminal_;
-    }
-    
-    if (same)
-        sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
-    else
-        differentSizeNoTerminalArguments(lisp, body, (List*)parameters, nbarguments, defaultarguments);
+    try {
+        if (terminal && lisp->called() == body) {
+            if (same)
+                sameSizeTerminalArguments(lisp, (List*)parameters);
+            else
+                differentSizeTerminalArguments(lisp, (List*)parameters, nbarguments, defaultarguments);
+            lisp->check_end_trace(lisp->check_trace_in_function(), lisp->trace);
+            return terminal_;
+        }
         
+        if (same)
+            sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
+        else
+            differentSizeNoTerminalArguments(lisp, body, (List*)parameters, nbarguments, defaultarguments);
+    }
+    catch(Error* err) {
+        return lisp->check_error(this, err, idxinfo);
+    }
+
     //We check if the current function belongs to the current space, to avoid using variables from the current_instance, which should be out of range.
     lisp->check_space(space);
 
@@ -642,11 +647,16 @@ Element* List_thread_eval::eval(LispE* lisp) {
 }
 
 Element* List_library_eval::eval(LispE* lisp) {
-    if (same)
-        sameSizeNoTerminalArguments(lisp, body, parameters);
-    else
-        differentSizeNoTerminalArguments(lisp, body, parameters, nbarguments, defaultarguments);
-        
+    try {
+        if (same)
+            sameSizeNoTerminalArguments(lisp, body, parameters);
+        else
+            differentSizeNoTerminalArguments(lisp, body, parameters, nbarguments, defaultarguments);
+    }
+    catch(Error* err) {
+        return lisp->check_error(this, err, idxinfo);
+    }
+
     Element* element;
     try {
         lisp->checkState(this);
