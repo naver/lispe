@@ -65,7 +65,7 @@ public:
         try {
             for (long i = 1; i < code->size(); i++) {
                 e = code->index(i)->eval(lisp);
-                call->set_in(lisp, new Quoted(e->fullcopy()), i);
+                call->set_in(lisp, new Quoted(e->duplicate_for_thread()), i);
                 e->release();
             }
         }

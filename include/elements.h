@@ -500,6 +500,8 @@ public:
         return false;
     }
     
+    Element* duplicate_for_thread();
+    
     Element* duplicate() {
         if (!status)
             return this;

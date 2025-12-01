@@ -1655,6 +1655,12 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, Element* data, List* paramet
     lisp->pushing(s);
 }
 
+
+Element* Element::duplicate_for_thread() {
+    Element* e = duplicate();
+    return (e == this)?new Error("Error: Cannot use this value in a thread"):e;
+}
+
 void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, Element* data, List* parameters) {
     //We then push a new stack element...
     //We cannot push it before, or the system will not be able to resolve
@@ -1671,7 +1677,7 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
             //containers should be duplicated...
-            data = liste[i+1]->eval(lisp)->duplicate();
+            data = liste[i+1]->eval(lisp)->duplicate_for_thread();
             thread_lisp->record_argument(data, parameters->liste[i]->label());
         }
     }
@@ -1812,7 +1818,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
                     label = element->label();
                     if (data == NULL)
                         throw new Error(L"Error: Wrong parameter description");
-                    data = data->duplicate();
+                    data = data->duplicate_for_thread();
                     break;
                 case 1:
                     label = element->index(0)->label();
@@ -1824,7 +1830,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
                         label = element->index(0)->label();
                         if (data == NULL)
                             data = element->index(1)->eval(lisp);
-                        data = data->duplicate();
+                        data = data->duplicate_for_thread();
                         break;
                     }
                     label = element->index(1)->label();
@@ -1832,7 +1838,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
                     l = lisp->provideList();
                     //We store the rest of the arguments in it...
                     if (data != NULL) {
-                        l->append(data->duplicate());
+                        l->append(data->duplicate_for_thread());
                         i++;
                         while (i < nbarguments) {
                             l->append(liste[i+1]->eval(lisp));
