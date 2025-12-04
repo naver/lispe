@@ -703,7 +703,7 @@ Element* List_library_pattern_eval::eval(LispE* lisp) {
             if (ilabel > l_final && element->type != t_data) {
                 match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
                 if (match != check_ok) {
-                    arguments->clear();
+                    element->release();
                     if (match == check_mismatch)
                         throw new Error(L"Error: Size mismatch between argument list and data structure definition");
                     else {
@@ -891,7 +891,7 @@ Element* List_pattern_eval::eval(LispE* lisp) {
             if (ilabel > l_final && element->type != t_data) {
                 match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
                 if (match != check_ok) {
-                    arguments->clear();
+                    element->release();
                     if (match == check_mismatch)
                         throw new Error(L"Error: Size mismatch between argument list and data structure definition");
                     else {
@@ -1068,7 +1068,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             if (ilabel > l_final && element->type != t_data) {
                 match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
                 if (match != check_ok) {
-                    arguments->clear();
+                    element->release();
                     throw &lisp->delegation->predicate_error;
                 }
             }
@@ -1274,7 +1274,7 @@ Element* List_prolog_eval::eval(LispE* lisp) {
             if (ilabel > l_final && element->type != t_data) {
                 match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
                 if (match != check_ok) {
-                    arguments->clear();
+                    element->release();
                     throw &lisp->delegation->predicate_error;
                 }
             }
