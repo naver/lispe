@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     }
 }
 #else
-void execute_pipe(string& code, string& codeinitial, string& codefinal, string& rgx, bool with_file) {
+void execute_pipe(string& code, string& codeinitial, string& codefinal, string& rgx, string& sep, bool with_file) {
     LispE lisp(&special_characters);
     Element* e;
     
@@ -91,7 +91,6 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
     
     string line_in;
     vector<string> fields;
-    string blanc(" ");
     int16_t l;
     long i;
     std::stringstream setq_list;
@@ -125,6 +124,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
             continue;
         
         //Initialisation des champs
+        setq << "(block" << endl;
         setq << "(setq l0 " << jsonstring(line_in) << ")" << endl;
         setq << "(setq ln " << fields.size() << ")" << endl;
         
@@ -133,8 +133,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
         }
         
         fields.clear();
-        
-        s_split(line_in, blanc, fields);
+        s_split(line_in, sep, fields);
         setq_list << "(setq ll (list";
         for (i = 0; i < fields.size(); i++) {
             setq_list << " ";
@@ -158,7 +157,8 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
         
         if (rgxtype[0])
             setq << "))" << endl;
-        
+        setq << ")" << endl; //the final block parenthesis
+
         string code = setq.str();
         e = lisp.eval(code);
         
@@ -211,6 +211,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     long i;
+    string sep(" ");
     for (i = 1; i < argc; i++) {
         args = argv[i];
         if (args == "-h" || args == "--help" || args == "-help" || args == "--h") {
@@ -253,6 +254,7 @@ int main(int argc, char *argv[]) {
             cout << "    lispe -P filename.lisp arg1 arg2:"<< endl;
             cout << "        - '-P' "<< coloring << "has the same variables as '-p'" << m_current << endl;
             cout << "        - '-P filename' " << coloring << "must contain the function: (defun runpipe()...)" << m_current << endl << endl;
+            cout << "    lispe -f 'split': "<< coloring << "'separator' that is used to split the current line." << m_current << endl;
             cout << "    lispe -r 'rgx': "<< coloring << "Condition (posix regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
             cout << "    lispe -R 'rgx': " << coloring << "Condition (internal regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
             cout << endl;
@@ -369,6 +371,15 @@ int main(int argc, char *argv[]) {
             exit(-1);
         }
 
+        if (args == "-f") {
+            if (i >= argc - 1) {
+                cerr << "Missing code for option '-f'" << endl;
+                exit(-1);
+            }
+            sep = argv[++i];
+            continue;
+        }
+
         if (args == "-pb") {
             if (i >= argc - 1) {
                 cerr << "Missing code for option '-pb'" << endl;
@@ -419,7 +430,7 @@ int main(int argc, char *argv[]) {
                 arguments.push_back(argv[i]);
                 i++;
             }
-            execute_pipe(code, codeinitial, codefinal, rgx, false);
+            execute_pipe(code, codeinitial, codefinal, rgx, sep, false);
             exit(0);
         }
         
@@ -430,7 +441,7 @@ int main(int argc, char *argv[]) {
             }
             i++;
             file_name = argv[i];
-            execute_pipe(file_name,codeinitial, codefinal, rgx, true);
+            execute_pipe(file_name,codeinitial, codefinal, rgx, sep, true);
             exit(0);
         }
         
