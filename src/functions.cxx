@@ -88,6 +88,29 @@ Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long
     return function;
 }
 
+//This function is dedicated to executing callbacks
+Element* lispe_eval_callback(LispE* lisp, Element* function, vector<Element*>& arguments) {
+    const unsigned long arity = 1 << (arguments.size() + 1);
+    List* callback = (List*)eval_body_as_argument_min(lisp, function->eval(lisp), arity);
+    
+    for (long i = 0; i < arguments.size(); i++) {
+        callback->append(lisp->quoted(arguments[i]));
+    }
+    
+    Element* e = null_;
+    try {
+        e = callback->eval(lisp);
+    }
+    catch (Error* err) {
+        e = err;
+    }
+    
+    e->increment();
+    callback->force_release();
+    e->decrementkeep();
+    return e;
+}
+
 //We evaluation function beforehand
 Element* eval_body_as_argument(LispE* lisp, Element* function, const unsigned long arity) {
     return eval_body_as_argument_min(lisp, function->eval(lisp), arity);

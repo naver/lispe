@@ -35,7 +35,7 @@
 
 typedef enum {sys_command, sys_ls, sys_setenv, sys_getenv, sys_isdirectory, sys_fileinfo, sys_realpath, sys_exit, sys_os, sys_memory_size, sys_full_memory_size} systeme;
 typedef enum {file_open, file_close, file_eof, file_read, file_readline, file_readlist, file_getchar, file_write, file_writeln, file_seek, file_tell, file_getstruct} file_command;
-typedef enum {date_setdate, date_year, date_month, date_day, date_hour, date_minute, date_second, date_yearday, date_raw, date_weekday } tempus;
+typedef enum {date_setdate, date_year, date_month, date_day, date_hour, date_minute, date_second, date_yearday, date_raw, date_weekday, date_format } tempus;
 
 /*
 First of all we create a new Element derivation
@@ -677,6 +677,17 @@ public:
         return this;
     }
 
+    Element* format(LispE* lisp, const string& fmt) {
+        char buffer[1000];
+        struct tm* ladate = localtime(&the_time);
+        size_t sz = strftime(buffer, 1000, fmt.c_str(), ladate);
+        if (sz == 0) {
+            throw new Error("Error: Invalid date format");
+        }
+        string b(buffer);
+        return lisp->provideString(b);
+    }
+
     Element* eval(LispE* lisp) {
         return this;
     }
@@ -760,12 +771,15 @@ public:
     tempus tmp;
     int16_t v_d;
     int16_t v_date;
+    int16_t v_frm;
     
     Date(LispE* lisp, int16_t l_date, tempus t) : tmp(t),  Element(l_date) {
         u_ustring s(U"d");
         v_d = lisp->encode(s);
         s = U"adate";
         v_date = lisp->encode(s);
+        s = U"frm";
+        v_frm = lisp->encode(s);
     }
 
     // We recover the default values described as a list
@@ -863,6 +877,15 @@ public:
         return dt->setdate(y,m,d,H,M,S);
     }
 
+    Element* format(LispE* lisp) {
+        Element* e = lisp->get_variable(v_date);
+        if (e->type != type)
+            throw new Error("Error: wrong type for 'format'");
+        Dateitem* dt = (Dateitem*)e;
+        string fmt = lisp->get_variable(v_frm)->toString(lisp);
+        return dt->format(lisp, fmt);
+    }
+
     Element* eval(LispE* lisp) {
         switch (tmp) {
             case date_setdate: {
@@ -894,6 +917,9 @@ public:
             }
             case date_second: {
                 return second(lisp);
+            }
+            case date_format: {
+                return format(lisp);
             }
         }
         
@@ -931,6 +957,9 @@ public:
             }
             case date_raw: {
                 return L"Initializes a 'date' object";
+            }
+            case date_format: {
+                return L"format(adate, frm): Formats a date according to the format string (strftime format)";
             }
         }
         return L"";
@@ -1331,6 +1360,7 @@ void moduleSysteme(LispE* lisp) {
     lisp->extension("deflib weekday (adate)", new Date(lisp, identifier,  date_weekday));
     //m, d,H, M, S are optional
     lisp->extension("deflib setdate (y (m -1) (d -1) (H -1) (M -1) (S -1))", new Date(lisp, identifier,  date_setdate));
+    lisp->extension("deflib date_format (adate frm)", new Date(lisp, identifier,  date_format));
     //------------------------------------------
 
     w = U"file_";

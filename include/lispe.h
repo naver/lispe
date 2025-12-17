@@ -48,6 +48,10 @@ long create_global_lispe();
 class List_instance;
 class LispE;
 
+//------------------------------------------------------------
+Element* lispe_eval_callback(LispE* lisp, Element* function, vector<Element*>& arguments);
+//------------------------------------------------------------
+
 class Thread_Function {
 public:
     List* current_thread;

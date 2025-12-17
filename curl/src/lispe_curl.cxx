@@ -260,9 +260,9 @@ static void Init() {
 }
 
 
-//Callback function
+/*
 Element* eval_body_as_argument(LispE* lisp, Element* function, const unsigned long arity);
-static size_t call_writing(char *ptr, size_t size, size_t nmemb, Lispe_curl* userdata) {
+static size_t call_writing_old(char *ptr, size_t size, size_t nmemb, Lispe_curl* userdata) {
     long real_size = size*nmemb;
     if (userdata->function != NULL) {
         LispE* lisp = userdata->lisp;
@@ -278,10 +278,33 @@ static size_t call_writing(char *ptr, size_t size, size_t nmemb, Lispe_curl* use
             e = call->eval(userdata->lisp);
         }
         catch (Error* err) {
-            cerr << err->toString(userdata->lisp) << endl;
+            cerr << err->toString(lisp) << endl;
             err->release();
         }
         call->force_release();
+        e->release();
+    }
+    else
+        userdata->data.append(static_cast<char*>(ptr), real_size);
+    return real_size;
+}
+*/
+
+//Callback function
+static size_t call_writing(char *ptr, size_t size, size_t nmemb, Lispe_curl* userdata) {
+    long real_size = size*nmemb;
+    if (userdata->function != NULL) {
+        LispE* lisp = userdata->lisp;
+        userdata->data.assign(static_cast<char*>(ptr), real_size);
+        if (userdata->data == "404 page not found")
+            return real_size;
+        vector<Element*> arguments;
+        arguments.push_back(lisp->provideString(userdata->data));
+        arguments.push_back(userdata->argument);
+        Element* e = lispe_eval_callback(lisp, userdata->function, arguments);
+        if (e->isError()) {
+            cerr << e->toString(lisp) << endl;
+        }
         e->release();
     }
     else
