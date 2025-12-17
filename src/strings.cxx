@@ -432,24 +432,35 @@ public:
     Element* methodPadding(LispE* lisp, Element* val, long nb) {
         string value =  val->toString(lisp);
         string sval = lisp->get_variable(U"c")->toString(lisp);
+        string padd;
+        bool left = false;
+        if (nb < 0) {
+            nb *= -1;
+            left = true;
+        }
         long sz = nb - value.size();
         if (sval.size() == 1) {
-            while (sz) {
-                value += sval;
+            while (sz > 0) {
+                padd += sval;
                 sz--;
             }
         }
         else {
             long i = 0;
             nb = sval.size();
-            while (sz) {
-                value += sval[i++];
+            while (sz > 0) {
+                padd += sval[i++];
                 sz--;
                 if (i == nb)
                     i = 0;
             }
         }
         
+        if (left) {
+            padd += value;
+            return new Stringbyte(padd);
+        }
+        value += padd;
         return new Stringbyte(value);
     }
 
@@ -462,24 +473,36 @@ public:
         
         u_ustring value =  val->asUString(lisp);
         u_ustring sval = lisp->get_variable(U"c")->asUString(lisp);
+        u_ustring padd;
+        bool left = false;
+
+        if (nb < 0) {
+            //Left padding
+            nb *= -1;
+            left = true;
+        }
         long sz = nb - value.size();
         if (sval.size() == 1) {
-            while (sz) {
-                value += sval;
+            while (sz > 0) {
+                padd += sval;
                 sz--;
             }
         }
         else {
             long i = 0;
             nb = sval.size();
-            while (sz) {
-                value += sval[i++];
+            while (sz > 0) {
+                padd += sval[i++];
                 sz--;
                 if (i == nb)
                     i = 0;
             }
         }
-        
+        if (left) {
+            padd += value;
+            return lisp->provideString(padd);
+        }
+        value += padd;
         return lisp->provideString(value);
     }
 
