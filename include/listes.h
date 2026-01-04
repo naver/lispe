@@ -1463,6 +1463,7 @@ public:
     Element* evall_setg(LispE* lisp);
     Element* evall_setq(LispE* lisp);
     Element* evall_setqi(LispE* lisp);
+    Element* evall_setqequal(LispE* lisp);
     Element* evall_setqv(LispE* lisp);
     Element* evall_seth(LispE* lisp);
     Element* evall_size(LispE* lisp);
@@ -2521,12 +2522,17 @@ class List_withclass_eval : public Listincode {
 public:
 
     List_withclass_eval(Listincode* l) : Listincode(l) {}
+    List_withclass_eval(List* l) : Listincode(l) {}
     List_withclass_eval() {}
     
     bool is_straight_eval() {
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_withclass_eval(e);
+    }
+
     List* cloning(Listincode* e, methodEval m) {
         return new List_withclass_eval(e);
     }
@@ -5155,6 +5161,32 @@ public:
     
     List* cloning() {
         return new List_setqi_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_setqequal_eval : public Listincode {
+public:
+    
+    List_setqequal_eval(Listincode* l) : Listincode(l) {}
+    List_setqequal_eval() {}
+    List_setqequal_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_setqequal_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_setqequal_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_setqequal_eval(multiple);
     }
     
     Element* eval(LispE* lisp);

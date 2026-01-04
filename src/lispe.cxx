@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2025.12.17.17.25";
+static std::string version = "1.2026.1.4.8.55";
 string LispVersion() {
     return version;
 }
@@ -631,6 +631,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq, new List_setq_eval());
     set_instruction(l_setqv, "setqv", P_THREE, &List::evall_setqv, new List_setqv_eval());
     set_instruction(l_setqi, "setqi", P_THREE, &List::evall_setqi, new List_setqi_eval());
+    set_instruction(l_setqequal, "setq=", P_THREE, &List::evall_setqequal, new List_setqequal_eval());
     set_instruction(l_seth, "seth", P_THREE, &List::evall_seth, new List_seth_eval());
     set_instruction(l_sign, "sign", P_TWO, &List::evall_sign, new List_sign_eval());
     set_instruction(l_size, "size", P_TWO, &List::evall_size, new List_size_eval());
@@ -2195,8 +2196,9 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
             case l_setq:
             case l_setqv:
             case l_setqi:
-            case l_seth:
+            case l_setqequal:
             case l_setg:
+            case l_seth:
                 if (element->size() > 1) {
                     if (element->index(1)->type == t_list) {
                         for (long a = 0; a < element->index(1)->size(); a++) {
@@ -3692,6 +3694,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

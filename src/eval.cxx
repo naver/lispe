@@ -1751,6 +1751,12 @@ Element* List::evall_setqi(LispE* lisp) {
     return element;
 }
 
+Element* List::evall_setqequal(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    int16_t label = liste[1]->label();
+    return lisp->recording_back(element, label);
+}
+
 Element* List::evall_seth(LispE* lisp) {
     if (lisp->check_thread_stack) {
         Element* element = liste[2]->eval(lisp);
