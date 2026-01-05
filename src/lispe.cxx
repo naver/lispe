@@ -440,7 +440,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_count, "count", P_THREE|P_FOUR,  new List_count_eval());
     set_instruction(l_shift, "shift", P_THREE | P_FOUR,  new List_shift_eval());
     set_instruction(l_slice, "slice", P_THREE,  new List_slice_eval());
-    set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
+    set_instruction(l_short, "short", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger, new List_integer_eval());
     set_instruction(l_enumerate, "enum", P_TWO | P_THREE, new List_enumerate_eval());
     set_instruction(l_float, "float", P_TWO, &List::evall_converttofloat, new List_converttofloat_eval());
