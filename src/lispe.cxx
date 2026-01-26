@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2026.1.4.8.55";
+static std::string version = "1.2026.1.24.9.39";
 string LispVersion() {
     return version;
 }
@@ -632,6 +632,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_setqv, "setqv", P_THREE, &List::evall_setqv, new List_setqv_eval());
     set_instruction(l_setqi, "setqi", P_THREE, &List::evall_setqi, new List_setqi_eval());
     set_instruction(l_setqequal, "setq=", P_THREE, &List::evall_setqequal, new List_setqequal_eval());
+    set_instruction(l_record_in_stack, "?", P_THREE, new List_record_in_stack_eval());
     set_instruction(l_seth, "seth", P_THREE, &List::evall_seth, new List_seth_eval());
     set_instruction(l_sign, "sign", P_TWO, &List::evall_sign, new List_sign_eval());
     set_instruction(l_size, "size", P_TWO, &List::evall_size, new List_size_eval());
@@ -871,6 +872,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[v_null] = U"nil";
     code_to_string[v_true] = U"true";
     code_to_string[v_cut] = U"cut_";
+    code_to_string[v_into] = U"into";
 
     code_to_string[v_mainspace] = U"mainspace_";
 
@@ -915,6 +917,7 @@ void Delegation::initialisation(LispE* lisp) {
     _NULL = (Atome*)lisp->provideAtomOrInstruction(v_null);
     _ERROR = (Atome*)lisp->provideAtomOrInstruction(t_error);
     _TERMINAL = (Atome*)lisp->provideAtomOrInstruction(l_terminal);
+    _INTO_STACK = (Atome*)lisp->provideAtomOrInstruction(v_into);
     _TRUE = (Atome*)lisp->provideAtomOrInstruction(v_true);
     _CUT = (Atome*)lisp->provideAtomOrInstruction(v_cut);
     _EMPTYATOM = (Atome*)lisp->provideAtomOrInstruction(v_emptyatom);
@@ -973,6 +976,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     //On crée un espace global dans la pile (la fonction associée est _NUL)
     lisp->push(_NULL);
+
 
     //We create our constant values
     lisp->recordingunique(_TRUE, v_true);
@@ -1096,6 +1100,10 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce @@@ as a substitute to atshape
     w = U"@@@";
     string_to_code[w] = l_at_shape;
+
+    //We introduce ?? as a substitute to setqi, to be used in class instantiation.
+    w = U"??";
+    string_to_code[w] = l_setqi;
 
     //We introduce set@@ as a substitute to setrange
     w = U"set@@";
@@ -1400,6 +1408,7 @@ void LispE::cleaning() {
 }
 
 LispE::LispE(LispE* lisp, List* function, List* body) {
+    terminal_stack_variables = false;
     current_instance = NULL;
     macro_mode = false;
     max_size = 25;
@@ -1454,6 +1463,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
 }
 
 LispE::LispE(LispE* lisp) {
+    terminal_stack_variables = false;
     current_instance = NULL;
     macro_mode = false;
     max_size = 1;
@@ -3382,7 +3392,11 @@ Element* LispE::extension(string code, Element* etendre) {
     catch (Error* err) {
         etendre->release();
         delegation->forceClean();
-        return err;
+        delete err;
+        string error("Error: While parsing '");
+        error += code;
+        error += "'. Check if parameter names are not keywords.";
+        throw new Error(error);
     }
 }
 
@@ -3694,6 +3708,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

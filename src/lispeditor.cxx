@@ -245,6 +245,23 @@ public:
     
 };
 
+//------------------------------------------------------------------------------------
+bool evaluate_quotes_lisp(wstring& l) {
+    long pos = l.find(L"\"");
+    char fnd = false;
+    int nb = 0;
+    while (pos != -1) {
+        if (!pos || l[pos-1] != '\\') {
+            fnd = 1 - fnd;
+            nb++;
+        }
+        pos = l.find(L"\"", pos + 1);
+    }
+    if ((nb % 2) == 1)
+        return false;
+    return fnd;
+}
+
 string lispe_editor::coloringline(string line_of_code, long current_pos, bool thread) {
     static tokenizer_result<u_ustring> segments;
     static coloring_automaton lsp_tokenizer(&special_characters);
@@ -271,7 +288,7 @@ string lispe_editor::coloringline(string line_of_code, long current_pos, bool th
         bool q = false;
         if (lines[current_pos].find(L'"') != -1) {
             q = true;
-            if (evaluate_quotes(lines[current_pos-1])) {
+            if (evaluate_quotes_lisp(lines[current_pos-1])) {
                 long nb = line_of_code.find("\"");
                 if (nb != -1) {
                     nb++;

@@ -58,7 +58,7 @@ class ITEM;
 
 typedef enum {
     //Default values
-    v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, v_cut, 
+    v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, v_cut, v_into,
     
     //Default types
     t_emptystring, t_operator, t_atom,
@@ -77,7 +77,7 @@ typedef enum {
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, 
-    l_next, l_compose, l_enumerate,
+    l_next, l_compose, l_enumerate, l_record_in_stack,
     
     //Default Lisp instructions
     l_number, l_float, l_format, l_string, l_stringbyte, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary, l_bytes,
@@ -211,6 +211,7 @@ inline const unsigned long _arity(long sz) {
 
 #define quote_ lisp->delegation->_QUOTE
 
+#define into_stack_ lisp->delegation->_INTO_STACK
 #define emptyatom_ lisp->delegation->_EMPTYATOM
 #define emptystring_ lisp->delegation->_EMPTYSTRING
 #define emptylist_ lisp->delegation->_EMPTYLIST

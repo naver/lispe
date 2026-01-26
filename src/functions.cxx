@@ -1660,6 +1660,11 @@ long List::argumentsize(long sz) {
     return sz;
 }
 
+/*
+ IMPORTANT: function calls accept argument instanciation by name: (call (? x 10) (? y 20)) for (defun call(x y) ..)
+ When a (? var value) is executed, it returns the "into_stack_" value.
+ */
+
 void List::sameSizeNoTerminalArguments(LispE* lisp, Element* data, List* parameters) {
     Stackelement* s = lisp->providingStack(data);
     // For each of the parameters we record in the stack
@@ -1674,11 +1679,23 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, Element* data, List* paramet
         //the argument variables...
         //Note that if it is a new thread creation, the body is pushed onto the stack
         //of this new thread environment...
+        bool into_stack = false;
         for (long i = 0; i < sz; i++) {
             label = parameters->liste[i]->label();
             //The evaluation must be done on the previous stage of the stack
             data = liste[i+1]->eval(lisp)->duplicate_constant(lisp);
+            if (data == into_stack_) {
+                into_stack = true;
+                continue;
+            }
             s->record_argument(data, label);
+        }
+        
+        if (into_stack) {
+            for (long i = 0; i < sz; i++) {
+                if (!s->check_with_instance(parameters->liste[i]->label()))
+                    throw new Error("Error: missing arguments");
+            }
         }
     }
     catch (Error* err) {
@@ -1701,44 +1718,74 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
     //Note that if it is a new thread creation, the body is pushed onto the stack
     //of this new thread environment...
     thread_lisp->push(data);
+    Stackelement* current = lisp->top_new_stack;
+    lisp->top_new_stack = thread_lisp->top_new_stack;
     bool previous_context = lisp->create_no_pool_element;
     lisp->create_no_pool_element = true;
     long sz = parameters->liste.size();
     // For each of the parameters we record in the stack
+    bool into_stack = false;
     try {
         for (long i = 0; i < sz; i++) {
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
             //containers should be duplicated...
             data = liste[i+1]->eval(lisp)->duplicate_for_thread();
+            if (data == into_stack_) {
+                into_stack = true;
+                continue;
+            }
             thread_lisp->record_argument(data, parameters->liste[i]->label());
+        }
+        if (into_stack) {
+            for (long i = 0; i < sz; i++) {
+                if (!thread_lisp->checkvariable(parameters->liste[i]->label()))
+                    throw new Error("Error: missing arguments");
+            }
         }
     }
     catch (Error* err) {
+        lisp->top_new_stack = current;
         lisp->create_no_pool_element = previous_context;
         thread_lisp->pop();
         throw err;
     }
+    lisp->top_new_stack = current;
     lisp->create_no_pool_element = previous_context;
 }
 
 void List::sameSizeTerminalArguments(LispE* lisp, List* parameters) {
     Element* data;
     long sz = parameters->size();
+    lisp->terminal_stack_variables = true;
     try {
         // For each of the parameters we record in the stack
         for (long i = 0; i < sz; i++) {
             data = liste[i+1]->eval(lisp);
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
+            if (data == into_stack_) {
+                continue;
+            }
             lisp->replacestackvalue(data, parameters->liste[i]->label());
         }
     }
     catch (Error* err) {
+        lisp->terminal_stack_variables = false;
         throw err;
     }
+    lisp->terminal_stack_variables = false;
 }
 
+/*
+ IMPORTANT: When an into_stack_ has been returned, then raw values are no longer accepted...
+ 
+ (defun call(x y (z 1) (w 10)) ..)
+ 
+ (call 10 20) ; is valid
+ (call 10 20 (? w 2)) ; is valid, (? w 2) returns into_stack_
+ (call 10 20 (? w 2) 12) ; is illegal
+ */
 void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* parameters,long nbarguments, long defaultarguments) {
     Stackelement* s = lisp->providingStack(data);
     long sz = parameters->liste.size();
@@ -1757,11 +1804,26 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
         // For each of the parameters we record in the stack
         int16_t label;
         Element* element;
+        vecte<int16_t> vars;
+        bool into_stack = false;
         for (i = 0; i < sz; i++) {
             data = (i < nbarguments) ? liste[i+1]->eval(lisp) : NULL;
+            if (data == into_stack_) {
+                vars.push_back(liste[i+1]->index(1)->label());
+                into_stack = true;
+                continue;
+            }
+                        
+            if (into_stack) {
+                if (data != NULL) {
+                    data->release();
+                    throw new Error("Error: illegal argument.");
+                }
+                continue;
+            }
             
             element = parameters->liste[i];
-            
+
             switch (element->size()) {
                 case 0:
                     label = element->label();
@@ -1803,9 +1865,48 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
             }
 
 
+            vars.push_back(label);
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
             s->record_argument(data, label);
+        }
+        
+        if (into_stack) {
+            for (i = 0; vars.last < sz; i++) {
+                element = parameters->liste[i];
+                data = null_;
+                switch (element->size()) {
+                    case 0:
+                        label = element->label();
+                        if (!vars.check(label))
+                            throw new Error("Error: missing argument");
+                        continue;
+                    case 1:
+                        label = element->index(0)->label();
+                        if (vars.check(label))
+                            continue;
+                        break;
+                    default:
+                        if (element->index(0) != emptylist_) {
+                            label = element->index(0)->label();
+                            if (vars.check(label))
+                                continue;
+                            data = element->index(1)->eval(lisp);
+                            break;
+                        }
+                        throw new Error("Error: Illegal argument");
+                }
+
+                if (label <= l_final) {
+                    data->release();
+                    throw new Error(L"Error: Wrong parameter description");
+                }
+
+                //if we are dealing with a new thread, variables will be stored onto
+                //the stack of this new thread environment
+                vars.push_back(label);
+                s->record_argument(data, label);
+            }
         }
     }
     catch (Error* err) {
@@ -1822,6 +1923,9 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
     //We create a new stage in the local stack for the new thread
     thread_lisp->push(data);
     
+    Stackelement* current = lisp->top_new_stack;
+    lisp->top_new_stack = thread_lisp->top_new_stack;
+
     bool previous_context = lisp->create_no_pool_element;
     lisp->create_no_pool_element = true;
 
@@ -1838,12 +1942,28 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
         // For each of the parameters we record in the stack
         int16_t label;
         Element* element;
+        vecte<int16_t> vars;
+        bool into_stack = false;
         for (i = 0; i < sz; i++) {
-            if (i < nbarguments)
+            if (i < nbarguments) {
                 data = liste[i+1]->eval(lisp);
+                if (data == into_stack_) {
+                    vars.push_back(liste[i+1]->index(1)->label());
+                    into_stack = true;
+                    continue;
+                }
+            }
             else
                 data = NULL;
             
+            if (into_stack) {
+                if (data != NULL) {
+                    data->release();
+                    throw new Error("Error: illegal argument.");
+                }
+                continue;
+            }
+
             element = parameters->liste[i];
             
             switch (element->size()) {
@@ -1887,18 +2007,59 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
                 throw new Error(L"Error: Wrong parameter description");
             }
 
+            vars.push_back(label);
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
             thread_lisp->record_argument(data, label);
         }
+        
+        if (into_stack) {
+            for (i = 0; vars.last < sz; i++) {
+                element = parameters->liste[i];
+                data = null_;
+
+                switch (element->size()) {
+                    case 0:
+                        label = element->label();
+                        if (!vars.check(label))
+                            throw new Error("Error: missing argument");
+                        continue;
+                    case 1:
+                        label = element->index(0)->label();
+                        if (vars.check(label))
+                            continue;
+                        break;
+                    default:
+                        if (element->index(0) != emptylist_) {
+                            label = element->index(0)->label();
+                            if (vars.check(label))
+                                continue;
+                            data = element->index(1)->eval(lisp);
+                            break;
+                        }
+                        throw new Error("Error: Illegal argument");
+                }
+
+                if (label <= l_final) {
+                    throw new Error(L"Error: Wrong parameter description");
+                }
+
+                //if we are dealing with a new thread, variables will be stored onto
+                //the stack of this new thread environment
+                vars.push_back(label);
+                thread_lisp->record_argument(data, label);
+            }
+        }
     }
     catch (Error* err) {
+        lisp->top_new_stack = current;
         lisp->create_no_pool_element = previous_context;
         if (l != NULL)
             l->release();
         thread_lisp->pop();
         throw err;
     }
+    lisp->top_new_stack = current;
     lisp->create_no_pool_element = previous_context;
 }
 
@@ -1909,13 +2070,30 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
     Element* element;
     Element* data;
     long sz = parameters->liste.size();
+    lisp->terminal_stack_variables = true;
     
     try {
-        
-        for (long i = 0; i < sz; i++) {
+        vecte<int16_t> vars;
+        bool into_stack = false;
+        long i;
+        for (i = 0; i < sz; i++) {
             data = (i < nbarguments) ? liste[i+1]->eval(lisp) : NULL;
-            
+            if (data == into_stack_) {
+                vars.push_back(liste[i+1]->index(1)->label());
+                into_stack = true;
+                continue;
+            }
+
+            if (into_stack) {
+                if (data != NULL) {
+                    data->release();
+                    throw new Error("Error: illegal argument.");
+                }
+                continue;
+            }
+
             element = parameters->liste[i];
+            
             //This is the zone when arguments can be implicit
             switch (element->size()) {
                 case 0:
@@ -1956,14 +2134,54 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
                 throw new Error(L"Error: Wrong parameter description");
             }
 
+            vars.push_back(label);
             lisp->replacestackvalue(data, label);
+        }
+        
+        if (into_stack) {
+            for (i = 0; vars.last < sz; i++) {
+                element = parameters->liste[i];
+                data = null_;
+                switch (element->size()) {
+                    case 0:
+                        label = element->label();
+                        if (!vars.check(label))
+                            throw new Error("Error: missing argument");
+                        continue;
+                    case 1:
+                        label = element->index(0)->label();
+                        if (vars.check(label))
+                            continue;
+                        break;
+                    default:
+                        if (element->index(0) != emptylist_) {
+                            label = element->index(0)->label();
+                            if (vars.check(label))
+                                continue;
+                            data = element->index(1)->eval(lisp);
+                            break;
+                        }
+                        throw new Error("Error: Illegal argument");
+                }
+
+                if (label <= l_final) {
+                    throw new Error(L"Error: Wrong parameter description");
+                }
+
+                //if we are dealing with a new thread, variables will be stored onto
+                //the stack of this new thread environment
+                vars.push_back(label);
+                lisp->replacestackvalue(data, label);
+            }
         }
     }
     catch (Error* err) {
         if (l != NULL)
             l->release();
+        lisp->terminal_stack_variables = false;
         throw err;
     }
+    lisp->terminal_stack_variables = false;
 }
 
 Element* List::eval_function(LispE* lisp, List* body) {

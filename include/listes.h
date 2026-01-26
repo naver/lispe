@@ -5192,6 +5192,32 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_record_in_stack_eval : public Listincode {
+public:
+    
+    List_record_in_stack_eval(Listincode* l) : Listincode(l) {}
+    List_record_in_stack_eval() {}
+    List_record_in_stack_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_record_in_stack_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_record_in_stack_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_record_in_stack_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
 
 class List_getfast_eval : public Listincode {
 public:

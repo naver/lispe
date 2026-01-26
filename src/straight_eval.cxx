@@ -1233,12 +1233,19 @@ Element* List_loopcount_eval::eval(LispE* lisp) {
 
     if (liste[2]->isAtom()) {
         label = liste[2]->label();
+        if (label == v_into) {
+            label = liste[3]->label();
+            if (label < l_final)
+                throw new Error("Error: missing variable in loopcount");
+            first = 4;
+        }
+        else
+            first = 3;
         if (increment == -1)
             element = lisp->provideInteger(counter - 1);
         else
             element = lisp->provideInteger(0);
         lisp->storing_variable(element, label);
-        first = 3;
     }
     
     Element* result = null_;
@@ -3776,6 +3783,18 @@ Element* List_setqequal_eval::eval(LispE* lisp) {
 }
 
 #else
+
+Element* List_record_in_stack_eval::eval(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    lisp->checkState(this);
+    if (lisp->terminal_stack_variables)
+        lisp->top_new_stack->replace_stack_value(element->duplicate_constant(lisp), liste[1]->label());
+    else
+        lisp->top_new_stack->storing_variable(element->duplicate_constant(lisp), liste[1]->label());
+    lisp->resetStack();
+    return into_stack_;
+}
+
 Element* List_setqv_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     lisp->checkState(this);

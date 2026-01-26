@@ -71,6 +71,8 @@ class LispE {
     
 public:
     
+    Stackelement* top_new_stack;
+
     Element* fast_variables[16];
 
     vecte<Floatpool*> float_pool;
@@ -154,8 +156,10 @@ public:
 	bool current_path_set;
     bool select_bool_as_one;
     bool macro_mode;
+    bool terminal_stack_variables;
 
     LispE(UTF8_Handler* hnd = NULL) {
+        terminal_stack_variables = false;
         current_instance = NULL;
         macro_mode = false;
         max_size = 50;
@@ -280,7 +284,8 @@ public:
     }
 
     inline void push(Element* fonction) {
-        execution_stack.push_back(provideStackElement(fonction));
+        top_new_stack = provideStackElement(fonction);
+        execution_stack.push_back(top_new_stack);
     }
     
     inline void clear_top_stack() {
@@ -291,26 +296,30 @@ public:
         if (execution_stack.last == max_stack_size)
             sendError(U"stack overflow");
 
-        return stack_pool.last?stack_pool.backpop()->setFunction(function):new Stackelement(function);
+        top_new_stack = stack_pool.last?stack_pool.backpop()->setFunction(function):new Stackelement(function);
+        return top_new_stack;
     }
     
     inline Stackelement* providingStack(Element* function) {
         if (execution_stack.last == max_stack_size)
             sendError(U"stack overflow");
 
-        return stack_pool.last?stack_pool.backpop()->setFunction(function):new Stackelement(function);
+        top_new_stack = stack_pool.last?stack_pool.backpop()->setFunction(function):new Stackelement(function);
+        return top_new_stack;
     }
 
     void removeStackElement() {
         Stackelement* s = execution_stack.backpop();
         s->clear();
         stack_pool.push_back(s);
+        top_new_stack = execution_stack.back();
     }
 
     void removeStackElement(Element* keep) {
         Stackelement* s = execution_stack.backpop();
         s->clear(keep);
         stack_pool.push_back(s);
+        top_new_stack = execution_stack.back();
     }
     
     inline long threadId() {
@@ -1198,6 +1207,10 @@ public:
 
     inline void recording(Element* e, int16_t label) {
         execution_stack.back()->recording(e->duplicate_constant(this), label);
+    }
+
+    inline bool check_stack(int16_t label) {
+        return execution_stack.back()->check_with_instance(label);
     }
 
     inline void record_argument(Element* e, int16_t label) {
