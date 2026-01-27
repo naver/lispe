@@ -439,8 +439,10 @@ Element* List_class_eval::eval(LispE* lisp) {
                 if (element->isNotEmptyList()) {
                     label = element->index(0)->label();
                     switch(label) {
-                        case l_setq:
-                            throw new Error("Error: Uses 'setqi' instead of 'setq' in a class instantiation");
+                        case l_record_in_stack: {
+                            ((List_record_in_stack_eval*)element)->eval_in_class(lisp);
+                            break;
+                        }
                         case l_setqi:
                             element->eval(lisp);
                             break;
@@ -490,8 +492,10 @@ Element* List_class_eval::eval(LispE* lisp) {
             if (element->isNotEmptyList()) {
                 label = element->index(0)->label();
                 switch(label) {
-                    case l_setq:
-                        throw new Error("Error: Uses 'setqi' instead of 'setq' in a class instantiation");
+                    case l_record_in_stack: {
+                        ((List_record_in_stack_eval*)element)->eval_in_class(lisp);
+                        break;
+                    }
                     case l_setqi:
                         element->eval(lisp);
                         break;

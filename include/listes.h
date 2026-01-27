@@ -5144,6 +5144,7 @@ class List_setqi_eval : public Listincode {
 public:
     
     List_setqi_eval(Listincode* l) : Listincode(l) {}
+    List_setqi_eval(List* l) : Listincode(l) {}
     List_setqi_eval() {}
     List_setqi_eval(bool m)  {multiple = m;}
     
@@ -5216,6 +5217,7 @@ public:
     }
     
     Element* eval(LispE* lisp);
+    Element* eval_in_class(LispE* lisp);
 };
 
 

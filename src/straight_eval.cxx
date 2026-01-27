@@ -3782,18 +3782,63 @@ Element* List_setqequal_eval::eval(LispE* lisp) {
     return True_;
 }
 
-#else
-
-Element* List_record_in_stack_eval::eval(LispE* lisp) {
-    Element* element = liste[2]->eval(lisp);
+Element* List_setqi_eval::eval(LispE* lisp) {
+    List_instance* instance = lisp->current_instance;
+    if (instance == NULL)
+        return new Error("Error: setqi can only be used within an instance");
+    
     lisp->checkState(this);
-    if (lisp->terminal_stack_variables)
-        lisp->top_new_stack->replace_stack_value(element->duplicate_constant(lisp), liste[1]->label());
-    else
-        lisp->top_new_stack->storing_variable(element->duplicate_constant(lisp), liste[1]->label());
+    Element* element = liste[2]->eval(lisp)->duplicate_constant(lisp);
+    if (thrown_error)
+        return element;
+    int16_t label = liste[1]->label();
+    long i = instance->names.search(label);
+    if (i != -1) {
+        //In this case, we force the value onto the existing variable...
+        if (element != instance->liste[i]) {
+            instance->liste[i]->decrement();
+            instance->liste[i] = element;
+            element->increment();
+        }
+    }
+    else {
+        instance->names.push_back(label);
+        instance->append(element);
+    }
     lisp->resetStack();
-    return into_stack_;
+    return True_;
 }
+
+Element* List_record_in_stack_eval::eval_in_class(LispE* lisp) {
+    List_instance* instance = lisp->current_instance;
+    if (instance == NULL) {
+        return new Error("Error: setqi can only be used within an instance");
+    }
+    
+    lisp->checkState(this);
+    Element* element = liste[2]->eval(lisp)->duplicate_constant(lisp);
+    if (thrown_error)
+        return element;
+
+    int16_t label = liste[1]->label();
+    long i = instance->names.search(label);
+    if (i != -1) {
+        //In this case, we force the value onto the existing variable...
+        if (element != instance->liste[i]) {
+            instance->liste[i]->decrement();
+            instance->liste[i] = element;
+            element->increment();
+        }
+    }
+    else {
+        instance->names.push_back(label);
+        instance->append(element);
+    }
+    lisp->resetStack();
+    return True_;
+}
+
+#else
 
 Element* List_setqv_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
@@ -3898,7 +3943,47 @@ Element* List_setqi_eval::eval(LispE* lisp) {
     return True_;
 }
 
+Element* List_record_in_stack_eval::eval_in_class(LispE* lisp) {
+    List_instance* instance = lisp->current_instance;
+    if (instance == NULL) {
+        Error* err = new Error("Error: setqi can only be used within an instance");
+        lisp->delegation->set_error_context(err, idxinfo);
+        throw err;
+    }
+    
+    lisp->checkState(this);
+    Element* element = liste[2]->eval(lisp)->duplicate_constant(lisp);
+    int16_t label = liste[1]->label();
+    long i = instance->names.search(label);
+    if (i != -1) {
+        //In this case, we force the value onto the existing variable...
+        if (element != instance->liste[i]) {
+            instance->liste[i]->decrement();
+            instance->liste[i] = element;
+            element->increment();
+        }
+    }
+    else {
+        instance->names.push_back(label);
+        instance->append(element);
+    }
+    lisp->resetStack();
+    return True_;
+}
+
 #endif
+
+Element* List_record_in_stack_eval::eval(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    lisp->checkState(this);
+    if (lisp->terminal_stack_variables)
+        lisp->top_new_stack->replace_stack_value(element->duplicate_constant(lisp), liste[1]->label());
+    else
+        lisp->top_new_stack->storing_variable(element->duplicate_constant(lisp), liste[1]->label());
+    lisp->resetStack();
+    return into_stack_;
+}
+
 
 Element* List_set_const_eval::eval(LispE* lisp) {
     int16_t label = liste[1]->label();

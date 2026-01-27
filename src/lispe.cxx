@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2026.1.24.9.39";
+static std::string version = "1.2026.1.27.11.22";
 string LispVersion() {
     return version;
 }
@@ -1100,10 +1100,6 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce @@@ as a substitute to atshape
     w = U"@@@";
     string_to_code[w] = l_at_shape;
-
-    //We introduce ?? as a substitute to setqi, to be used in class instantiation.
-    w = U"??";
-    string_to_code[w] = l_setqi;
 
     //We introduce set@@ as a substitute to setrange
     w = U"set@@";
@@ -3708,6 +3704,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
