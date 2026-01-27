@@ -1,10 +1,12 @@
-# Tensor Logic in Practice: From Notation to Execution
+# Tensor Logic
 
-## Introduction
+Your paper "Tensor Logic: The Language of AI" proposes tensor equations as the fundamental primitive unifying symbolic and neural computation. I found your article impressive and wondered whether my own work might be of use to you.
 
-Your paper "Tensor Logic: The Language of AI" proposes tensor equations as the fundamental primitive unifying symbolic and neural computation. The following examples demonstrate how this notation could map directly onto executable code, using a LispE implementation of Mistral Nemo 12B running on Apple Silicon via the MLX framework.
+I am Claude Roux, a senior researcher, formerly at the Xerox Research Centre Europe (XRCE) before the lab was acquired by Naver. My background is primarily in symbolic linguistics — I designed and implemented the Xerox Incremental Parser (XIP), which won SemEval 2016 on sentiment analysis. Over the years, I have specialized in programming language design. Naver has open-sourced several of my languages, including LispE. I am actively seeking collaborations to increase the visibility of this language.
 
 LispE is a modern Lisp dialect with native integration to both PyTorch (via libtorch) and Apple's MLX framework. The MLX binding, `lispe_mlx`, specifically targets Apple Silicon's unified memory architecture, eliminating CPU-GPU transfer overhead. A separate binding, `lispe_torch`, provides CUDA support for broader hardware compatibility.
+
+The code examples shown in this document come from a program called `mistral_nemo.lisp`, which loads the Mistral-Nemo-Instruct-2407-4bit model directly retrieved via LM Studio — providing a ready-to-use environment for experimenting with tensor operations on real model weights.
 
 The existing codebase already contains the essential operations you identify: Einstein summation, tensor projections, and Tucker decomposition. What follows shows how your declarative notation would translate into working code.
 
@@ -149,6 +151,44 @@ The available implementation:
 
 The einsum formulation avoids materializing the full weight tensor, reducing memory usage proportionally to the compression ratio.
 
+## LispE: A Multi-Paradigm Language
+
+Beyond its tensor capabilities, LispE offers features that align with the symbolic reasoning side of your Tensor Logic vision.
+
+**Pattern Matching.** LispE provides native pattern matching on lists and structures, enabling declarative data transformation:
+
+```lisp
+; Match and destructure tensor metadata
+(defpat parse_shape ( [b h l d] ) (list 'batch b 'heads h 'length l 'dim d))
+(defpat parse_shape ( [b l d] ) (list 'batch b 'length l 'dim d))
+(defpat parse_shape ( _ ) 'unknown)
+```
+
+**Prolog-Style Logic Programming.** LispE includes `defprol`, a native Prolog-like inference engine with unification and backtracking:
+
+```lisp
+; Define tensor compatibility rules
+(defprol compatible (T1 T2)
+    (dimension T1 D)
+    (dimension T2 D))
+
+(defprol broadcastable (T1 T2)
+    (shape T1 S1)
+    (shape T2 S2)
+    (prefix S2 S1))
+
+; Query: find all compatible tensor pairs
+(setq results (findall ?x (compatible tensor_a ?x)))
+```
+
+This combination of pattern matching and logic programming could express tensor equation validation, type checking, and automatic differentiation rules declaratively — precisely the symbolic layer that complements your tensor computations.
+
+## Availability
+
+LispE is available on Naver's official GitHub repository. To avoid this message being flagged as spam, I have not included direct links. However, a simple search for "LispE Naver" will immediately provide access to the source code, documentation, and examples. Should you find this language potentially useful for your research, I would be happy to provide all the necessary guidance to get started.
+
 ## Conclusion
 
 Your theoretical framework has a natural implementation path. The code shown here demonstrates that the gap between Tensor Logic as specification and Tensor Logic as executable program is smaller than it might appear. The `lispe_mlx` library provides the necessary primitives for Apple Silicon, while `lispe_torch` with its CUDA backend extends coverage to broader hardware. Both libraries implement einsum, Tucker decomposition, and the full range of tensor operations your notation requires.
+
+I believe a collaboration could benefit both our efforts — your theoretical framework gaining a practical implementation, and LispE gaining visibility in the AI research community.
