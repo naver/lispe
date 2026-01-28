@@ -2,7 +2,7 @@
 
 Your paper "Tensor Logic: The Language of AI" proposes tensor equations as the fundamental primitive unifying symbolic and neural computation. I found your article impressive and wondered whether my own work might be of use to you.
 
-I am Claude Roux, a senior researcher, formerly at the Xerox Research Centre Europe (XRCE) before the lab was acquired by Naver. My background is primarily in symbolic linguistics — I designed and implemented the Xerox Incremental Parser (XIP), which won SemEval 2016 on sentiment analysis. Over the years, I have specialized in programming language design. Naver has open-sourced several of my languages, including LispE. I am actively seeking collaborations to increase the visibility of this language.
+I am Claude Roux, a senior researcher, formerly at the Xerox Research Centre Europe (XRCE) before the lab was acquired by Naver (the Korean Google). My background is primarily in symbolic linguistics — I designed and implemented the Xerox Incremental Parser (XIP), which won SemEval 2016 on sentiment analysis. Over the years, I have specialized in programming language design. Naver has _open-sourced_ several of my languages, including LispE. I am actively seeking collaborations to increase the visibility of this language.
 
 LispE is a modern Lisp dialect with native integration to both PyTorch (via libtorch) and Apple's MLX framework. The MLX binding, `lispe_mlx`, specifically targets Apple Silicon's unified memory architecture, eliminating CPU-GPU transfer overhead. A separate binding, `lispe_torch`, provides CUDA support for broader hardware compatibility.
 
@@ -192,3 +192,12 @@ LispE is available on Naver's official GitHub repository. To avoid this message 
 Your theoretical framework has a natural implementation path. The code shown here demonstrates that the gap between Tensor Logic as specification and Tensor Logic as executable program is smaller than it might appear. The `lispe_mlx` library provides the necessary primitives for Apple Silicon, while `lispe_torch` with its CUDA backend extends coverage to broader hardware. Both libraries implement einsum, Tucker decomposition, and the full range of tensor operations your notation requires.
 
 I believe a collaboration could benefit both our efforts — your theoretical framework gaining a practical implementation, and LispE gaining visibility in the AI research community.
+
+
+Claude Roux Ph.D
+Senor Scientist 
+claude.roux@naverlabs.com
+Naver Labs Europe
+6, chemin de Maupertuis
+38250 Meylan
+

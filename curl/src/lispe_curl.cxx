@@ -292,8 +292,10 @@ static size_t call_writing_old(char *ptr, size_t size, size_t nmemb, Lispe_curl*
 
 //Callback function
 static size_t call_writing(char *ptr, size_t size, size_t nmemb, Lispe_curl* userdata) {
+    if (ptr == NULL || userdata == NULL) return 0;
+    
     long real_size = size*nmemb;
-    if (userdata->function != NULL) {
+    if (userdata->function != NULL && userdata->lisp != NULL) {
         LispE* lisp = userdata->lisp;
         userdata->data.assign(static_cast<char*>(ptr), real_size);
         if (userdata->data == "404 page not found")
@@ -390,9 +392,13 @@ Element* Lispe_curl_function::MethodURL(LispE* lisp) {
     string urlstr = lisp->get_variable("str")->toString(lisp);
     if (urlstr != "") {
         if (urlstr.size() >= lcurl->urlsize) {
+            char* new_buffer = (char*)malloc(urlstr.size()*1.5 + 1);
+            if (new_buffer == NULL) {
+                throw new Error("Error: Memory allocation failed");
+            }
             free(lcurl->urlbuffer);
-            lcurl->urlsize = urlstr.size()*1.5;
-            lcurl->urlbuffer = (char*)malloc(lcurl->urlsize);
+            lcurl->urlbuffer = new_buffer;
+            lcurl->urlsize = urlstr.size()*1.5 + 1;
         }
         strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(urlstr));
         curl_easy_setopt(lcurl->curl, CURLOPT_URL, lcurl->urlbuffer);
@@ -406,10 +412,13 @@ Element* Lispe_curl_function::MethodURL(LispE* lisp) {
     }
     else {
         string filename = lfilename->toString(lisp);
-        tmp = fopen(STR(filename), "w");
+        tmp = fopen(STR(filename), "wb");
 
-        if (tmp == NULL)
-            throw new Error("Error: URL(009): Wrong filename");
+        if (tmp == NULL) {
+            std::stringstream err;
+            err << "Error: URL(009): Cannot create file: " << filename;
+            throw new Error(err.str());
+        }
         curl_easy_setopt(lcurl->curl, CURLOPT_WRITEDATA, tmp);
     }
     CURLcode res = curl_easy_perform(lcurl->curl);
@@ -439,9 +448,12 @@ Element* Lispe_curl_function::MethodExecute(LispE* lisp) {
     }
     else {
         string filename = lfilename->toString(lisp);
-        tmp = fopen(STR(filename), "w");
-        if (tmp == NULL)
-            throw new Error("Error: URL(009): Wrong filename");
+        tmp = fopen(STR(filename), "wb");
+        if (tmp == NULL) {
+            std::stringstream err;
+            err << "Error: URL(009): Cannot create file: " << filename;
+            throw new Error(err.str());
+        }
         curl_easy_setopt(lcurl->curl, CURLOPT_WRITEDATA, tmp);
     }
     CURLcode res = curl_easy_perform(lcurl->curl);
@@ -477,9 +489,13 @@ Element* Lispe_curl_function::MethodHeaders(LispE* lisp) {
 
     string data = lisp->get_variable("data")->toString(lisp);
     if (data.size() >= lcurl->urlsize) {
+        char* new_buffer = (char*)malloc(data.size()*1.5 + 1);
+        if (new_buffer == NULL) {
+            throw new Error("Error: Memory allocation failed");
+        }
         free(lcurl->urlbuffer);
-        lcurl->urlsize = data.size()*1.5;
-        lcurl->urlbuffer = (char*)malloc(lcurl->urlsize);
+        lcurl->urlbuffer = new_buffer;
+        lcurl->urlsize = data.size()*1.5 + 1;
     }
     strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(data));
     lcurl->headers = curl_slist_append(lcurl->headers, lcurl->urlbuffer);
@@ -513,9 +529,13 @@ Element* Lispe_curl_function::MethodOptions(LispE* lisp) {
         if (kdata->isString()) {
             string data = kdata->toString(lisp);
             if (data.size() >= lcurl->urlsize) {
+                char* new_buffer = (char*)malloc(data.size()*1.5 + 1);
+                if (new_buffer == NULL) {
+                    throw new Error("Error: Memory allocation failed");
+                }
                 free(lcurl->urlbuffer);
-                lcurl->urlsize = data.size()*1.5;
-                lcurl->urlbuffer = (char*)malloc(lcurl->urlsize);
+                lcurl->urlbuffer = new_buffer;
+                lcurl->urlsize = data.size()*1.5 + 1;
             }
             strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(data));
             res = curl_easy_setopt(lcurl->curl, noption, lcurl->urlbuffer);
