@@ -27,7 +27,7 @@
 typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
     str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_chrbyte, str_is_punctuation,
     str_format, str_padding, str_fill, str_getstruct, str_startwith, str_endwith, str_sprintf,
-    str_edit_distance, str_read_json, str_write_json, str_parse_json, str_string_json, str_ngrams,
+    str_edit_distance, str_read_json, str_write_json, str_parse_json, str_string_json, str_json_dictionary, str_ngrams,
     str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main,
     str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter, str_indent
     
@@ -1404,6 +1404,20 @@ public:
                 wstring w = e->jsonString(lisp);
                 return lisp->provideString(w);
             }
+            case str_json_dictionary: {
+                Element* e = lisp->get_variable(U"lst");
+                if (e == null_)
+                    return new Dictionary_json();
+                if (!e->isList() || (e->size()%2))
+                    throw new Error("Error: expecting a list of an even number of values");
+                Dictionary_json* d = new Dictionary_json;
+                u_ustring ky;
+                for (long i = 0; i < e->size(); i+=2) {
+                    ky = e->index(i)->asUString(lisp);
+                    d->recording(ky, e->index(i+1)->copying(false));
+                }
+                return d;
+            }
             case str_is_vowel: {
                 u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->s_is_vowel(s)];
@@ -1671,6 +1685,8 @@ public:
                 return L"Check if a string starts with a given string";
             case str_endwith:
                 return L"Check if a string ends with a given string";
+            case str_json_dictionary:
+                return L"Creates a JSON dictionary, where keys are ordered along creation";
         }
 		return L"";
     }
@@ -1746,4 +1762,5 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib json_write (data filename)", new Stringmethod(lisp, str_write_json));
     lisp->extension("deflib json_parse (str (raw))", new Stringmethod(lisp, str_parse_json));
     lisp->extension("deflib json (element)", new Stringmethod(lisp, str_string_json));
+    lisp->extension("deflib json_dictionary ((lst))", new Stringmethod(lisp, str_json_dictionary));
 }
