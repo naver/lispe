@@ -620,9 +620,14 @@ public:
     }
     
     void set_in(LispE* lisp, Element* e, long i) {
-        e->increment();
-        if (i < size())
+        if (i < size()) {
+            if (liste[i] == e)
+                return;
+            e->increment();
             liste[i]->decrement();
+        }
+        else
+            e->increment();
         liste[i] = e;
     }
     
