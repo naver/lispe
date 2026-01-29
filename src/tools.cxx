@@ -5573,8 +5573,11 @@ void replacemetas(u_ustring& sub) {
     sub = thestr;
 }
 
-bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s) {
-    s = u_trim(s);    
+bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s, bool raw) {
+    if (raw)
+        return compileraw(s);
+    
+    s = u_trim(s);
     if (s[0] == '{')
         compiled_result = lisp->provideDictionary();
     else

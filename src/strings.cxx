@@ -329,9 +329,9 @@ public:
         v_segment = lisp->encode(nom);
     }
     
-    Element* parse_json(LispE* lisp, u_ustring& w) {
+    Element* parse_json(LispE* lisp, u_ustring& w, bool raw) {
         LispEJsonCompiler json;
-        if (!json.compile(lisp, w)) {
+        if (!json.compile(lisp, w, raw)) {
             std::wstringstream wstr;
             wstr << "Error: JSON' structure contains errors line: ";
             wstr << json.line << " at position: " << json.i;
@@ -340,10 +340,10 @@ public:
         return json.compiled_result;
     }
     
-    Element* read_json(LispE* lisp, string name) {
+    Element* read_json(LispE* lisp, string name, bool raw) {
         String ch("");
         ch.charge(lisp, name);
-        return parse_json(lisp, ch.content);
+        return parse_json(lisp, ch.content, raw);
     }
 
     Element* write_json(LispE* lisp, string name, Element* data) {
@@ -1386,7 +1386,8 @@ public:
             }
             case str_read_json: {
                 string filename = lisp->get_variable(U"filename")->toString(lisp);
-                return read_json(lisp, filename);
+                bool raw = lisp->get_variable(U"raw")->Boolean();
+                return read_json(lisp, filename, raw);
             }
             case str_write_json: {
                 string filename = lisp->get_variable(U"filename")->toString(lisp);
@@ -1395,7 +1396,8 @@ public:
             }
             case str_parse_json: {
                 u_ustring str = lisp->get_variable(U"str")->asUString(lisp);
-                return parse_json(lisp, str);
+                bool raw = lisp->get_variable(U"raw")->Boolean();
+                return parse_json(lisp, str, raw);
             }
             case str_string_json: {
                 Element* e = lisp->get_variable(U"element");
@@ -1740,8 +1742,8 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib get_tokenizer_operators (rules)", new Stringmethod(lisp, str_get_operators));
     lisp->extension("deflib set_tokenizer_operators (rules a_set)", new Stringmethod(lisp, str_set_operators));
     
-    lisp->extension("deflib json_read (filename)", new Stringmethod(lisp, str_read_json));
+    lisp->extension("deflib json_read (filename (raw))", new Stringmethod(lisp, str_read_json));
     lisp->extension("deflib json_write (data filename)", new Stringmethod(lisp, str_write_json));
-    lisp->extension("deflib json_parse (str)", new Stringmethod(lisp, str_parse_json));
+    lisp->extension("deflib json_parse (str (raw))", new Stringmethod(lisp, str_parse_json));
     lisp->extension("deflib json (element)", new Stringmethod(lisp, str_string_json));
 }

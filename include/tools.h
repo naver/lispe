@@ -440,7 +440,7 @@ public:
     Element* compileraw(u_ustring& s);
     char buildexpressionraw(Element* kf);
 
-    bool compile(LispE* lisp, u_ustring& s);
+    bool compile(LispE* lisp, u_ustring& s, bool raw);
     char buildexpression(LispE*, Element* kf);
 };
 

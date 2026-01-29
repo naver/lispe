@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2026.1.29.10.24";
+static std::string version = "1.2026.1.29.16.9";
 string LispVersion() {
     return version;
 }
@@ -846,6 +846,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     code_to_string[t_data] = U"data_";
     code_to_string[t_dictionary] = U"dictionary_";
+    code_to_string[t_dictionaryjson] = U"dictionaryjson_";
     code_to_string[t_dictionaryn] = U"dictionary_n_";
     code_to_string[t_dictionaryi] = U"dictionary_i_";
     code_to_string[t_tree] = U"dictionarytree_";
@@ -1011,6 +1012,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_dictionary);
     provideAtomType(t_dictionaryn);
     provideAtomType(t_dictionaryi);
+    provideAtomType(t_dictionaryjson);
     provideAtomType(t_tree);
     provideAtomType(t_treen);
     provideAtomType(t_treei);
@@ -1030,6 +1032,7 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_complex, _NULL), t_complex, v_null);
     recordingData(lisp->create_instruction(t_data, _NULL), t_data, v_null);
     recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
+    recordingData(lisp->create_instruction(t_dictionaryjson, _NULL), t_dictionaryjson, v_null);
     recordingData(lisp->create_instruction(t_dictionaryi, _NULL), t_dictionaryi, v_null);
     recordingData(lisp->create_instruction(t_dictionaryn, _NULL), t_dictionaryn, v_null);
     recordingData(lisp->create_instruction(t_float, _NULL), t_float, v_null);
@@ -3705,6 +3708,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

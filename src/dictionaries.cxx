@@ -1105,6 +1105,61 @@ Element* Dictionary::thevalues(LispE* lisp) {
     return liste;
 }
 
+Element* Dictionary_json::loop(LispE* lisp, int16_t label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    
+    String* element = lisp->provideString();
+    lisp->recording(element, label);
+    
+    long sz = code->liste.size();
+    //We record the keys first, in  case the dictionary is changed
+    //in the following instructions
+    for (long i = 0; i < the_keys.size(); i++) {
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_string) {
+                e = lisp->provideString(the_keys[i]);
+                lisp->recording(e, label);
+            }
+            else
+                ((String*)e)->content = the_keys[i];
+            element = (String*)e;
+        }
+        else
+            element->content = the_keys[i];
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
+Element* Dictionary_json::thekeys(LispE* lisp) {
+    Strings* dkeys = lisp->provideStrings();
+    dkeys->liste = the_keys;
+    return dkeys;
+}
+
+Element* Dictionary_json::thevalues(LispE* lisp) {
+    List* liste = lisp->provideList();
+    Element* e;
+    for (long i = 0; i < the_keys.size(); i++) {
+        e = dictionary[the_keys[i]];
+        liste->append(e->copying(false));
+    }
+    return liste;
+}
+
 Element* Dictionary::search_element(LispE* lisp, Element* valeur, long ix) {
     for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur)->Boolean()) {
@@ -1206,6 +1261,25 @@ Element* Dictionary::reverse(LispE* lisp, bool duplicate) {
     return dico;
 }
 
+Element* Dictionary_json::reverse(LispE* lisp, bool duplicate) {
+    Dictionary_json* dico = new Dictionary_json;
+    
+    u_ustring k;
+    Element* e;
+    for (long i = 0; i < the_keys.size(); i++) {
+        k = dictionary[the_keys[i]]->asUString(lisp);
+        e = dico->dictionary[k];
+        if (e == NULL) {
+            e = lisp->provideStrings();
+            dico->dictionary[k] = e;
+            dico->the_keys.push_back(k);
+            e->increment();
+        }
+        ((Strings*)e)->append(the_keys[i]);
+    }
+    return dico;
+}
+
 Element* Dictionary::value_on_index(u_ustring& k, LispE* lisp) {
     auto it = dictionary.find(k);
     return (it == dictionary.end())?null_:it->second->copying(false);
@@ -1251,6 +1325,21 @@ Element* Dictionary::join_in_list(LispE* lisp, u_ustring& sep) {
     return lisp->provideString(str);
 }
 
+Element* Dictionary_json::join_in_list(LispE* lisp, u_ustring& sep) {
+    if (sep==U"")
+        sep = U",";
+    u_ustring str;
+    u_ustring beg;
+    for (long i = 0; i < the_keys.size(); i++) {
+        str += beg;
+        beg = sep;
+        str += the_keys[i];
+        str += U":";
+        str += dictionary[the_keys[i]]->asUString(lisp);
+    }
+    return lisp->provideString(str);
+}
+
 Element* Dictionary::equal(LispE* lisp, Element* e) {
     return booleans_[((e->type == t_dictionary && e->size() == 0 && dictionary.size() == 0) || e == this)];
 }
@@ -1262,6 +1351,21 @@ bool Dictionary::egal(Element* e) {
 Element* Dictionary::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Dictionary* d = lisp->provideDictionary();
+        Element* e;
+        for (const auto& a: dictionary) {
+            e = a.second->copying(true);
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        return d;
+    }
+    return this;
+}
+
+Element* Dictionary_json::duplicate_constant(LispE* lisp) {
+    if (status == s_constant) {
+        Dictionary_json* d = new Dictionary_json();
+        d->the_keys = the_keys;
         Element* e;
         for (const auto& a: dictionary) {
             e = a.second->copying(true);
@@ -1886,6 +1990,24 @@ Element* Dictionary::next_iter_exchange(LispE* lisp, void* it) {
     u_ustring u = (*n)->first;
     (*n)++;
     return lisp->provideString(u);
+}
+
+Element* Dictionary_json::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == the_keys.size())
+        return emptyatom_;
+    Element* e = lisp->provideString(the_keys[n[0]]);
+    n[0]++;
+    return e;
+}
+
+Element* Dictionary_json::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == the_keys.size())
+        return emptyatom_;
+    Element* e = lisp->provideString(the_keys[n[0]]);
+    n[0]++;
+    return e;
 }
 
 Element* Dictionary_i::next_iter(LispE* lisp, void* it) {

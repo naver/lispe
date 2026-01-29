@@ -68,7 +68,7 @@ typedef enum {
     t_list, t_llist,
     t_matrix_string, t_matrix_stringbyte, t_matrix_short, t_matrix_number, t_matrix_float, t_matrix_integer,
     t_tensor_string, t_tensor_stringbyte, t_tensor_short, t_tensor_number, t_tensor_float, t_tensor_integer,
-    t_dictionary, t_dictionaryi, t_dictionaryn,
+    t_dictionary, t_dictionaryi, t_dictionaryn, t_dictionaryjson,
     t_tree, t_treei, t_treen,
     t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_predicate, t_pattern, t_lambda, t_thread,
@@ -3542,12 +3542,12 @@ public:
         return new Dictionary;
     }
 
-    void* begin_iter() {
+    virtual void* begin_iter() {
         return new std::unordered_map<u_ustring, Element*>::iterator(dictionary.begin());
     }
     
-    Element* next_iter(LispE* lisp, void* it);
-    Element* next_iter_exchange(LispE* lisp, void* it);
+    virtual Element* next_iter(LispE* lisp, void* it);
+    virtual Element* next_iter_exchange(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
         delete (std::unordered_map<u_ustring, Element*>::iterator*)it;
@@ -3574,7 +3574,7 @@ public:
 
     void garbaging_values(LispE*);
     
-    Element* loop(LispE* lisp, int16_t label,  List* code);
+    virtual Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
@@ -3625,9 +3625,9 @@ public:
 
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp);
+    virtual Element* duplicate_constant(LispE* lisp);
     
-    Element* join_in_list(LispE* lisp, u_ustring& sep);
+    virtual Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     virtual void release() {
         if (!status && !marking) {
@@ -3722,7 +3722,7 @@ public:
         return dictionary.size();
     }
     
-    Element* reverse(LispE*, bool duplique = true);
+    virtual Element* reverse(LispE*, bool duplique = true);
     
     void protecting(bool protection, LispE* lisp) {
         if (protection) {
@@ -3738,7 +3738,7 @@ public:
             a.second->protecting(protection, lisp);
     }
 
-    void jsonStream(LispE* lisp, std::ostream& os) {
+    virtual void jsonStream(LispE* lisp, std::ostream& os) {
         if (!dictionary.size()) {
             os << "{}";
             return;
@@ -3771,7 +3771,7 @@ public:
         marking = false;
     }
 
-    wstring jsonString(LispE* lisp) {
+    virtual wstring jsonString(LispE* lisp) {
         if (!dictionary.size())
             return L"{}";
                 
@@ -3797,7 +3797,7 @@ public:
         return tampon;
     }
     
-    wstring asString(LispE* lisp) {
+    virtual wstring asString(LispE* lisp) {
         long taille = dictionary.size();
         if (!taille)
             return L"{}";
@@ -3825,7 +3825,7 @@ public:
         return tampon;
     }
 
-    u_ustring asUString(LispE* lisp) {
+    virtual u_ustring asUString(LispE* lisp) {
         long taille = dictionary.size();
         if (!taille)
             return U"{}";
@@ -3873,7 +3873,7 @@ public:
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
     
-    void recording(string& c, Element* e) {
+    virtual void recording(string& c, Element* e) {
         u_ustring k;
         s_utf8_to_unicode(k, c, c.size());
         auto it = dictionary.find(k);
@@ -3886,7 +3886,7 @@ public:
         e->increment();
     }
     
-    void recording(u_ustring& k, Element* e) {
+    virtual void recording(u_ustring& k, Element* e) {
         auto it = dictionary.find(k);
         if (it != dictionary.end()) {
             it->second->decrement();
@@ -3903,16 +3903,15 @@ public:
         return this;
     }
 
-    Element* thekeys(LispE* lisp);
-    
-    Element* thevalues(LispE* lisp);
+    virtual Element* thekeys(LispE* lisp);
+    virtual Element* thevalues(LispE* lisp);
 
-    bool remove(LispE* lisp, Element* e) {
+    virtual bool remove(LispE* lisp, Element* e) {
         wstring d =  e->asString(lisp);
         return remove(d);
     }
 
-    bool remove(wstring& w) {
+    virtual bool remove(wstring& w) {
         u_pstring k = _w_to_u(w);
         auto it = dictionary.find(k);
         if (it == dictionary.end())
@@ -3923,7 +3922,7 @@ public:
         return true;
     }
 
-    bool remove(u_ustring& k) {
+    virtual bool remove(u_ustring& k) {
         auto it = dictionary.find(k);
         if (it == dictionary.end())
             return false;
@@ -3937,10 +3936,13 @@ public:
 
 class Dictionary_json : public Dictionary {
 public:
+    vecte_n<u_ustring> the_keys;
     u_ustring u_key;
     bool choice;
     
-    Dictionary_json() : choice(true) {}
+    Dictionary_json() : choice(true) {
+        type = t_dictionaryjson;
+    }
 
     void reversechoice() {
         choice = 1 - choice;
@@ -3950,15 +3952,252 @@ public:
         return choice;
     }
     
-    void append(Element* e) {
-        if (choice)
-            u_key = e->asUString(NULL);
+    Element* reverse(LispE*, bool duplique = true);
+    
+    Element* newInstance() {
+        return new Dictionary_json;
+    }
+
+    Element* thekeys(LispE* lisp);
+    Element* thevalues(LispE* lisp);
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
+    
+    void recording(string& c, Element* e) {
+        u_ustring k;
+        s_utf8_to_unicode(k, c, c.size());
+        auto it = dictionary.find(k);
+        if (it != dictionary.end()) {
+            it->second->decrement();
+            it->second = e;
+        }
         else {
+            dictionary[k] = e;
+            the_keys.push_back(k);
+        }
+        e->increment();
+    }
+    
+    void recording(u_ustring& k, Element* e) {
+        auto it = dictionary.find(k);
+        if (it != dictionary.end()) {
+            it->second->decrement();
+            it->second = e;
+        }
+        else {
+            dictionary[k] = e;
+            the_keys.push_back(k);
+        }
+        e->increment();
+    }
+
+    void append(Element* e) {
+        if (choice) {
+            u_key = e->asUString(NULL);
+            e->release();
+        }
+        else {
+            the_keys.push_back(u_key);
             dictionary[u_key] = e;
             e->increment();
             reversechoice();
         }
     }
+
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        if (!the_keys.size()) {
+            os << "{}";
+            return;
+        }
+                
+        if (marking) {
+            os << "#inf";
+            return;
+        }
+        
+        marking = true;
+        os << "{";
+        string s;
+        u_ustring u;
+        bool premier = true;
+        for (long i = 0; i < the_keys.size(); i++) {
+            if (!premier) {
+                os << ",";
+            }
+            else
+                premier = false;
+            s = "";
+            u = the_keys[i];
+            s_unicode_to_utf8(s, u);
+            os << jsonstring(s);
+            os << ":";
+            dictionary[u]->jsonStream(lisp, os);
+        }
+        os << "}";
+        marking = false;
+    }
+
+    wstring jsonString(LispE* lisp) {
+        if (!dictionary.size())
+            return L"{}";
+                
+        if (marking)
+            return L"#inf";
+        
+        marking = true;
+        wstring tampon(L"{");
+        
+        bool premier = true;
+        for (long i = 0; i < the_keys.size(); i++) {
+            if (!premier) {
+                tampon += L",";
+            }
+            else
+                premier = false;
+            tampon += wjsonstring(the_keys[i]);
+            tampon += L":";
+            tampon += dictionary[the_keys[i]]->jsonString(lisp);
+        }
+        tampon += L"}";
+        marking = false;
+        return tampon;
+    }
+    
+    wstring asString(LispE* lisp) {
+        long taille = dictionary.size();
+        if (!taille)
+            return L"{}";
+
+        if (marking)
+            return L"...";
+        
+        marking = true;
+
+        wstring tampon(L"{");
+        
+        bool premier = true;
+        for (long i = 0; i < the_keys.size(); i++) {
+            if (!premier) {
+                tampon += L" ";
+            }
+            else
+                premier = false;
+            tampon += wjsonstring(the_keys[i]);
+            tampon += L":";
+            tampon += dictionary[the_keys[i]]->wstringInList(lisp);
+        }
+        tampon += L"}";
+        marking = false;
+        return tampon;
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        long taille = dictionary.size();
+        if (!taille)
+            return U"{}";
+
+        if (marking)
+            return U"...";
+        
+        marking = true;
+
+        u_ustring tampon(U"{");
+        
+        bool premier = true;
+        for (long i = 0; i < the_keys.size(); i++) {
+            if (!premier) {
+                tampon += U" ";
+            }
+            else
+                premier = false;
+            tampon += ujsonstring(the_keys[i]);
+            tampon += U":";
+            tampon += dictionary[the_keys[i]]->stringInUList(lisp);
+        }
+        tampon += U"}";
+        marking = false;
+        return tampon;
+    }
+    
+    bool remove(LispE* lisp, Element* e) {
+        wstring d =  e->asString(lisp);
+        return remove(d);
+    }
+
+    bool remove(wstring& w) {
+        u_pstring k = _w_to_u(w);
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
+            return false;
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        long i = the_keys.search(k, 0);
+        if (i != -1)
+            the_keys.erase(i);
+        return true;
+    }
+
+    bool remove(u_ustring& k) {
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
+            return false;
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        long i = the_keys.search(k, 0);
+        if (i != -1)
+            the_keys.erase(i);
+        return true;
+    }
+
+    Element* fullcopy() {
+        if (marking)
+            return object;
+        
+        marking = true;
+        Dictionary_json* d = new Dictionary_json;
+        d->the_keys = the_keys;
+        object = d;
+        Element* e;
+        for (const auto& a: dictionary) {
+            e = a.second->fullcopy();
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        marking = false;
+        return d;
+    }
+
+    Element* copying(bool duplicate = true) {
+        if (!is_protected() && !duplicate)
+            return this;
+        
+        Dictionary_json* d = new Dictionary_json;
+        d->the_keys = the_keys;
+        Element* e;
+        for (const auto& a: dictionary) {
+            e = a.second->copying(false);
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        return d;
+    }
+    
+    virtual Element* copyatom(LispE* lisp, uint16_t s);
+
+    //In the case of a container for push, key and keyn
+    // We must force the copy when it is a constant
+    virtual Element* duplicate_constant(LispE* lisp);
+    
+    virtual Element* join_in_list(LispE* lisp, u_ustring& sep);
 
 };
 

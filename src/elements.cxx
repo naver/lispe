@@ -219,6 +219,21 @@ Element* Dictionary::copyatom(LispE* lisp, uint16_t s) {
     return d;
 }
 
+Element* Dictionary_json::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+    
+    Dictionary_json* d = new Dictionary_json;
+    d->the_keys = the_keys;
+    Element* e;
+    for (const auto& a: dictionary) {
+        e = a.second->copying(false);
+        d->dictionary[a.first] = e;
+        e->increment();
+    }
+    return d;
+}
+
 Element* Dictionary_n::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
