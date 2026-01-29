@@ -1422,6 +1422,7 @@ public:
     Element* evall_clone(LispE* lisp);
     Element* evall_emptyp(LispE* lisp);
     Element* evall_emptylist(LispE* lisp);
+    Element* evall_force(LispE* lisp);
     Element* evall_getchar(LispE* lisp);
     Element* evall_if(LispE* lisp);
     Element* evall_ife(LispE* lisp);

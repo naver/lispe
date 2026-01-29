@@ -1965,6 +1965,13 @@ Element* List::evall_keys(LispE* lisp) {
     return keys;
 }
 
+Element* List::evall_force(LispE* lisp) {
+    if (!lisp->create_no_pool_element)
+        throw new Error("Error: 'force' can only be used as a thread argument");
+    Element* e = liste[1]->eval(lisp);
+    return new Force(e);
+}
+
 Element* List::evall_values(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* values = container->thevalues(lisp);

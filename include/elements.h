@@ -73,11 +73,11 @@ typedef enum {
     t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_predicate, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
-    t_call, t_call_lambda, t_eval, t_fileelement, t_class, t_class_instance,
+    t_call, t_call_lambda, t_eval, t_fileelement, t_class, t_class_instance, t_forced,
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, 
-    l_next, l_compose, l_enumerate, l_record_in_stack,
+    l_next, l_compose, l_enumerate, l_record_in_stack, l_force,
     
     //Default Lisp instructions
     l_number, l_float, l_format, l_string, l_stringbyte, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary, l_bytes,
@@ -503,7 +503,7 @@ public:
     
     Element* duplicate_for_thread();
     
-    Element* duplicate() {
+    virtual Element* duplicate() {
         if (!status)
             return this;
         return copying(true);
@@ -1189,6 +1189,21 @@ public:
     
     bool isError() {
         return true;
+    }
+};
+
+class Force : public Element {
+public:
+    Element* forced_element;
+    
+    Force(Element* v) : Element(t_forced) {
+        forced_element = v;
+    }
+    
+    Element* duplicate() {
+        Element* f = forced_element;
+        delete this;
+        return f;
     }
 };
 
