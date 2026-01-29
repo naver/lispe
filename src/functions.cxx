@@ -1712,7 +1712,7 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, Element* data, List* paramet
 
 Element* Element::duplicate_for_thread() {
     Element* e = duplicate();
-    return (e == this)?new Error("Error: Cannot use this value in a thread"):e;
+    return (e == this && e->status && e->not_protected())?new Error("Error: Cannot use this value in a thread"):e;
 }
 
 void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, Element* data, List* parameters) {

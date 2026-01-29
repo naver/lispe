@@ -63,13 +63,17 @@ public:
     void initialize(LispE* lisp) {
         Element* e = NULL;
         try {
+            // On crée les éléments hors du pool pour éviter
+            // qu'ils soient réutilisés par un autre thread
+            lisp->create_no_pool_element = true;
             for (long i = 1; i < code->size(); i++) {
-                e = code->index(i)->eval(lisp);
-                call->set_in(lisp, new Quoted(e->duplicate_for_thread()), i);
-                e->release();
+                e = code->index(i)->eval(lisp)->duplicate_for_thread();
+                call->set_in(lisp, new Quoted(e), i);
             }
+            lisp->create_no_pool_element = false;
         }
         catch(Error* err) {
+            lisp->create_no_pool_element = false;
             for (long i = 1; i < call->size(); i++) {
                 call->set_in(lisp, null_, i);
             }
@@ -91,7 +95,7 @@ public:
         catch(Error* err) {
             return err;
         }
-
+        
         local_lisp.create_no_pool_element = true;
         Element* v = e->fullcopy();
         local_lisp.create_no_pool_element = false;
@@ -128,7 +132,7 @@ Element* evaluation(LispE* lisp, Element* code) {
 
 class LispE_async_run : public Element {
 public:
-
+    
     LispE_async_run() : Element(type_async_run) {}
 
     Element* eval(LispE* lisp) {
@@ -166,7 +170,7 @@ public:
         }
 
         for (long i = 0; i < codes->size(); i++) {
-            ((LispE_async_element*)e)->clean(lisp);
+            ((LispE_async_element*)codes->index(i))->clean(lisp);
         }
         return l;
     }
