@@ -14,7 +14,7 @@
 ; Configuration du modèle
 ; =============================================================================
 
-(setq MODEL_PATH "/Users/clauderoux/.lmstudio/models/mlx-community/gemma-3-27b-it-qat-4bit")
+(setq MODEL_PATH "/Users/user/.lmstudio/models/mlx-community/gemma-3-27b-it-qat-4bit")
 
 ; =============================================================================
 ; Fonction pour générer les chemins des fichiers safetensors shardés

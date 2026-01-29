@@ -19,7 +19,7 @@
 ; Configuration du modèle
 ; =============================================================================
 
-(setq MODEL_PATH "/Users/clauderoux/.lmstudio/models/lmstudio-community/gpt-oss-20b-MLX-8bit")
+(setq MODEL_PATH "/Users/user/.lmstudio/models/lmstudio-community/gpt-oss-20b-MLX-8bit")
 
 ; =============================================================================
 ; Fonction pour générer les chemins des fichiers safetensors shardés
