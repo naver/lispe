@@ -1408,6 +1408,10 @@ public:
                 Element* e = lisp->get_variable(U"lst");
                 if (e == null_)
                     return new Dictionary_json();
+                
+                if (e->type == t_dictionary)
+                    return new Dictionary_json((Dictionary*)e);
+                
                 if (!e->isList() || (e->size()%2))
                     throw new Error("Error: expecting a list of an even number of values");
                 Dictionary_json* d = new Dictionary_json;

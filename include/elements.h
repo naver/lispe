@@ -3944,6 +3944,14 @@ public:
         type = t_dictionaryjson;
     }
 
+    Dictionary_json(Dictionary* d) : choice(true) {
+        type = t_dictionaryjson;
+        for (const auto& a : d->dictionary) {
+            dictionary[a.first] = a.second->copying(false);
+            the_keys.push_back(a.first);
+        }
+    }
+
     void reversechoice() {
         choice = 1 - choice;
     }
