@@ -29,8 +29,7 @@ SRC_DIR = src
 LOBJPATH = ../objs
 
 # Linking
-# -install_name with absolute path to /usr/local/lib/lispe for portability
-LDFLAGS = -shared -undefined dynamic_lookup -install_name /usr/local/lib/lispe/$(LIB_NAME)
+LDFLAGS = -shared -undefined dynamic_lookup
 MLX_LIBS = -L$(MLX_LIB) -lmlx
 MLX_FRAMEWORKS = -framework Metal -framework Foundation -framework Accelerate
 
@@ -51,16 +50,6 @@ $(TARGET): $(OBJECTS)
 	@echo "Linking $(LIB_NAME)..."
 	$(COMPPLUSPLUS) $(LDFLAGS) $(OBJECTS) $(MLX_LIBS) $(MLX_FRAMEWORKS) -o $@
 	@echo "✓ Library created: $(TARGET)"
-	@echo "Replacing library paths for portability..."
-	@# Replace @rpath references
-	@for lib in `otool -L $@ | grep '@rpath' | awk '{print $$1}'`; do \
-		lib_name=`basename $$lib`; \
-		echo "  Replacing: $$lib -> /usr/local/lib/lispe/$$lib_name"; \
-		install_name_tool -change $$lib /usr/local/lib/lispe/$$lib_name $@; \
-	done
-	@# Replace Homebrew libmlx.dylib path
-	@install_name_tool -change /opt/homebrew/opt/mlx/lib/libmlx.dylib /usr/local/lib/lispe/libmlx.dylib $@
-	@echo "✓ Paths modified"
 
 $(LOBJPATH)/lispemlx/%.o: $(SRC_DIR)/%.cxx
 	@mkdir -p $(LOBJPATH)/lispemlx

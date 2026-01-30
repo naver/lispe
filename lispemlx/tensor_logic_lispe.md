@@ -195,7 +195,7 @@ I believe a collaboration could benefit both our efforts — your theoretical fr
 
 
 Claude Roux Ph.D
-Senor Scientist 
+Senior Scientist 
 claude.roux@naverlabs.com
 Naver Labs Europe
 6, chemin de Maupertuis
