@@ -1,116 +1,116 @@
-; Exemple d'utilisation du modèle GPT-OSS-20B avec GGUF
-; Modèle: gpt-oss-20b-MXFP4.gguf (format quantifié)
+; Example of using the GPT-OSS-20B model with GGUF
+; Model: gpt-oss-20b-MXFP4.gguf (quantized format)
 
-; Chargement de la bibliothèque
+; Loading the library
 (use 'lispe_gguf)
 
-; Chemin vers votre modèle
-(setq model-path "/Users/clauderoux/.lmstudio/models/lmstudio-community/gpt-oss-20b-GGUF/gpt-oss-20b-MXFP4.gguf")
+; Path to your model
+(setq model-path "/Users/user/.lmstudio/models/lmstudio-community/gpt-oss-20b-GGUF/gpt-oss-20b-MXFP4.gguf")
 
 ; ========================================
-; EXEMPLE 1: Chargement et info du modèle
+; EXAMPLE 1: Loading and model info
 ; ========================================
 
 (defun load-gpt-oss ()
-  (println "Chargement du modèle GPT-OSS-20B...")
-  (println "Chemin:" model-path)
+  (println "Loading GPT-OSS-20B model...")
+  (println "Path:" model-path)
 
-  ; Configuration optimisée pour un modèle de 20B
+  ; Optimized configuration for a 20B model
   (setq config {
-    'use_mmap true           ; Memory mapping pour économiser la RAM
-    'dequantize_on_load false ; Déquantification à la demande
-    'num_threads 8            ; Nombre de threads (ajustez selon votre CPU)
+    'use_mmap true           ; Memory mapping to save RAM
+    'dequantize_on_load false ; Dequantization on demand
+    'num_threads 8            ; Number of threads (adjust based on your CPU)
   })
 
-  ; Chargement sur CPU (changez en "cuda" si vous avez un GPU)
+  ; Loading on CPU (change to "cuda" if you have a GPU)
   (setq model (gguf-load-model model-path "mps" config))
 
   (if (null model)
       (block
-        (println "ERREUR: Impossible de charger le modèle")
-        (println "Vérifiez que le fichier existe et que vous avez assez de mémoire")
+        (println "ERROR: Unable to load the model")
+        (println "Check that the file exists and you have enough memory")
         null)
       (block
-        (println "✓ Modèle chargé avec succès!\n")
+        (println "✓ Model loaded successfully!\n")
 
-        ; Afficher les informations du modèle
-        (println "=== Informations du modèle ===")
+        ; Display model information
+        (println "=== Model Information ===")
         (gguf-print-info model)
 
-        ; Récupérer les métadonnées importantes
+        ; Retrieve important metadata
         (setq info (gguf-model-info model))
-        (println "\nDétails clés:")
+        (println "\nKey details:")
         (println "- Architecture:" (@ info "architecture"))
-        (println "- Vocabulaire:" (@ info "vocab_size") "tokens")
-        (println "- Contexte max:" (@ info "context_length") "tokens")
-        (println "- Dimensions embedding:" (@ info "embedding_length"))
+        (println "- Vocabulary:" (@ info "vocab_size") "tokens")
+        (println "- Max context:" (@ info "context_length") "tokens")
+        (println "- Embedding dimensions:" (@ info "embedding_length"))
 
         model)))
 
 ; ========================================
-; EXEMPLE 2: Génération de texte simple
+; EXAMPLE 2: Simple text generation
 ; ========================================
 
 (defun generate-text (model prompt)
-  (println "\n=== Génération de texte ===")
+  (println "\n=== Text Generation ===")
   (println "Prompt:" prompt)
   (println "")
 
-  ; Tokenisation du prompt
+  ; Tokenization of the prompt
   (setq tokens (gguf-tokenize model prompt))
-  (println "Nombre de tokens du prompt:" (length tokens))
+  (println "Number of prompt tokens:" (length tokens))
 
-  ; Configuration de génération
+  ; Generation configuration
   (setq gen-config {
-    'max_new_tokens 100      ; Générer jusqu'à 100 nouveaux tokens
-    'temperature 0.7         ; Température modérée (0.7 = équilibré)
+    'max_new_tokens 100      ; Generate up to 100 new tokens
+    'temperature 0.7         ; Moderate temperature (0.7 = balanced)
     'top_p 0.9              ; Nucleus sampling
     'top_k 40               ; Top-k sampling
-    'repetition_penalty 1.1  ; Pénalité contre les répétitions
+    'repetition_penalty 1.1  ; Penalty against repetitions
   })
 
-  ; Génération
-  (println "Génération en cours...")
+  ; Generation
+  (println "Generating...")
   (setq generated-tokens (gguf-generate model tokens gen-config))
 
-  ; Conversion en texte
+  ; Convert to text
   (setq result (gguf-detokenize model generated-tokens))
 
-  (println "\n--- Résultat ---")
+  (println "\n--- Result ---")
   (println result)
-  (println "----------------\n")
+  (println "\-----------\n")
 
   result)
 
 ; ========================================
-; EXEMPLE 3: Session interactive
+; EXAMPLE 3: Interactive session
 ; ========================================
 
 (defun chat-gpt-oss (model)
-  (println "\n=== Chat interactif avec GPT-OSS-20B ===")
-  (println "Tapez 'quit' ou 'exit' pour quitter")
-  (println "Tapez 'reset' pour réinitialiser le cache")
+  (println "\n=== Interactive Chat with GPT-OSS-20B ===")
+  (println "Type 'quit' or 'exit' to quit")
+  (println "Type 'reset' to reset the cache")
   (println "")
 
   (loop
-    (print "\nVous: ")
+    (print "\nYou: ")
     (setq input (read-line))
 
-    ; Commandes spéciales
+    ; Special commands
     (cond
       ((or (= input "quit") (= input "exit"))
        (block
-         (println "Au revoir!")
+         (println "Goodbye!")
          (break)))
 
       ((= input "reset")
        (block
          (gguf-reset-cache model)
-         (println "Cache réinitialisé")))
+         (println "Cache reset")))
 
       (true
        (block
-         ; Génération de la réponse
+         ; Generate the response
          (setq tokens (gguf-tokenize model input))
          (setq response-tokens (gguf-generate model tokens {
            'max_new_tokens 150
@@ -122,11 +122,11 @@
          (println "\nGPT-OSS:" response))))))
 
 ; ========================================
-; EXEMPLE 4: Test de créativité avec différentes températures
+; EXAMPLE 4: Testing creativity with different temperatures
 ; ========================================
 
 (defun test-temperatures (model prompt)
-  (println "\n=== Test de différentes températures ===")
+  (println "\n=== Testing Different Temperatures ===")
   (println "Prompt:" prompt)
   (println "")
 
@@ -135,12 +135,12 @@
 
   (maplist temp temperatures
     (block
-      (println "--- Température:" temp "(")
+      (println "--- Temperature:" temp "(")
       (cond
-        ((< temp 0.5) (println "    conservateur/déterministe)"))
-        ((< temp 0.9) (println "    équilibré)"))
-        ((< temp 1.2) (println "    créatif)"))
-        (true (println "    très créatif/aléatoire)")))
+        ((< temp 0.5) (println "    conservative/deterministic)"))
+        ((< temp 0.9) (println "    balanced)"))
+        ((< temp 1.2) (println "    creative)"))
+        (true (println "    very creative/random)"))))
 
       (setq result-tokens (gguf-generate model tokens {
         'max_new_tokens 50
@@ -152,76 +152,76 @@
       (println ""))))
 
 ; ========================================
-; EXEMPLE 5: Complétion de code
+; EXAMPLE 5: Code completion
 ; ========================================
 
 (defun complete-code (model code-start)
-  (println "\n=== Complétion de code ===")
-  (println "Code de départ:")
+  (println "\n=== Code Completion ===")
+  (println "Starting code:")
   (println code-start)
   (println "")
 
   (setq tokens (gguf-tokenize model code-start))
 
-  ; Configuration optimisée pour le code
+  ; Configuration optimized for code
   (setq result-tokens (gguf-generate model tokens {
     'max_new_tokens 200
-    'temperature 0.2       ; Basse température pour plus de précision
+    'temperature 0.2       ; Low temperature for better accuracy
     'top_p 0.95
     'repetition_penalty 1.05
   }))
 
   (setq completion (gguf-detokenize model result-tokens))
 
-  (println "--- Code complété ---")
+  (println "--- Completed code ---")
   (println completion)
   (println "--------------------\n")
 
   completion)
 
 ; ========================================
-; FONCTION PRINCIPALE
+; MAIN FUNCTION
 ; ========================================
 
 (defun main ()
   (println "╔═══════════════════════════════════════╗")
-  (println "║  Exemple GPT-OSS-20B GGUF            ║")
+  (println "║  GPT-OSS-20B GGUF Example            ║")
   (println "╚═══════════════════════════════════════╝\n")
 
-  ; Chargement du modèle
+  ; Load the model
   (setq my-model (load-gpt-oss))
 
   (if (not (null my-model))
       (block
-        ; Exemple 1: Génération simple
-        (generate-text my-model "La programmation fonctionnelle est")
+        ; Example 1: Simple generation
+        (generate-text my-model "Functional programming is")
 
-        ; Exemple 2: Test de températures
-        (test-temperatures my-model "Il était une fois")
+        ; Example 2: Temperature testing
+        (test-temperatures my-model "Once upon a time")
 
-        ; Exemple 3: Complétion de code
-        (complete-code my-model "def fibonacci(n):\n    \"\"\"Calcule le n-ième nombre de Fibonacci\"\"\"\n    ")
+        ; Example 3: Code completion
+        (complete-code my-model "def fibonacci(n):\n    \"\"\"Calculate the nth Fibonacci number\"\"\"\n    ")
 
-        ; Exemple 4: Mode interactif (décommentez pour l'utiliser)
+        ; Example 4: Interactive mode (uncomment to use)
         ; (chat-gpt-oss my-model)
 
-        (println "\n✓ Tous les exemples ont été exécutés avec succès!")
-        (println "\nPour lancer le mode chat interactif, exécutez:")
+        (println "\n✓ All examples have been executed successfully!")
+        (println "\nTo launch interactive chat mode, run:")
         (println "  (chat-gpt-oss my-model)")
 
         my-model)
-      (println "Échec du chargement du modèle")))
+      (println "Failed to load the model")))
 
 ; ========================================
-; UTILISATION RAPIDE
+; QUICK USAGE
 ; ========================================
 
 (println "")
-(println "Commandes disponibles:")
-(println "  (main)                          - Lance tous les exemples")
-(println "  (setq m (load-gpt-oss))         - Charge seulement le modèle")
-(println "  (generate-text m \"votre texte\") - Génère du texte")
-(println "  (chat-gpt-oss m)                - Mode chat interactif")
-(println "  (test-temperatures m \"texte\")   - Test de créativité")
-(println "  (complete-code m \"code\")        - Complétion de code")
+(println "Available commands:")
+(println "  (main)                          - Run all examples")
+(println "  (setq m (load-gpt-oss))         - Load the model only")
+(println "  (generate-text m \"your text\")   - Generate text")
+(println "  (chat-gpt-oss m)                - Interactive chat mode")
+(println "  (test-temperatures m \"text\")    - Test creativity")
+(println "  (complete-code m \"code\")        - Code completion")
 (println "")

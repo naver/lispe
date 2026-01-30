@@ -6,7 +6,7 @@
 ; 1. Load model (with GPU by default)
 (println "Loading model...")
 (setq model (gguf_load
-      "/Users/clauderoux/.lmstudio/models/lmstudio-community/gpt-oss-20b-GGUF/gpt-oss-20b-MXFP4.gguf"))
+      "/Users/user/.lmstudio/models/lmstudio-community/gpt-oss-20b-GGUF/gpt-oss-20b-MXFP4.gguf"))
 
 ; 2. Generate text only if model is loaded
 (ncheck (not (nullp model))

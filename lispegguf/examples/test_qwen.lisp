@@ -4,7 +4,7 @@
 
 (println "=== GGUF Test with Qwen2-Math Q8_0 ===\n")
 
-(setq model-path "/Users/clauderoux/.lmstudio/models/lmstudio-community/Qwen2-Math-1.5B-Instruct-GGUF/Qwen2-Math-1.5B-Instruct-Q8_0.gguf")
+(setq model-path "/Users/user/.lmstudio/models/lmstudio-community/Qwen2-Math-1.5B-Instruct-GGUF/Qwen2-Math-1.5B-Instruct-Q8_0.gguf")
 
 (println "File:" model-path)
 (println "")

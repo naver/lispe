@@ -1,25 +1,25 @@
-; Test de la nouvelle bibliothèque GGUF basée sur llama.cpp
-; Cette version utilise directement llama.cpp au lieu de PyTorch
-; pour de meilleures performances avec MXFP4
+; Test of the new GGUF library based on llama.cpp
+; This version uses llama.cpp directly instead of PyTorch
+; for better performance with MXFP4
 
 (use 'lispe_gguf)
 
-(println "=== Test GGUF avec llama.cpp (v2) ===\n")
+(println "=== GGUF Test with llama.cpp (v2) ===\n")
 
-; Chemin du modèle MXFP4
-(setq model-path "/Users/clauderoux/.lmstudio/models/lmstudio-community/gpt-oss-20b-GGUF/gpt-oss-20b-MXFP4.gguf")
+; MXFP4 model path
+(setq model-path "/Users/user/.lmstudio/models/lmstudio-community/gpt-oss-20b-GGUF/gpt-oss-20b-MXFP4.gguf")
 
-(println "Fichier:" model-path)
+(println "File:" model-path)
 (println "")
 
-; Test 1: Chargement du modèle
-(println "Test 1: Chargement du modèle...")
+; Test 1: Model loading
+(println "Test 1: Loading model...")
 (setq model (gguf_load model-path 0 2048))
 
 (if (nullp model)
-    (println "❌ Échec du chargement\n")
+    (println "❌ Loading failed\n")
     (block
-        (println "✓ Modèle chargé avec succès!")
+        (println "✓ Model loaded successfully!")
         (println "")))
 
 ; Test 2: Tokenization
@@ -27,29 +27,29 @@
     (block
         (println "Test 2: Tokenization...")
         (setq test-text "Hello, how are you?")
-        (println "Texte:" test-text)
+        (println "Text:" test-text)
         (setq tokens (gguf_tokenize model test-text))
         (println "Tokens:" tokens)
-        (println "Nombre de tokens:" (size tokens))
+        (println "Number of tokens:" (size tokens))
         (println "")))
 
-; Test 3: Détokenization
+; Test 3: Detokenization
 (if (not (nullp model))
     (block
-        (println "Test 3: Détokenization...")
+        (println "Test 3: Detokenization...")
         (setq decoded (gguf_detokenize model tokens))
-        (println "Texte reconstruit:" decoded)
+        (println "Reconstructed text:" decoded)
         (println "")))
 
-; Test 4: Génération de texte
+; Test 4: Text generation
 (if (not (nullp model))
     (block
-        (println "Test 4: Génération de texte...")
+        (println "Test 4: Text generation...")
         (println "Prompt: 'Once upon a time'")
         (println "")
         (setq generated (gguf_generate model "Once upon a time" 50 0.8 0.9 40))
         (println "")
-        (println "Texte généré:" generated)
+        (println "Generated text:" generated)
         (println "")))
 
-(println "=== Tests terminés ===")
+(println "=== Tests completed ===")
