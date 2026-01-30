@@ -1,0 +1,252 @@
+# Copie des librairies nécessaires dans bin/
+PYTHON_VERSION = $(shell $(CONDA_PREFIX)/bin/python -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")
+
+copy-libs:
+	@echo "=== Copie des librairies nécessaires dans $(LBINPATH) ==="
+	cp -u $(LIBTORCH_LIB)/libtorch* $(LBINPATH) 2>/dev/null || true
+	cp -u $(LIBTORCH_LIB)/libc10* $(LBINPATH) 2>/dev/null || true
+	cp -u $(SENTENCEPIECE_LIB_DIR)/libsentencepiece* $(LBINPATH) 2>/dev/null || true
+	# Copie libnccl.so.2 depuis conda si présent
+	cp -u $(CONDA_PREFIX)/lib/libnccl.so.2* $(LBINPATH) 2>/dev/null || true
+	# Détection automatique de la version de Python dans l'environnement conda
+	# Copie libnccl.so* depuis le dossier nvidia/nccl/lib de conda si présent
+	cp -u $(CONDA_PREFIX)/lib/$(PYTHON_VERSION)/site-packages/nvidia/nccl/lib/libnccl.so* $(LBINPATH) 2>/dev/null || true
+	# Copie libcusparseLt.so* depuis le dossier CUDA si présent
+	cp -u $(CONDA_PREFIX)/lib/python3.12/site-packages/cusparselt/lib/libcusparseLt.so* $(LBINPATH) 2>/dev/null || true
+	@echo "✓ Librairies copiées dans $(LBINPATH)"
+# Makefile.linux - Configuration optimisée Linux pour LispETorch avec SentencePiece
+# Adapté pour environnements conda et compilation locale de SentencePiece
+# Usage: make -f Makefile.linux all
+
+include ../Makefile.in
+
+###################################################################
+# Configuration Linux optimisée
+###################################################################
+
+# Détection automatique de l'environnement conda
+CONDA_PREFIX = $(shell echo $$CONDA_PREFIX)
+ifeq ($(CONDA_PREFIX),)
+    $(error Environnement conda requis. Activez votre environnement : conda activate votre-env-pytorch)
+endif
+
+# Détection PyTorch via conda Python
+PYTORCH_PATH = $(shell $(CONDA_PREFIX)/bin/python -c "import torch; import os; print(os.path.dirname(torch.__file__))" 2>/dev/null)
+ifeq ($(PYTORCH_PATH),)
+    $(error PyTorch non trouvé. Installez avec: conda install pytorch torchvision torchaudio -c pytorch)
+endif
+
+LIBTORCH_INCLUDE = $(PYTORCH_PATH)/include
+LIBTORCH_LIB = $(PYTORCH_PATH)/lib
+
+# Détection automatique CUDA
+CUDA_PATH = $(shell find /usr/local/cuda* -maxdepth 0 -type d 2>/dev/null | head -1)
+ifeq ($(CUDA_PATH),)
+    CUDA_PATH = $(shell find /opt/cuda* -maxdepth 0 -type d 2>/dev/null | head -1)
+endif
+
+ifneq ($(CUDA_PATH),)
+    CUDA_INCLUDE = $(CUDA_PATH)/include
+    CUDA_LIB = $(CUDA_PATH)/lib64
+    CUDA_FLAGS = -DUSE_CUDA
+    CUDA_LIBS = -L$(CUDA_LIB) -lcudart -lcublas -lcurand -lcusparse
+    CUDA_RPATH = -Wl,-rpath,$(CUDA_LIB)
+    $(info ✓ CUDA détecté: $(CUDA_PATH))
+else
+    CUDA_FLAGS = 
+    CUDA_LIBS = 
+    CUDA_RPATH = 
+    $(info ℹ CUDA non détecté - compilation CPU uniquement)
+endif
+
+###################################################################
+# Configuration SentencePiece LOCAL (par défaut)
+###################################################################
+
+# Compilation locale de SentencePiece dans le répertoire lispetorch/
+SENTENCEPIECE_LOCAL_PATH = $(PWD)/sentencepiece-build
+SENTENCEPIECE_LOCAL_LIB = $(SENTENCEPIECE_LOCAL_PATH)/lib/libsentencepiece.so
+SENTENCEPIECE_LOCAL_INCLUDE = $(SENTENCEPIECE_LOCAL_PATH)/include
+SENTENCEPIECE_SOURCE_DIR = $(PWD)/sentencepiece
+
+# Configuration pour SentencePiece local
+SENTENCEPIECE_INCLUDE = $(SENTENCEPIECE_LOCAL_INCLUDE)
+SENTENCEPIECE_LIB_DIR = $(SENTENCEPIECE_LOCAL_PATH)/lib
+SENTENCEPIECE_FLAGS = -DUSE_SENTENCEPIECE
+SENTENCEPIECE_LIBS = -L$(SENTENCEPIECE_LIB_DIR) -lsentencepiece -lsentencepiece_train
+SENTENCEPIECE_RPATH = -Wl,-rpath,$(SENTENCEPIECE_LIB_DIR)
+
+###################################################################
+# Configuration de compilation
+###################################################################
+
+sourcelispetorch = lispetorch.cxx torchjit.cxx torchtensors.cxx torchextensions.cxx torchdefinitions.cxx lispe_hf_loader.cxx lispe_hf_loader_manual.cxx
+LBINPATH = ../bin
+LOBJPATH = ../objs
+objectlispetorch = $(sourcelispetorch:%.cxx=$(LOBJPATH)/lispetorch/%.o)
+
+# Flags de compilation Linux
+C++11Flag = -std=c++17 -fPIC -w -c $(COPTION) -DUNIX -DUSE_HUGGINGFACE $(CUDA_FLAGS) $(SENTENCEPIECE_FLAGS)
+
+# Chemins d'inclusion
+INCLUDEPATH = -I../include -Iinclude \
+              -I$(LIBTORCH_INCLUDE) \
+              -I$(LIBTORCH_INCLUDE)/torch/csrc/api/include \
+              $(if $(CUDA_PATH),-I$(CUDA_INCLUDE),) \
+              -I$(SENTENCEPIECE_INCLUDE)
+
+# Bibliothèques et RPATH
+LIBTORCH_LIBS = -L$(LIBTORCH_LIB) -ltorch -ltorch_cpu -lc10 $(CUDA_LIBS) $(SENTENCEPIECE_LIBS)
+PYTORCH_RPATH_FLAGS = -Wl,-rpath,$(LIBTORCH_LIB) $(SENTENCEPIECE_RPATH) $(CUDA_RPATH)
+
+###################################################################
+# Targets principaux
+###################################################################
+
+# Target principal : compilation complète avec SentencePiece local
+all: check-conda check-sentencepiece compile-sentencepiece-if-needed build-lispetorch copy-libs
+	@echo "=== ✓ LispETorch Linux compilé avec succès ! ==="
+	@echo "Bibliothèque : $(LBINPATH)/liblispe_torch.so"
+	@echo "SentencePiece : $(SENTENCEPIECE_LOCAL_PATH)"
+	@echo "Librairies copiées dans $(LBINPATH) : libtorch, libc10, libsentencepiece, libsentencepiece_train"
+	@echo "Test disponible : cd tests && ../bin/lispe demo_sentencepiece.lisp"
+
+# Vérification environnement conda
+check-conda:
+	@echo "=== Vérification environnement conda ==="
+	@echo "Conda prefix: $(CONDA_PREFIX)"
+	@echo "PyTorch path: $(PYTORCH_PATH)"
+	@echo "PyTorch version: $(shell python -c "import torch; print(torch.__version__)" 2>/dev/null)"
+
+# Vérification SentencePiece local
+check-sentencepiece:
+	@if [ -f $(SENTENCEPIECE_LOCAL_LIB) ]; then \
+		echo "✓ SentencePiece local trouvé: $(SENTENCEPIECE_LOCAL_LIB)"; \
+	else \
+		echo "ℹ SentencePiece local absent - sera compilé automatiquement"; \
+	fi
+
+# Compilation conditionnelle de SentencePiece
+compile-sentencepiece-if-needed:
+	@if [ ! -f $(SENTENCEPIECE_LOCAL_LIB) ]; then \
+		echo "=== Compilation de SentencePiece requise ==="; \
+		$(MAKE) -f Makefile.linux compile-sentencepiece-local; \
+	else \
+		echo "✓ SentencePiece local déjà compilé"; \
+	fi
+
+# Compilation de LispETorch
+build-lispetorch: install $(objectlispetorch)
+	@echo "=== Compilation de LispETorch ==="
+	$(COMPPLUSPLUS) -shared -o $(LBINPATH)/liblispe_torch.so $(objectlispetorch) \
+		-L$(LBINPATH) $(LIBTORCH_LIBS) -llispe -ldl -lpthread $(LIBBOOST)
+	@echo "✓ Compilation terminée"
+
+###################################################################
+# SentencePiece - Compilation locale
+###################################################################
+
+# Clonage et compilation de SentencePiece
+compile-sentencepiece-local:
+	@echo "=== Compilation locale de SentencePiece ==="
+	@echo "Destination: $(SENTENCEPIECE_LOCAL_PATH)"
+	@echo "Protobuf: $(shell python -c 'import google.protobuf; print(google.protobuf.__version__)' 2>/dev/null || echo 'non détecté')"
+	
+	@# Clonage si nécessaire
+	@if [ ! -d $(SENTENCEPIECE_SOURCE_DIR) ]; then \
+		echo "Clonage de SentencePiece depuis GitHub..."; \
+		git clone https://github.com/google/sentencepiece.git $(SENTENCEPIECE_SOURCE_DIR); \
+	else \
+		echo "✓ Code source SentencePiece présent"; \
+	fi
+	
+	@# Compilation avec cmake
+	@mkdir -p $(SENTENCEPIECE_LOCAL_PATH)
+	@cd $(SENTENCEPIECE_SOURCE_DIR) && \
+	mkdir -p build && cd build && \
+	echo "Configuration cmake..." && \
+	cmake .. \
+		-DCMAKE_INSTALL_PREFIX=$(SENTENCEPIECE_LOCAL_PATH) \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DSPM_USE_BUILTIN_PROTOBUF=OFF \
+		-DCMAKE_CXX_STANDARD=17 \
+		-DCMAKE_CXX_FLAGS="-fPIC" \
+		-DCMAKE_PREFIX_PATH="$(CONDA_PREFIX)" && \
+	echo "Compilation ($(shell nproc) cœurs)..." && \
+	make -j$(shell nproc) && \
+	echo "Installation..." && \
+	make install
+	
+	@echo "✓ SentencePiece installé: $(du -sh $(SENTENCEPIECE_LOCAL_PATH) | cut -f1)"
+	@echo "✓ Bibliothèque: $(SENTENCEPIECE_LOCAL_LIB)"
+	@echo "✓ Headers: $(SENTENCEPIECE_LOCAL_INCLUDE)"
+
+# Vérification installation SentencePiece
+check-sentencepiece-local:
+	@echo "=== Vérification SentencePiece local ==="
+	@if [ -f $(SENTENCEPIECE_LOCAL_LIB) ]; then \
+		echo "✓ Bibliothèque: $(SENTENCEPIECE_LOCAL_LIB)"; \
+		echo "✓ Headers: $(SENTENCEPIECE_LOCAL_INCLUDE)"; \
+		echo "✓ Binaires:"; \
+		ls -1 $(SENTENCEPIECE_LOCAL_PATH)/bin/spm_* 2>/dev/null || echo "  Aucun binaire"; \
+		echo "✓ Taille: $(shell du -sh $(SENTENCEPIECE_LOCAL_PATH) | cut -f1)"; \
+		echo "✓ Dépendances principales:"; \
+		ldd $(SENTENCEPIECE_LOCAL_LIB) | grep -E "(libc|libstdc|libgcc)" | head -3; \
+	else \
+		echo "✗ SentencePiece local non trouvé"; \
+		echo "Compilez avec: make -f Makefile.linux compile-sentencepiece-local"; \
+	fi
+
+# Nettoyage SentencePiece
+clean-sentencepiece:
+	@echo "=== Nettoyage SentencePiece ==="
+	@rm -rf $(SENTENCEPIECE_LOCAL_PATH) $(SENTENCEPIECE_SOURCE_DIR)
+	@echo "✓ SentencePiece nettoyé"
+
+###################################################################
+# Tests et diagnostic
+###################################################################
+
+# Test complet
+test: all
+	@echo "=== Test LispETorch + SentencePiece ==="
+	@cd tests && ../../bin/lispe demo_sentencepiece.lisp
+
+# Diagnostic complet
+status:
+	@echo "=== État LispETorch Linux ==="
+	@echo "Conda: $(CONDA_PREFIX)"
+	@echo "PyTorch: $(PYTORCH_PATH)"
+	@echo "CUDA: $(if $(CUDA_PATH),$(CUDA_PATH),NON DÉTECTÉ)"
+	@echo "SentencePiece: $(if $(wildcard $(SENTENCEPIECE_LOCAL_LIB)),INSTALLÉ,NON INSTALLÉ)"
+	@echo "LispETorch: $(if $(wildcard $(LBINPATH)/liblispe_torch.so),COMPILÉ,NON COMPILÉ)"
+	@echo ""
+	@echo "Commandes disponibles:"
+	@echo "  make -f Makefile.linux all              # Compilation complète"
+	@echo "  make -f Makefile.linux test             # Test avec SentencePiece"
+	@echo "  make -f Makefile.linux clean-all        # Nettoyage complet"
+	@echo "  make -f Makefile.linux status           # Ce diagnostic"
+
+# Nettoyage complet
+clean-all: clean clean-sentencepiece
+	@rm -f $(LBINPATH)/liblispe_torch.so
+	@echo "✓ Nettoyage complet terminé"
+
+###################################################################
+# Règles de base
+###################################################################
+
+$(LOBJPATH)/lispetorch/%.o: src/%.cxx
+	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDEPATH) $< -o $@
+
+install:
+	mkdir -p $(LOBJPATH)/lispetorch
+
+clean:
+	rm -f $(LOBJPATH)/lispetorch/*.o
+
+.PHONY: all check-conda check-sentencepiece compile-sentencepiece-if-needed build-lispetorch \
+        compile-sentencepiece-local check-sentencepiece-local clean-sentencepiece \
+        test status clean-all install clean
+
+# vim: set ft=make ts=4 sw=4 noexpandtab:

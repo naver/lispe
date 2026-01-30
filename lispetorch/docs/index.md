@@ -1,0 +1,136 @@
+# Index des fonctions libtorch et sentencepiece dans LispE-LispeTorch
+
+Ce document liste toutes les fonctions disponibles dans le module `lispe_lispetorch` pour l'intégration de libtorch (PyTorch C++) et SentencePiece dans LispE.
+
+## Fonctions Libtorch disponibles
+
+- torch_tensor_create
+- torch_tensor_zeros
+- torch_tensor_full
+- torch_tensor_ones
+- torch_tensor_triu
+- torch_tensor_set_item
+- torch_tensor_randn
+- torch_tensor_rand
+- torch_tensor_randint
+- torch_tensor_transpose
+- torch_tensor_at
+- torch_tensor_add
+- torch_tensor_sub
+- torch_tensor_mul
+- torch_tensor_div
+- torch_tensor_mul_scalar
+- torch_tensor_add_scalar
+- torch_tensor_matmul
+- torch_tensor_size
+- torch_tensor_shape
+- torch_tensor_reshape
+- torch_tensor_slice
+- torch_tensor_cat
+- torch_tensor_to_device
+- torch_tensor_to_cuda
+- torch_tensor_sum
+- torch_tensor_mean
+- torch_tensor_std
+- torch_tensor_max
+- torch_tensor_min
+- torch_tensor_argmax
+- torch_tensor_relu
+- torch_tensor_sigmoid
+- torch_tensor_tanh
+- torch_tensor_gelu
+- torch_tensor_softmax
+- torch_linear_create
+- torch_linear_forward
+- torch_model_create
+- torch_model_forward
+- torch_model_parameters
+- torch_model_train
+- torch_model_eval
+- torch_optimizer_create
+- torch_adam_optimizer
+- torch_adamw_optimizer
+- torch_sgd_optimizer
+- torch_optimizer_step
+- torch_optimizer_zero_grad
+- torch_loss_mse
+- torch_loss_crossentropy
+- torch_cross_entropy
+- torch_backward
+- torch_cuda_is_available
+- torch_cuda_device_count
+- torch_cuda_memory_allocated
+- torch_cuda_memory_total
+- torch_set_device
+- torch_mps_is_available
+- torch_to_mps
+- torch_get_best_device
+- torch_multihead_attention_create
+- torch_multihead_attention_forward
+- torch_layer_norm_create
+- torch_layer_norm_forward
+- torch_embedding_create
+- torch_embedding_forward
+- torch_transformer_block_create
+- torch_transformer_block_forward
+- torch_pad_sequence
+- torch_create_attention_mask
+- torch_positional_encoding_create
+- torch_positional_encoding_forward
+- torch_rotary_embedding_create
+- torch_rotary_embedding_forward
+- torch_apply_rotary_pos_emb
+- torch_checkpoint_enable
+- torch_checkpoint_disable
+- torch_checkpoint_forward
+- torch_checkpoint_create
+- torch_load_model
+- torch_save_model
+- torch_load_checkpoint
+- torch_save_checkpoint
+- torch_load_state_dict
+- torch_model_state_dict
+- torch_lora_linear_create
+- torch_lora_linear_forward
+- torch_lora_apply_to_linear
+- torch_lora_merge_weights
+- torch_lora_get_trainable_params
+- torch_lora_save_adapters
+- torch_lora_load_adapters
+- torch_flash_attention_create
+- torch_flash_attention_forward
+- torch_flash_attention_with_mask
+- torch_flash_attention_with_dropout
+- torch_flash_attention
+- torch_scaled_dot_product_attention
+- torch_generator_create
+- torch_generator_config
+- torch_generate
+- torch_set_generation_params
+- torch_topk
+- torch_multinomial
+- torch_sort
+- torch_quantize_dynamic
+- torch_quantize_static
+- torch_dequantize
+- torch_quantize_linear
+- torch_quantize_per_channel
+- torch_quantize_int8
+- torch_quantize_fp16
+- torch_tensor_to_int8
+- torch_tensor_to_fp16
+- torch_model_quantize_dynamic
+- torch_model_quantize_static
+
+## Fonctions SentencePiece/tokenization disponibles
+
+- torch_tokenizer_simple_create
+- torch_tokenizer_sentencepiece_create
+- torch_tokenizer_sentencepiece_train
+- torch_tokenizer_encode
+- torch_tokenizer_decode
+- torch_vocabulary_size
+
+---
+
+Pour chaque fonction, consulte la documentation ou le code source pour les paramètres et exemples d'utilisation.

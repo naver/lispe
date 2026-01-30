@@ -1,0 +1,42 @@
+[
+  {
+    "prompt": "Explain how to create a vector in Tamgu",
+    "chosen": "In Tamgu, you can create a vector using the following syntax:\n\nvector v = [1, 2, 3, 4, 5];\n\nYou can also initialize an empty vector:\n\nvector v;\n\nAnd add elements using the push method:\n\nv.push(10);\nv.push(20);",
+    "rejected": "To create a vector in Tamgu, you need to use the new keyword like this: vector v = new vector(). Then you add items with append()."
+  },
+  {
+    "prompt": "What is the difference between a map and a treemap in Tamgu?",
+    "chosen": "In Tamgu:\n\n- map: An unordered hash map that provides O(1) average lookup time. Keys are not sorted.\n  map m = {'a': 1, 'b': 2};\n\n- treemap: An ordered map based on a balanced tree (red-black tree) that maintains keys in sorted order. Lookup time is O(log n).\n  treemap tm = {'a': 1, 'b': 2};\n\nUse map for fast lookups when order doesn't matter, and treemap when you need sorted keys.",
+    "rejected": "A map and treemap are basically the same thing in Tamgu, just different names for the same data structure. You can use them interchangeably."
+  },
+  {
+    "prompt": "How do you iterate over a vector in Tamgu?",
+    "chosen": "There are several ways to iterate over a vector in Tamgu:\n\n1. Using a for-in loop:\nvector v = [1, 2, 3];\nfor (x in v)\n    println(x);\n\n2. Using an indexed for loop:\nfor (int i = 0; i < v.size(); i++)\n    println(v[i]);\n\n3. Using the map method:\nv.map(lambda(x) (println(x)));",
+    "rejected": "You iterate over a vector using while loops only:\n\nvector v = [1, 2, 3];\nint i = 0;\nwhile (i < v.length) {\n    print(v.get(i));\n    i = i + 1;\n}"
+  },
+  {
+    "prompt": "Explain lambda functions in Tamgu",
+    "chosen": "Lambda functions in Tamgu are anonymous functions that can be defined inline. They are useful for short operations:\n\nSyntax: lambda(parameters) (expression)\n\nExample:\nvector v = [1, 2, 3, 4, 5];\nvector doubled = v.map(lambda(x) (x * 2));\n// Result: [2, 4, 6, 8, 10]\n\nYou can also assign lambdas to variables:\nfunction add = lambda(a, b) (a + b);\nprintln(add(3, 4)); // Outputs 7",
+    "rejected": "Lambda functions are not really supported in Tamgu. You need to define regular functions using the function keyword every time."
+  },
+  {
+    "prompt": "How do you handle errors in Tamgu?",
+    "chosen": "Tamgu uses try-catch blocks for error handling:\n\ntry {\n    // Code that might throw an error\n    int x = int(\"not a number\");\n}\ncatch(error e) {\n    println(\"Error caught: \" + e);\n}\n\nYou can also throw custom errors:\n\nif (x < 0)\n    throw(\"Value must be positive\");\n\nThe catch block receives the error as a string.",
+    "rejected": "Tamgu doesn't have error handling. If something goes wrong, the program just crashes. You should validate all inputs manually before processing."
+  },
+  {
+    "prompt": "What is the purpose of the self keyword in Tamgu?",
+    "chosen": "In Tamgu, 'self' refers to the current instance of an object within a method, similar to 'this' in Java or C++.\n\nExample:\nframe MyClass {\n    int value;\n    \n    function setValue(int v) {\n        self.value = v;  // Refers to this instance's value\n    }\n    \n    function getValue() {\n        return self.value;\n    }\n}\n\nMyClass obj;\nobj.setValue(42);\nprintln(obj.getValue()); // Outputs 42",
+    "rejected": "The 'self' keyword is used to reference global variables from within functions. It's similar to the 'global' keyword in other languages."
+  },
+  {
+    "prompt": "How do you define a function with default parameters in Tamgu?",
+    "chosen": "In Tamgu, you can define default parameters by providing values in the function signature:\n\nfunction greet(string name, string greeting = \"Hello\") {\n    return greeting + \", \" + name + \"!\";\n}\n\nprintln(greet(\"Alice\")); // Outputs: Hello, Alice!\nprintln(greet(\"Bob\", \"Hi\")); // Outputs: Hi, Bob!\n\nDefault parameters must come after required parameters.",
+    "rejected": "Tamgu doesn't support default parameters. You need to create multiple function overloads with different parameter counts."
+  },
+  {
+    "prompt": "Explain how strings work in Tamgu",
+    "chosen": "Tamgu has powerful string manipulation capabilities:\n\n1. Creation:\nstring s = \"Hello World\";\n\n2. Concatenation:\nstring result = s + \" from Tamgu\";\n\n3. Common methods:\ns.size()         // Length of string\ns.lower()        // Convert to lowercase\ns.upper()        // Convert to uppercase\ns.split(\" \")     // Split into vector\ns.replace(\"o\", \"0\") // Replace characters\ns.find(\"World\")  // Find substring position\n\n4. String formatting:\nstring msg = \"Value: \" + 42; // Automatic conversion",
+    "rejected": "Strings in Tamgu are just arrays of characters. You manipulate them by accessing indices like s[0], s[1], etc. There are no built-in methods for string operations."
+  }
+]
