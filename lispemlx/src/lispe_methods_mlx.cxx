@@ -5,10 +5,10 @@
  * The 3-Clause BSD License
  */
 //
-//  lispe_methods_mlx.cxx
-//  LispE library for MLX methods (Apple Silicon)
+  //  lispe_methods_mlx.cxx
+  //  LispE library for MLX methods (Apple Silicon)
 //
-//  Cette bibliothèque expose les fonctions de base de mlx::core
+  //  This library exposes the basic functions of mlx::core
 //
 
 #include "lispe.h"
@@ -17,10 +17,10 @@
 using namespace std;
 namespace mx = mlx::core;
 
-// Enum for MLX method actions
+ // Enum for MLX method actions
 enum mlx_method_actions {
-    mlx_method_array,        // Créer un mx::array à partir de données
-    mlx_method_shape,        // Créer un mx::Shape à partir de données
+    mlx_method_array,        // Create a mx::array from data
+    mlx_method_shape,        // Create a mx::Shape from data
     mlx_method_reshape,
     mlx_method_take,
     mlx_method_mean,
@@ -29,7 +29,7 @@ enum mlx_method_actions {
     mlx_method_sum,
     mlx_method_transpose,
     mlx_method_matmul,
-    // 10 nouvelles fonctions
+    // 10 new functions
     mlx_method_subtract,
     mlx_method_divide,
     mlx_method_maximum,
@@ -40,34 +40,34 @@ enum mlx_method_actions {
     mlx_method_abs,
     mlx_method_concatenate,
     mlx_method_split,
-    // Fonctions d'activation
+    // Activation functions
     mlx_method_sigmoid,
     mlx_method_relu,
     mlx_method_softmax,
     mlx_method_tanh,
-    // Fonctions trigonométriques
+    // Trigonometric functions
     mlx_method_sin,
     mlx_method_cos,
     mlx_method_tan,
-    // Fonctions de réduction avancées
+    // Advanced reduction functions
     mlx_method_argmax,
     mlx_method_argmin,
-    // Fonctions supplémentaires
+    // Additional functions
     mlx_method_power,
     mlx_method_negative,
     mlx_method_square,
-    // Groupe 1: Création d'arrays
+    // Group 1: Array creation
     mlx_method_zeros,
     mlx_method_ones,
     mlx_method_full,
     mlx_method_arange,
     mlx_method_linspace,
     mlx_method_eye,
-    // Groupe 2: Nombres aléatoires
+    // Group 2: Random numbers
     mlx_method_random_uniform,
     mlx_method_random_normal,
     mlx_method_random_randint,
-    // Groupe 3: Mathématiques
+    // Group 3: Mathematics
     mlx_method_log2,
     mlx_method_log10,
     mlx_method_log1p,
@@ -77,13 +77,13 @@ enum mlx_method_actions {
     mlx_method_clip,
     mlx_method_reciprocal,
     mlx_method_rsqrt,
-    // Groupe 4: Trigonométrie inverse
+    // Group 4: Inverse trigonometry
     mlx_method_arcsin,
     mlx_method_arccos,
     mlx_method_arctan,
     mlx_method_sinh,
     mlx_method_cosh,
-    // Groupe 5: Réductions
+    // Group 5: Reductions
     mlx_method_prod,
     mlx_method_max,
     mlx_method_min,
@@ -91,7 +91,7 @@ enum mlx_method_actions {
     mlx_method_std,
     mlx_method_all,
     mlx_method_any,
-    // Groupe 6: Comparaisons
+    // Group 6: Comparisons
     mlx_method_equal,
     mlx_method_not_equal,
     mlx_method_greater,
@@ -99,7 +99,7 @@ enum mlx_method_actions {
     mlx_method_greater_equal,
     mlx_method_less_equal,
     mlx_method_where,
-    // Groupe 7: Manipulation
+    // Group 7: Manipulation
     mlx_method_flatten,
     mlx_method_squeeze,
     mlx_method_expand_dims,
@@ -107,7 +107,7 @@ enum mlx_method_actions {
     mlx_method_tile,
     mlx_method_repeat,
     mlx_method_pad,
-    // Groupe 8: Activation deep learning
+    // Group 8: Deep learning activations
     mlx_method_gelu,
     mlx_method_gelu_tanh,
     mlx_method_silu,
@@ -115,7 +115,7 @@ enum mlx_method_actions {
     mlx_method_elu,
     mlx_method_selu,
     mlx_method_log_softmax,
-    // Groupe 9: Algèbre linéaire
+    // Group 9: Linear algebra
     mlx_method_norm,
     mlx_method_inv,
     mlx_method_svd,
@@ -127,14 +127,14 @@ enum mlx_method_actions {
     mlx_method_tucker_reconstruct,
     mlx_method_tucker_compression_ratio,
     mlx_method_khatri_rao_product,
-    // Groupe 10: Opérations logiques et tests
+    // Group 10: Logical operations and tests
     mlx_method_logical_and,
     mlx_method_logical_or,
     mlx_method_logical_not,
     mlx_method_isnan,
     mlx_method_isinf,
     mlx_method_isfinite,
-    // Groupe 11: Manipulation avancée
+    // Group 11: Advanced manipulation
     mlx_method_flip,
     mlx_method_roll,
     mlx_method_sort,
@@ -143,26 +143,26 @@ enum mlx_method_actions {
     mlx_method_moveaxis,
     mlx_method_swapaxes,
     mlx_method_broadcast_to,
-    // Groupe 12: Création avancée
+    // Group 12: Advanced creation
     mlx_method_identity,
     mlx_method_tri,
     mlx_method_tril,
     mlx_method_triu,
     mlx_method_meshgrid,
-    // Groupe 13: Algèbre linéaire avancée
+    // Group 13: Advanced linear algebra
     mlx_method_pinv,
     mlx_method_eig,
     mlx_method_eigvals,
     mlx_method_lu,
     mlx_method_cross,
-    // Groupe 14: I/O de modèles
+    // Group 14: Model I/O
     mlx_method_save,
     mlx_method_load,
     mlx_method_load_safetensors,
     mlx_method_save_safetensors,
     mlx_method_load_gguf,
     mlx_method_save_gguf,
-    // Groupe 15: Quantification et mémoire
+    // Group 15: Quantization and memory
     mlx_method_quantize,
     mlx_method_dequantize,
     mlx_method_quantized_matmul,
@@ -173,7 +173,7 @@ enum mlx_method_actions {
     mlx_method_get_cache_memory,
     mlx_method_set_memory_limit,
     mlx_method_set_cache_limit,
-    // Groupe 16: Opérations supplémentaires
+    // Group 16: Additional operations
     mlx_method_slice,
     mlx_method_trace,
     mlx_method_diagonal,
@@ -185,7 +185,7 @@ enum mlx_method_actions {
     mlx_method_cumprod,
     mlx_method_topk,
     mlx_method_partition,
-    // Groupe 17: FFT (Transformées de Fourier)
+    // Group 17: FFT (Fourier Transforms)
     mlx_method_fft,
     mlx_method_ifft,
     mlx_method_fft2,
@@ -200,7 +200,7 @@ enum mlx_method_actions {
     mlx_method_irfftn,
     mlx_method_fftshift,
     mlx_method_ifftshift,
-    // Groupe 18: Fonctions mathématiques avancées
+    // Group 18: Advanced math functions
     mlx_method_arctan2,
     mlx_method_arcsinh,
     mlx_method_arccosh,
@@ -213,23 +213,23 @@ enum mlx_method_actions {
     mlx_method_logaddexp,
     mlx_method_sign,
     mlx_method_kron,
-    // Groupe 19: Opérations bitwise
+    // Group 19: Bitwise operations
     mlx_method_bitwise_and,
     mlx_method_bitwise_or,
     mlx_method_bitwise_xor,
     mlx_method_bitwise_invert,
     mlx_method_left_shift,
     mlx_method_right_shift,
-    // Groupe 20: Division et reste
+    // Group 20: Division and remainder
     mlx_method_divmod,
     mlx_method_floor_divide,
     mlx_method_remainder,
-    // Groupe 21: Opérations cumulatives et logsumexp
+    // Group 21: Cumulative operations and logsumexp
     mlx_method_cummax,
     mlx_method_cummin,
     mlx_method_logsumexp,
     mlx_method_logcumsumexp,
-    // Groupe 22: Convolutions (deep learning)
+    // Group 22: Convolutions (deep learning)
     mlx_method_conv1d,
     mlx_method_conv2d,
     mlx_method_conv3d,
@@ -237,13 +237,13 @@ enum mlx_method_actions {
     mlx_method_conv_transpose2d,
     mlx_method_conv_transpose3d,
     mlx_method_conv_general,
-    // Groupe 23: Opérations spécialisées ML
+    // Group 23: ML specialized operations
     mlx_method_rms_norm,
     mlx_method_layer_norm,
     mlx_method_rope,
     mlx_method_scaled_dot_product_attention,
     mlx_method_einsum,
-    // Groupe 24: Manipulation et création avancée
+    // Group 24: Advanced manipulation and creation
     mlx_method_dtype,
     mlx_method_astype,
     mlx_method_copy,
@@ -255,7 +255,7 @@ enum mlx_method_actions {
     mlx_method_atleast_3d,
     mlx_method_array_equal,
     mlx_method_allclose,
-    // Groupe 25: Random avancé
+    // Group 25: Advanced random
     mlx_method_random_bernoulli,
     mlx_method_random_truncated_normal,
     mlx_method_random_gumbel,
@@ -263,41 +263,41 @@ enum mlx_method_actions {
     mlx_method_random_laplace,
     mlx_method_random_multivariate_normal,
     mlx_method_random_permutation,
-    // Groupe 26: Algèbre linéaire avancée
+    // Group 26: Advanced linear algebra
     mlx_method_tri_inv,
     mlx_method_cholesky_inv,
     mlx_method_lu_factor,
     mlx_method_solve_triangular,
     mlx_method_eigvalsh,
     mlx_method_eigh,
-    // Groupe 27: Gather/Scatter avancé
+    // Group 27: Advanced gather/scatter
     mlx_method_take_along_axis,
     mlx_method_put_along_axis,
     mlx_method_gather,
     mlx_method_scatter,
     mlx_method_scatter_add,
     mlx_method_slice_update,
-    // Groupe 28: Nombres complexes
+    // Group 28: Complex numbers
     mlx_method_conjugate,
     mlx_method_real,
     mlx_method_imag,
-    // Groupe 29: Opérations fusionnées pour LLM
+    // Group 29: Fused operations for LLM
     mlx_method_fused_mlp,
     mlx_method_fused_moe,
     mlx_method_fused_moe_batch,
-    // Groupe 30: Évaluation explicite (lazy evaluation)
+    // Group 30: Explicit evaluation (lazy evaluation)
     mlx_method_eval,
-    // Groupe 31: Conversion vers LispE
+    // Group 31: Conversion to LispE
     mlx_method_tolist
 };
 
-// Type pour les arrays MLX
+ // Type for MLX arrays
 int16_t t_mlx_array = 0;
 int16_t t_mlx_shape = 0;
 
-// ============================================================================
-// MLXShape Element - Encapsule un mx::Shape pour LispE
-// ============================================================================
+ // ============================================================================
+ // MLXShape Element - Encapsulates an mx::Shape for LispE
+ // ============================================================================
 
 class MLXShape : public Element {
 public:
@@ -340,7 +340,7 @@ public:
         return true;
     }
 
-    // Accès aux éléments par index
+    // Access to elements by index
     Element* index(long i) override {
         if (i < 0)
             i = shape.size() + i;
@@ -378,9 +378,9 @@ public:
     }
 };
 
-// ============================================================================
-// MLX Array Element - Encapsule un mx::array pour LispE
-// ============================================================================
+ // ============================================================================
+ // MLX Array Element - Encapsulates an mx::array for LispE
+ // ============================================================================
 
 class MLXArray : public Element {
 public:
@@ -412,7 +412,7 @@ public:
         }
         ss << "] dtype: ";
 
-        // Afficher le type
+        // Show the type
         if (array.dtype() == mx::float32) ss << "float32";
         else if (array.dtype() == mx::float64) ss << "float64";
         else if (array.dtype() == mx::int32) ss << "int32";
@@ -436,32 +436,32 @@ public:
         return true;
     }
 
-    // Accès aux éléments par index
-    // Note: Pour un array multi-dimensionnel, on accède aux éléments linéairement
+    // Access to elements by index
+    // Note: For a multi-dimensional array, elements are accessed linearly
     Element* index(long i) override;
     Element* protected_index(LispE* lisp, long i) override;
     Element* protected_index(LispE* lisp, Element* k) override;
     Element* value_on_index(LispE* lisp, long i) override;
     Element* value_on_index(LispE* lisp, Element* idx) override;
 
-    // Opérations arithmétiques directes
+    // Direct arithmetic operations
     Element* plus_direct(LispE* lisp, Element* e) override;
     Element* minus_direct(LispE* lisp, Element* e) override;
     Element* multiply_direct(LispE* lisp, Element* e) override;
     Element* divide_direct(LispE* lisp, Element* e) override;
 
 private:
-    // Valeur d'échange pour éviter les allocations répétées dans index()
+    // Swap value to avoid repeated allocations in index()
     mutable Constfloat exchange_float{0};
     mutable Constinteger exchange_int{0};
     mutable Complexe exchange_complex{0, 0};
 };
 
-// ============================================================================
-// Helper functions pour convertir entre LispE et MLX
-// ============================================================================
+ // ============================================================================
+ // Helper functions to convert between LispE and MLX
+ // ============================================================================
 
-// Convertir un Element LispE vers mx::array
+ // Convert a LispE Element to mx::array
 mx::array element_to_array(LispE* lisp, Element* elem) {
     if (elem->type == t_mlx_array)
         return ((MLXArray*)elem)->array;
@@ -485,20 +485,20 @@ mx::array element_to_array(LispE* lisp, Element* elem) {
             Integers* ints = (Integers*)elem;
             std::vector<long> data;
             ints->liste.to_vector(data);
-            // Convertir long vers int64_t pour MLX
+            // Convert long to int64_t for MLX
             std::vector<int64_t> data64(data.begin(), data.end());
             return mx::array(data64.data(), {static_cast<int>(data64.size())}, mx::int64);
         }
 
         case t_complex: {
-            // Nombre complexe scalaire LispE -> mx::array complex64
+            // LispE scalar complex -> mx::array complex64
             Complexe* cplx = (Complexe*)elem;
             std::complex<float> val(cplx->content.real(), cplx->content.imag());
             return mx::array(val);
         }
 
         case t_list: {
-            // Pour les listes génériques, détecter le type via le premier élément
+            // For generic lists, detect the type via the first element
             if (elem->size() == 0) {
                 throw new Error("Error: Cannot convert empty list to MLX array");
             }
@@ -526,7 +526,7 @@ mx::array element_to_array(LispE* lisp, Element* elem) {
                     return mx::array(data.data(), {static_cast<int>(data.size())}, mx::int64);
                 }
                 case t_number: {
-                    // Number (générique) -> utiliser double
+                    // Number (generic) -> use double
                     std::vector<double> data;
                     for (long i = 0; i < elem->size(); i++) {
                         data.push_back(elem->index(i)->asNumber());
@@ -534,7 +534,7 @@ mx::array element_to_array(LispE* lisp, Element* elem) {
                     return mx::array(data.data(), {static_cast<int>(data.size())}, mx::float64);
                 }
                 case t_complex: {
-                    // Liste de nombres complexes -> mx::array complex64
+                    // List of complex numbers -> mx::array complex64
                     std::vector<mx::complex64_t> data;
                     for (long i = 0; i < elem->size(); i++) {
                         Element* e = elem->index(i);
@@ -542,7 +542,7 @@ mx::array element_to_array(LispE* lisp, Element* elem) {
                             Complexe* cplx = (Complexe*)e;
                             data.push_back(mx::complex64_t(cplx->content.real(), cplx->content.imag()));
                         } else {
-                            // Nombre réel traité comme complexe avec partie imaginaire = 0
+                            // Real number treated as complex with imaginary part = 0
                             data.push_back(mx::complex64_t(e->asNumber(), 0));
                         }
                     }
@@ -554,7 +554,7 @@ mx::array element_to_array(LispE* lisp, Element* elem) {
         }
 
         default:
-            // Scalaire
+            // Scalar
             if (elem->isNumber()) {
                 double val = elem->asNumber();
                 return mx::array(val);
@@ -563,7 +563,7 @@ mx::array element_to_array(LispE* lisp, Element* elem) {
     }
 }
 
-// Convertir une liste LispE en mx::Shape
+ // Convert a LispE list to mx::Shape
 void element_to_shape(Element* elem, mx::Shape& shape) {
     shape.clear();
     if (elem->type == t_mlx_shape) {
@@ -579,8 +579,8 @@ void element_to_shape(Element* elem, mx::Shape& shape) {
     }
 }
 
-// Convertir une liste LispE en std::vector<int> pour les axes
-// (Beaucoup de fonctions MLX utilisent std::vector<int> pour les axes)
+ // Convert a LispE list to std::vector<int> for axes
+ // (Many MLX functions use std::vector<int> for axes)
 std::vector<int> element_to_axes(Element* elem) {
     std::vector<int> axes;
     if (elem->type == t_mlx_shape) {
@@ -600,19 +600,19 @@ std::vector<int> element_to_axes(Element* elem) {
     return axes;
 }
 
-// Convertir un mx::array vers Element LispE
+ // Convert an mx::array to a LispE Element
 Element* array_to_element(LispE* lisp, const mx::array& arr) {
-    // Pour l'instant, on retourne toujours un MLXArray
-    // On pourrait aussi convertir vers Numbers/Floats/Integers selon le besoin
+    // For now, always return an MLXArray
+    // We could also convert to Numbers/Floats/Integers as needed
     return new MLXArray(arr);
 }
 
-// ============================================================================
-// Implémentation des méthodes d'accès aux éléments pour MLXArray
-// ============================================================================
+ // ============================================================================
+ // Implementation of element access methods for MLXArray
+ // ============================================================================
 
-// Helper pour extraire un élément à l'index i et retourner un Element LispE
-// Utilise la valeur d'échange pour éviter les allocations dans index()
+ // Helper to extract an element at index i and return a LispE Element
+ // Uses the swap value to avoid allocations in index()
 Element* MLXArray::index(long i) {
     mx::eval(array);  // S'assurer que l'array est évalué
     
@@ -649,14 +649,14 @@ Element* MLXArray::index(long i) {
             return &exchange_float;
         }
         default: {
-            // Pour les autres types, retourner comme float
+            // For other types, return as float
             exchange_float.content = 0;
             return &exchange_float;
         }
     }
 }
 
-// protected_index avec vérification des bornes
+ // protected_index with bounds checking
 Element* MLXArray::protected_index(LispE* lisp, long i) {
     if (i < 0)
         i = array.size() + i;
@@ -706,13 +706,13 @@ Element* MLXArray::protected_index(LispE* lisp, long i) {
     }
 }
 
-// protected_index avec Element comme index
+ // protected_index with Element as index
 Element* MLXArray::protected_index(LispE* lisp, Element* k) {
     long i = k->checkInteger(lisp);
     return protected_index(lisp, i);
 }
 
-// value_on_index - retourne null_ si hors bornes au lieu de lever une erreur
+ // value_on_index - returns null_ if out of bounds instead of raising an error
 Element* MLXArray::value_on_index(LispE* lisp, long i) {
     if (i < 0)
         i = array.size() + i;
@@ -762,15 +762,15 @@ Element* MLXArray::value_on_index(LispE* lisp, long i) {
     }
 }
 
-// value_on_index avec Element comme index
+ // value_on_index with Element as index
 Element* MLXArray::value_on_index(LispE* lisp, Element* idx) {
     long i = idx->checkInteger(lisp);
     return value_on_index(lisp, i);
 }
 
-// ============================================================================
-// Implémentation des opérations arithmétiques directes pour MLXArray
-// ============================================================================
+ // ============================================================================
+ // Implementation of direct arithmetic operations for MLXArray
+ // ============================================================================
 
 Element* MLXArray::plus_direct(LispE* lisp, Element* e) {
     try {
@@ -863,9 +863,9 @@ Element* MLXArray::divide_direct(LispE* lisp, Element* e) {
     }
 }
 
-// ============================================================================
-// Classe principale pour les méthodes MLX
-// ============================================================================
+ // ============================================================================
+ // Main class for MLX methods
+ // ============================================================================
 
 class Lispe_mlx_methods : public Element {
 public:
@@ -896,34 +896,34 @@ public:
     Element* method_abs(LispE* lisp);
     Element* method_concatenate(LispE* lisp);
     Element* method_split(LispE* lisp);
-    // Fonctions d'activation
+    // Activation functions
     Element* method_sigmoid(LispE* lisp);
     Element* method_relu(LispE* lisp);
     Element* method_softmax(LispE* lisp);
     Element* method_tanh(LispE* lisp);
-    // Fonctions trigonométriques
+    // Trigonometric functions
     Element* method_sin(LispE* lisp);
     Element* method_cos(LispE* lisp);
     Element* method_tan(LispE* lisp);
-    // Fonctions de réduction avancées
+    // Advanced reduction functions
     Element* method_argmax(LispE* lisp);
     Element* method_argmin(LispE* lisp);
-    // Fonctions supplémentaires
+    // Additional functions
     Element* method_power(LispE* lisp);
     Element* method_negative(LispE* lisp);
     Element* method_square(LispE* lisp);
-    // Groupe 1: Création d'arrays
+    // Group 1: Array creation
     Element* method_zeros(LispE* lisp);
     Element* method_ones(LispE* lisp);
     Element* method_full(LispE* lisp);
     Element* method_arange(LispE* lisp);
     Element* method_linspace(LispE* lisp);
     Element* method_eye(LispE* lisp);
-    // Groupe 2: Nombres aléatoires
+    // Group 2: Random numbers
     Element* method_random_uniform(LispE* lisp);
     Element* method_random_normal(LispE* lisp);
     Element* method_random_randint(LispE* lisp);
-    // Groupe 3: Mathématiques
+    // Group 3: Mathematics
     Element* method_log2(LispE* lisp);
     Element* method_log10(LispE* lisp);
     Element* method_log1p(LispE* lisp);
@@ -933,13 +933,13 @@ public:
     Element* method_clip(LispE* lisp);
     Element* method_reciprocal(LispE* lisp);
     Element* method_rsqrt(LispE* lisp);
-    // Groupe 4: Trigonométrie inverse
+    // Group 4: Inverse trigonometry
     Element* method_arcsin(LispE* lisp);
     Element* method_arccos(LispE* lisp);
     Element* method_arctan(LispE* lisp);
     Element* method_sinh(LispE* lisp);
     Element* method_cosh(LispE* lisp);
-    // Groupe 5: Réductions
+    // Group 5: Reductions
     Element* method_prod(LispE* lisp);
     Element* method_max(LispE* lisp);
     Element* method_min(LispE* lisp);
@@ -947,7 +947,7 @@ public:
     Element* method_std(LispE* lisp);
     Element* method_all(LispE* lisp);
     Element* method_any(LispE* lisp);
-    // Groupe 6: Comparaisons
+    // Group 6: Comparisons
     Element* method_equal(LispE* lisp);
     Element* method_not_equal(LispE* lisp);
     Element* method_greater(LispE* lisp);
@@ -955,7 +955,7 @@ public:
     Element* method_greater_equal(LispE* lisp);
     Element* method_less_equal(LispE* lisp);
     Element* method_where(LispE* lisp);
-    // Groupe 7: Manipulation
+    // Group 7: Manipulation
     Element* method_flatten(LispE* lisp);
     Element* method_squeeze(LispE* lisp);
     Element* method_expand_dims(LispE* lisp);
@@ -963,7 +963,7 @@ public:
     Element* method_tile(LispE* lisp);
     Element* method_repeat(LispE* lisp);
     Element* method_pad(LispE* lisp);
-    // Groupe 8: Activation deep learning
+    // Group 8: Deep learning activations
     Element* method_gelu(LispE* lisp);
     Element* method_gelu_tanh(LispE* lisp);
     Element* method_silu(LispE* lisp);
@@ -971,7 +971,7 @@ public:
     Element* method_elu(LispE* lisp);
     Element* method_selu(LispE* lisp);
     Element* method_log_softmax(LispE* lisp);
-    // Groupe 9: Algèbre linéaire
+    // Group 9: Linear algebra
     Element* method_norm(LispE* lisp);
     Element* method_inv(LispE* lisp);
     Element* method_svd(LispE* lisp);
@@ -983,14 +983,14 @@ public:
     Element* method_tucker_reconstruct(LispE* lisp);
     Element* method_tucker_compression_ratio(LispE* lisp);
     Element* method_khatri_rao_product(LispE* lisp);
-    // Groupe 10: Opérations logiques et tests
+    // Group 10: Logical operations and tests
     Element* method_logical_and(LispE* lisp);
     Element* method_logical_or(LispE* lisp);
     Element* method_logical_not(LispE* lisp);
     Element* method_isnan(LispE* lisp);
     Element* method_isinf(LispE* lisp);
     Element* method_isfinite(LispE* lisp);
-    // Groupe 11: Manipulation avancée
+    // Group 11: Advanced manipulation
     Element* method_flip(LispE* lisp);
     Element* method_roll(LispE* lisp);
     Element* method_sort(LispE* lisp);
@@ -999,26 +999,26 @@ public:
     Element* method_moveaxis(LispE* lisp);
     Element* method_swapaxes(LispE* lisp);
     Element* method_broadcast_to(LispE* lisp);
-    // Groupe 12: Création avancée
+    // Group 12: Advanced creation
     Element* method_identity(LispE* lisp);
     Element* method_tri(LispE* lisp);
     Element* method_tril(LispE* lisp);
     Element* method_triu(LispE* lisp);
     Element* method_meshgrid(LispE* lisp);
-    // Groupe 13: Algèbre linéaire avancée
+    // Group 13: Advanced linear algebra
     Element* method_pinv(LispE* lisp);
     Element* method_eig(LispE* lisp);
     Element* method_eigvals(LispE* lisp);
     Element* method_lu(LispE* lisp);
     Element* method_cross(LispE* lisp);
-    // Groupe 14: I/O de modèles
+    // Group 14: Model I/O
     Element* method_save(LispE* lisp);
     Element* method_load(LispE* lisp);
     Element* method_load_safetensors(LispE* lisp);
     Element* method_save_safetensors(LispE* lisp);
     Element* method_load_gguf(LispE* lisp);
     Element* method_save_gguf(LispE* lisp);
-    // Groupe 15: Quantification et mémoire
+    // Group 15: Quantization and memory
     Element* method_quantize(LispE* lisp);
     Element* method_dequantize(LispE* lisp);
     Element* method_quantized_matmul(LispE* lisp);
@@ -1029,7 +1029,7 @@ public:
     Element* method_get_cache_memory(LispE* lisp);
     Element* method_set_memory_limit(LispE* lisp);
     Element* method_set_cache_limit(LispE* lisp);
-    // Groupe 16: Opérations supplémentaires
+    // Group 16: Additional operations
     Element* method_slice(LispE* lisp);
     Element* method_trace(LispE* lisp);
     Element* method_diagonal(LispE* lisp);
@@ -1041,7 +1041,7 @@ public:
     Element* method_cumprod(LispE* lisp);
     Element* method_topk(LispE* lisp);
     Element* method_partition(LispE* lisp);
-    // Groupe 17: FFT (Transformées de Fourier)
+    // Group 17: FFT (Fourier Transforms)
     Element* method_fft(LispE* lisp);
     Element* method_ifft(LispE* lisp);
     Element* method_fft2(LispE* lisp);
@@ -1056,7 +1056,7 @@ public:
     Element* method_irfftn(LispE* lisp);
     Element* method_fftshift(LispE* lisp);
     Element* method_ifftshift(LispE* lisp);
-    // Groupe 18: Fonctions mathématiques avancées
+    // Group 18: Advanced math functions
     Element* method_arctan2(LispE* lisp);
     Element* method_arcsinh(LispE* lisp);
     Element* method_arccosh(LispE* lisp);
@@ -1069,23 +1069,23 @@ public:
     Element* method_logaddexp(LispE* lisp);
     Element* method_sign(LispE* lisp);
     Element* method_kron(LispE* lisp);
-    // Groupe 19: Opérations bitwise
+    // Group 19: Bitwise operations
     Element* method_bitwise_and(LispE* lisp);
     Element* method_bitwise_or(LispE* lisp);
     Element* method_bitwise_xor(LispE* lisp);
     Element* method_bitwise_invert(LispE* lisp);
     Element* method_left_shift(LispE* lisp);
     Element* method_right_shift(LispE* lisp);
-    // Groupe 20: Division et reste
+    // Group 20: Division and remainder
     Element* method_divmod(LispE* lisp);
     Element* method_floor_divide(LispE* lisp);
     Element* method_remainder(LispE* lisp);
-    // Groupe 21: Opérations cumulatives et logsumexp
+    // Group 21: Cumulative operations and logsumexp
     Element* method_cummax(LispE* lisp);
     Element* method_cummin(LispE* lisp);
     Element* method_logsumexp(LispE* lisp);
     Element* method_logcumsumexp(LispE* lisp);
-    // Groupe 22: Convolutions (deep learning)
+    // Group 22: Convolutions (deep learning)
     Element* method_conv1d(LispE* lisp);
     Element* method_conv2d(LispE* lisp);
     Element* method_conv3d(LispE* lisp);
@@ -1093,13 +1093,13 @@ public:
     Element* method_conv_transpose2d(LispE* lisp);
     Element* method_conv_transpose3d(LispE* lisp);
     Element* method_conv_general(LispE* lisp);
-    // Groupe 23: Opérations spécialisées ML
+    // Group 23: ML specialized operations
     Element* method_rms_norm(LispE* lisp);
     Element* method_layer_norm(LispE* lisp);
     Element* method_rope(LispE* lisp);
     Element* method_scaled_dot_product_attention(LispE* lisp);
     Element* method_einsum(LispE* lisp);
-    // Groupe 24: Manipulation et création avancée
+    // Group 24: Advanced manipulation and creation
     Element* method_dtype(LispE* lisp);
     Element* method_astype(LispE* lisp);
     Element* method_copy(LispE* lisp);
@@ -1111,7 +1111,7 @@ public:
     Element* method_atleast_3d(LispE* lisp);
     Element* method_array_equal(LispE* lisp);
     Element* method_allclose(LispE* lisp);
-    // Groupe 25: Random avancé
+    // Group 25: Advanced random
     Element* method_random_bernoulli(LispE* lisp);
     Element* method_random_truncated_normal(LispE* lisp);
     Element* method_random_gumbel(LispE* lisp);
@@ -1119,37 +1119,37 @@ public:
     Element* method_random_laplace(LispE* lisp);
     Element* method_random_multivariate_normal(LispE* lisp);
     Element* method_random_permutation(LispE* lisp);
-    // Groupe 26: Algèbre linéaire avancée
+    // Group 26: Advanced linear algebra
     Element* method_tri_inv(LispE* lisp);
     Element* method_cholesky_inv(LispE* lisp);
     Element* method_lu_factor(LispE* lisp);
     Element* method_solve_triangular(LispE* lisp);
     Element* method_eigvalsh(LispE* lisp);
     Element* method_eigh(LispE* lisp);
-    // Groupe 27: Gather/Scatter avancé
+    // Group 27: Advanced gather/scatter
     Element* method_take_along_axis(LispE* lisp);
     Element* method_put_along_axis(LispE* lisp);
     Element* method_gather(LispE* lisp);
     Element* method_scatter(LispE* lisp);
     Element* method_scatter_add(LispE* lisp);
     Element* method_slice_update(LispE* lisp);
-    // Groupe 28: Nombres complexes
+    // Group 28: Complex numbers
     Element* method_conjugate(LispE* lisp);
     Element* method_real(LispE* lisp);
     Element* method_imag(LispE* lisp);
-    // Groupe 29: Opérations fusionnées pour LLM
+    // Group 29: Fused operations for LLM
     Element* method_fused_mlp(LispE* lisp);
     Element* method_fused_moe(LispE* lisp);
     Element* method_fused_moe_batch(LispE* lisp);
-    // Groupe 30: Évaluation explicite (lazy evaluation)
+    // Group 30: Explicit evaluation (lazy evaluation)
     Element* method_eval(LispE* lisp);
-    // Groupe 31: Conversion vers LispE
+    // Group 31: Conversion to LispE
     Element* method_tolist(LispE* lisp);
 };
 
-// ============================================================================
-// Implémentation des méthodes
-// ============================================================================
+ // ============================================================================
+ // Implementation of methods
+ // ============================================================================
 
 Element* Lispe_mlx_methods::eval(LispE* lisp) {
     switch (action) {
@@ -1193,7 +1193,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_concatenate(lisp);
         case mlx_method_split:
             return method_split(lisp);
-        // Fonctions d'activation
+        // Activation functions
         case mlx_method_sigmoid:
             return method_sigmoid(lisp);
         case mlx_method_relu:
@@ -1202,26 +1202,26 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_softmax(lisp);
         case mlx_method_tanh:
             return method_tanh(lisp);
-        // Fonctions trigonométriques
+        // Trigonometric functions
         case mlx_method_sin:
             return method_sin(lisp);
         case mlx_method_cos:
             return method_cos(lisp);
         case mlx_method_tan:
             return method_tan(lisp);
-        // Fonctions de réduction avancées
+        // Advanced reduction functions
         case mlx_method_argmax:
             return method_argmax(lisp);
         case mlx_method_argmin:
             return method_argmin(lisp);
-        // Fonctions supplémentaires
+        // Additional functions
         case mlx_method_power:
             return method_power(lisp);
         case mlx_method_negative:
             return method_negative(lisp);
         case mlx_method_square:
             return method_square(lisp);
-        // Groupe 1: Création d'arrays
+        // Group 1: Array creation
         case mlx_method_zeros:
             return method_zeros(lisp);
         case mlx_method_ones:
@@ -1234,14 +1234,14 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_linspace(lisp);
         case mlx_method_eye:
             return method_eye(lisp);
-        // Groupe 2: Nombres aléatoires
+        // Group 2: Random numbers
         case mlx_method_random_uniform:
             return method_random_uniform(lisp);
         case mlx_method_random_normal:
             return method_random_normal(lisp);
         case mlx_method_random_randint:
             return method_random_randint(lisp);
-        // Groupe 3: Mathématiques
+        // Group 3: Mathematics
         case mlx_method_log2:
             return method_log2(lisp);
         case mlx_method_log10:
@@ -1260,7 +1260,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_reciprocal(lisp);
         case mlx_method_rsqrt:
             return method_rsqrt(lisp);
-        // Groupe 4: Trigonométrie inverse
+        // Group 4: Inverse trigonometry
         case mlx_method_arcsin:
             return method_arcsin(lisp);
         case mlx_method_arccos:
@@ -1271,7 +1271,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_sinh(lisp);
         case mlx_method_cosh:
             return method_cosh(lisp);
-        // Groupe 5: Réductions
+        // Group 5: Reductions
         case mlx_method_prod:
             return method_prod(lisp);
         case mlx_method_max:
@@ -1286,7 +1286,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_all(lisp);
         case mlx_method_any:
             return method_any(lisp);
-        // Groupe 6: Comparaisons
+        // Group 6: Comparisons
         case mlx_method_equal:
             return method_equal(lisp);
         case mlx_method_not_equal:
@@ -1301,7 +1301,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_less_equal(lisp);
         case mlx_method_where:
             return method_where(lisp);
-        // Groupe 7: Manipulation
+        // Group 7: Manipulation
         case mlx_method_flatten:
             return method_flatten(lisp);
         case mlx_method_squeeze:
@@ -1316,7 +1316,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_repeat(lisp);
         case mlx_method_pad:
             return method_pad(lisp);
-        // Groupe 8: Activation deep learning
+        // Group 8: Deep learning activations
         case mlx_method_gelu:
             return method_gelu(lisp);
         case mlx_method_gelu_tanh:
@@ -1331,7 +1331,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_selu(lisp);
         case mlx_method_log_softmax:
             return method_log_softmax(lisp);
-        // Groupe 9: Algèbre linéaire
+        // Group 9: Linear algebra
         case mlx_method_norm:
             return method_norm(lisp);
         case mlx_method_inv:
@@ -1354,7 +1354,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_tucker_compression_ratio(lisp);
         case mlx_method_khatri_rao_product:
             return method_khatri_rao_product(lisp);
-        // Groupe 10: Opérations logiques et tests
+        // Group 10: Logical operations and tests
         case mlx_method_logical_and:
             return method_logical_and(lisp);
         case mlx_method_logical_or:
@@ -1367,7 +1367,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_isinf(lisp);
         case mlx_method_isfinite:
             return method_isfinite(lisp);
-        // Groupe 11: Manipulation avancée
+        // Group 11: Advanced manipulation
         case mlx_method_flip:
             return method_flip(lisp);
         case mlx_method_roll:
@@ -1384,7 +1384,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_swapaxes(lisp);
         case mlx_method_broadcast_to:
             return method_broadcast_to(lisp);
-        // Groupe 12: Création avancée
+        // Group 12: Advanced creation
         case mlx_method_identity:
             return method_identity(lisp);
         case mlx_method_tri:
@@ -1395,7 +1395,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_triu(lisp);
         case mlx_method_meshgrid:
             return method_meshgrid(lisp);
-        // Groupe 13: Algèbre linéaire avancée
+        // Group 13: Advanced linear algebra
         case mlx_method_pinv:
             return method_pinv(lisp);
         case mlx_method_eig:
@@ -1406,7 +1406,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_lu(lisp);
         case mlx_method_cross:
             return method_cross(lisp);
-        // Groupe 14: I/O de modèles
+        // Group 14: Model I/O
         case mlx_method_save:
             return method_save(lisp);
         case mlx_method_load:
@@ -1419,7 +1419,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_load_gguf(lisp);
         case mlx_method_save_gguf:
             return method_save_gguf(lisp);
-        // Groupe 15: Quantification et mémoire
+        // Group 15: Quantization and memory
         case mlx_method_quantize:
             return method_quantize(lisp);
         case mlx_method_dequantize:
@@ -1440,7 +1440,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_set_memory_limit(lisp);
         case mlx_method_set_cache_limit:
             return method_set_cache_limit(lisp);
-        // Groupe 16: Opérations supplémentaires
+        // Group 16: Additional operations
         case mlx_method_slice:
             return method_slice(lisp);
         case mlx_method_trace:
@@ -1463,7 +1463,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_topk(lisp);
         case mlx_method_partition:
             return method_partition(lisp);
-        // Groupe 17: FFT
+        // Group 17: FFT
         case mlx_method_fft:
             return method_fft(lisp);
         case mlx_method_ifft:
@@ -1492,7 +1492,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_fftshift(lisp);
         case mlx_method_ifftshift:
             return method_ifftshift(lisp);
-        // Groupe 18: Fonctions mathématiques avancées
+        // Group 18: Advanced math functions
         case mlx_method_arctan2:
             return method_arctan2(lisp);
         case mlx_method_arcsinh:
@@ -1517,7 +1517,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_sign(lisp);
         case mlx_method_kron:
             return method_kron(lisp);
-        // Groupe 19: Opérations bitwise
+        // Group 19: Bitwise operations
         case mlx_method_bitwise_and:
             return method_bitwise_and(lisp);
         case mlx_method_bitwise_or:
@@ -1530,14 +1530,14 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_left_shift(lisp);
         case mlx_method_right_shift:
             return method_right_shift(lisp);
-        // Groupe 20: Division et reste
+        // Group 20: Division and remainder
         case mlx_method_divmod:
             return method_divmod(lisp);
         case mlx_method_floor_divide:
             return method_floor_divide(lisp);
         case mlx_method_remainder:
             return method_remainder(lisp);
-        // Groupe 21: Opérations cumulatives et logsumexp
+        // Group 21: Cumulative operations and logsumexp
         case mlx_method_cummax:
             return method_cummax(lisp);
         case mlx_method_cummin:
@@ -1546,7 +1546,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_logsumexp(lisp);
         case mlx_method_logcumsumexp:
             return method_logcumsumexp(lisp);
-        // Groupe 22: Convolutions (deep learning)
+        // Group 22: Convolutions (deep learning)
         case mlx_method_conv1d:
             return method_conv1d(lisp);
         case mlx_method_conv2d:
@@ -1561,7 +1561,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_conv_transpose3d(lisp);
         case mlx_method_conv_general:
             return method_conv_general(lisp);
-        // Groupe 23: Opérations spécialisées ML
+        // Group 23: ML specialized operations
         case mlx_method_rms_norm:
             return method_rms_norm(lisp);
         case mlx_method_layer_norm:
@@ -1572,7 +1572,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_scaled_dot_product_attention(lisp);
         case mlx_method_einsum:
             return method_einsum(lisp);
-        // Groupe 24: Manipulation et création avancée
+        // Group 24: Advanced manipulation and creation
         case mlx_method_dtype:
             return method_dtype(lisp);
         case mlx_method_astype:
@@ -1595,7 +1595,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_array_equal(lisp);
         case mlx_method_allclose:
             return method_allclose(lisp);
-        // Groupe 25: Random avancé
+        // Group 25: Advanced random
         case mlx_method_random_bernoulli:
             return method_random_bernoulli(lisp);
         case mlx_method_random_truncated_normal:
@@ -1610,7 +1610,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_random_multivariate_normal(lisp);
         case mlx_method_random_permutation:
             return method_random_permutation(lisp);
-        // Groupe 26: Algèbre linéaire avancée
+        // Group 26: Advanced linear algebra
         case mlx_method_tri_inv:
             return method_tri_inv(lisp);
         case mlx_method_cholesky_inv:
@@ -1623,7 +1623,7 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_eigvalsh(lisp);
         case mlx_method_eigh:
             return method_eigh(lisp);
-        // Groupe 27: Gather/Scatter avancé
+        // Group 27: Advanced gather/scatter
         case mlx_method_take_along_axis:
             return method_take_along_axis(lisp);
         case mlx_method_put_along_axis:
@@ -1636,24 +1636,24 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_scatter_add(lisp);
         case mlx_method_slice_update:
             return method_slice_update(lisp);
-        // Groupe 28: Nombres complexes
+        // Group 28: Complex numbers
         case mlx_method_conjugate:
             return method_conjugate(lisp);
         case mlx_method_real:
             return method_real(lisp);
         case mlx_method_imag:
             return method_imag(lisp);
-        // Groupe 29: Opérations fusionnées pour LLM
+        // Group 29: Fused operations for LLM
         case mlx_method_fused_mlp:
             return method_fused_mlp(lisp);
         case mlx_method_fused_moe:
             return method_fused_moe(lisp);
         case mlx_method_fused_moe_batch:
             return method_fused_moe_batch(lisp);
-        // Groupe 30: Évaluation explicite (lazy evaluation)
+        // Group 30: Explicit evaluation (lazy evaluation)
         case mlx_method_eval:
             return method_eval(lisp);
-        // Groupe 31: Conversion vers LispE
+        // Group 31: Conversion to LispE
         case mlx_method_tolist:
             return method_tolist(lisp);
         default:
@@ -1703,7 +1703,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Concatenate MLX arrays along a specified axis";
         case mlx_method_split:
             return L"Split an MLX array into multiple sub-arrays";
-        // Fonctions d'activation
+        // Activation functions
         case mlx_method_sigmoid:
             return L"Apply sigmoid activation function element-wise";
         case mlx_method_relu:
@@ -1712,26 +1712,26 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Apply softmax activation function along an axis";
         case mlx_method_tanh:
             return L"Apply hyperbolic tangent activation function element-wise";
-        // Fonctions trigonométriques
+        // Trigonometric functions
         case mlx_method_sin:
             return L"Compute sine element-wise";
         case mlx_method_cos:
             return L"Compute cosine element-wise";
         case mlx_method_tan:
             return L"Compute tangent element-wise";
-        // Fonctions de réduction avancées
+        // Advanced reduction functions
         case mlx_method_argmax:
             return L"Return indices of maximum values along an axis";
         case mlx_method_argmin:
             return L"Return indices of minimum values along an axis";
-        // Fonctions supplémentaires
+        // Additional functions
         case mlx_method_power:
             return L"Raise array elements to a power element-wise";
         case mlx_method_negative:
             return L"Negate array elements element-wise";
         case mlx_method_square:
             return L"Compute square of array elements element-wise";
-        // Groupe 1: Création d'arrays
+        // Group 1: Array creation
         case mlx_method_zeros:
             return L"Create an array filled with zeros";
         case mlx_method_ones:
@@ -1744,14 +1744,14 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Create an array with linearly spaced values";
         case mlx_method_eye:
             return L"Create an identity matrix";
-        // Groupe 2: Nombres aléatoires
+        // Group 2: Random numbers
         case mlx_method_random_uniform:
             return L"Generate uniform random values in [low, high)";
         case mlx_method_random_normal:
             return L"Generate normally distributed random values";
         case mlx_method_random_randint:
             return L"Generate random integers in [low, high)";
-        // Groupe 3: Mathématiques
+        // Group 3: Mathematics
         case mlx_method_log2:
             return L"Compute base-2 logarithm element-wise";
         case mlx_method_log10:
@@ -1770,7 +1770,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Compute 1/x element-wise";
         case mlx_method_rsqrt:
             return L"Compute 1/sqrt(x) element-wise";
-        // Groupe 4: Trigonométrie inverse
+        // Group 4: Inverse trigonometry
         case mlx_method_arcsin:
             return L"Compute arc sine element-wise";
         case mlx_method_arccos:
@@ -1781,7 +1781,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Compute hyperbolic sine element-wise";
         case mlx_method_cosh:
             return L"Compute hyperbolic cosine element-wise";
-        // Groupe 5: Réductions
+        // Group 5: Reductions
         case mlx_method_prod:
             return L"Compute product of array elements";
         case mlx_method_max:
@@ -1796,7 +1796,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Test if all elements are true";
         case mlx_method_any:
             return L"Test if any element is true";
-        // Groupe 6: Comparaisons
+        // Group 6: Comparisons
         case mlx_method_equal:
             return L"Element-wise equality comparison";
         case mlx_method_not_equal:
@@ -1811,7 +1811,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Element-wise less than or equal comparison";
         case mlx_method_where:
             return L"Select elements based on condition";
-        // Groupe 7: Manipulation
+        // Group 7: Manipulation
         case mlx_method_flatten:
             return L"Flatten array to 1D";
         case mlx_method_squeeze:
@@ -1826,7 +1826,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Repeat array elements along an axis";
         case mlx_method_pad:
             return L"Pad array with values";
-        // Groupe 8: Activation deep learning
+        // Group 8: Deep learning activations
         case mlx_method_gelu:
             return L"Apply GELU activation function";
         case mlx_method_silu:
@@ -1839,7 +1839,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Apply SELU activation function";
         case mlx_method_log_softmax:
             return L"Apply log softmax function";
-        // Groupe 9: Algèbre linéaire
+        // Group 9: Linear algebra
         case mlx_method_norm:
             return L"Compute vector or matrix norm";
         case mlx_method_inv:
@@ -1862,7 +1862,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Compute compression ratio of Tucker decomposition";
         case mlx_method_khatri_rao_product:
             return L"Khatri-Rao product (column-wise Kronecker product)";
-        // Groupe 10: Opérations logiques et tests
+        // Group 10: Logical operations and tests
         case mlx_method_logical_and:
             return L"Element-wise logical AND";
         case mlx_method_logical_or:
@@ -1875,7 +1875,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Test for infinite values";
         case mlx_method_isfinite:
             return L"Test for finite values";
-        // Groupe 11: Manipulation avancée
+        // Group 11: Advanced manipulation
         case mlx_method_flip:
             return L"Reverse array along axes";
         case mlx_method_roll:
@@ -1892,7 +1892,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Swap two axes";
         case mlx_method_broadcast_to:
             return L"Broadcast array to shape";
-        // Groupe 12: Création avancée
+        // Group 12: Advanced creation
         case mlx_method_identity:
             return L"Identity matrix (alias for eye)";
         case mlx_method_tri:
@@ -1903,7 +1903,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Extract upper triangular part";
         case mlx_method_meshgrid:
             return L"Create coordinate matrices";
-        // Groupe 13: Algèbre linéaire avancée
+        // Group 13: Advanced linear algebra
         case mlx_method_pinv:
             return L"Compute the Moore-Penrose pseudo-inverse";
         case mlx_method_eig:
@@ -1914,7 +1914,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Compute LU decomposition";
         case mlx_method_cross:
             return L"Compute cross product of two vectors";
-        // Groupe 14: I/O de modèles
+        // Group 14: Model I/O
         case mlx_method_save:
             return L"Save array to .npy file";
         case mlx_method_load:
@@ -1927,7 +1927,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Load arrays from .gguf file";
         case mlx_method_save_gguf:
             return L"Save arrays to .gguf file";
-        // Groupe 15: Quantification et mémoire
+        // Group 15: Quantization and memory
         case mlx_method_quantize:
             return L"Quantize a matrix";
         case mlx_method_dequantize:
@@ -1948,7 +1948,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Set memory limit";
         case mlx_method_set_cache_limit:
             return L"Set cache limit";
-        // Groupe 16: Opérations supplémentaires
+        // Group 16: Additional operations
         case mlx_method_slice:
             return L"Extract a slice from an array";
         case mlx_method_trace:
@@ -1971,7 +1971,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Get top-k values";
         case mlx_method_partition:
             return L"Partition array around kth element";
-        // Groupe 17: FFT
+        // Group 17: FFT
         case mlx_method_fft:
             return L"Compute 1D Fast Fourier Transform";
         case mlx_method_ifft:
@@ -2000,7 +2000,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Shift zero-frequency component to center";
         case mlx_method_ifftshift:
             return L"Inverse of fftshift";
-        // Groupe 18: Fonctions mathématiques avancées
+        // Group 18: Advanced math functions
         case mlx_method_arctan2:
             return L"Element-wise arc tangent of a/b with correct quadrant";
         case mlx_method_arcsinh:
@@ -2025,7 +2025,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Return element-wise sign (-1, 0, or 1)";
         case mlx_method_kron:
             return L"Compute Kronecker product of two arrays";
-        // Groupe 19: Opérations bitwise
+        // Group 19: Bitwise operations
         case mlx_method_bitwise_and:
             return L"Element-wise bitwise AND";
         case mlx_method_bitwise_or:
@@ -2038,14 +2038,14 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Element-wise left bit shift";
         case mlx_method_right_shift:
             return L"Element-wise right bit shift";
-        // Groupe 20: Division et reste
+        // Group 20: Division and remainder
         case mlx_method_divmod:
             return L"Return quotient and remainder as a list";
         case mlx_method_floor_divide:
             return L"Element-wise floor division";
         case mlx_method_remainder:
             return L"Element-wise remainder of division";
-        // Groupe 21: Opérations cumulatives et logsumexp
+        // Group 21: Cumulative operations and logsumexp
         case mlx_method_cummax:
             return L"Cumulative maximum along an axis";
         case mlx_method_cummin:
@@ -2054,7 +2054,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Compute log(sum(exp(x))) in a numerically stable way";
         case mlx_method_logcumsumexp:
             return L"Cumulative logsumexp along an axis";
-        // Groupe 22: Convolutions (deep learning)
+        // Group 22: Convolutions (deep learning)
         case mlx_method_conv1d:
             return L"1D convolution with a filter";
         case mlx_method_conv2d:
@@ -2069,7 +2069,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"3D transposed convolution (deconvolution)";
         case mlx_method_conv_general:
             return L"General N-D convolution with full control over parameters";
-        // Groupe 23: Opérations spécialisées ML
+        // Group 23: ML specialized operations
         case mlx_method_rms_norm:
             return L"Root Mean Square normalization (used in LLaMA)";
         case mlx_method_layer_norm:
@@ -2080,7 +2080,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Scaled dot-product attention mechanism";
         case mlx_method_einsum:
             return L"Einstein summation convention";
-        // Groupe 24: Manipulation et création avancée
+        // Group 24: Advanced manipulation and creation
         case mlx_method_dtype:
             return L"Get the data type of an array as a string";
         case mlx_method_astype:
@@ -2103,7 +2103,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Test if two arrays are element-wise equal";
         case mlx_method_allclose:
             return L"Test if two arrays are element-wise close within tolerance";
-        // Groupe 25: Random avancé
+        // Group 25: Advanced random
         case mlx_method_random_bernoulli:
             return L"Generate Bernoulli random samples with given probability";
         case mlx_method_random_truncated_normal:
@@ -2118,7 +2118,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Generate multivariate normal distribution samples";
         case mlx_method_random_permutation:
             return L"Generate random permutation of array or indices";
-        // Groupe 26: Algèbre linéaire avancée
+        // Group 26: Advanced linear algebra
         case mlx_method_tri_inv:
             return L"Compute the inverse of a triangular matrix";
         case mlx_method_cholesky_inv:
@@ -2131,7 +2131,7 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Compute eigenvalues of a Hermitian/symmetric matrix";
         case mlx_method_eigh:
             return L"Compute eigenvalues and eigenvectors of a Hermitian/symmetric matrix";
-        // Groupe 27: Gather/Scatter avancé
+        // Group 27: Advanced gather/scatter
         case mlx_method_take_along_axis:
             return L"Take values along an axis at given indices";
         case mlx_method_put_along_axis:
@@ -2144,33 +2144,33 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Scatter and add updates at given indices";
         case mlx_method_slice_update:
             return L"Update a slice of the source array";
-        // Groupe 28: Nombres complexes
+        // Group 28: Complex numbers
         case mlx_method_conjugate:
             return L"Compute the complex conjugate of an array";
         case mlx_method_real:
             return L"Extract the real part of a complex array";
         case mlx_method_imag:
             return L"Extract the imaginary part of a complex array";
-        // Groupe 31: Conversion vers LispE
+        // Group 31: Conversion to LispE
         case mlx_method_tolist:
             return L"Convert MLX array to LispE list (floats, integers, or numbers)";
     }
     return L"";
 }
 
-// mlx_shape - Crée un MLXShape à partir de données numériques OU extrait la shape d'un MLXArray
-// Signature: deflib mlx_shape(data)
+ // mlx_shape - Create an MLXShape from numeric data OR extract the shape of an MLXArray
+ // Signature: deflib mlx_shape(data)
 Element* Lispe_mlx_methods::method_shape(LispE* lisp) {
     Element* data_elem = lisp->get_variable("data");
 
     try {
-        // Si c'est un MLXArray, extraire sa shape
+        // If it's an MLXArray, extract its shape
         if (data_elem->type == t_mlx_array) {
             mx::Shape shape = ((MLXArray*)data_elem)->array.shape();
             return new MLXShape(std::move(shape));
         }
         
-        // Sinon, créer un shape à partir des données
+        // Otherwise, create a shape from the data
         mx::Shape shape;
         element_to_shape(data_elem, shape);
         return new MLXShape(std::move(shape));
@@ -2179,25 +2179,25 @@ Element* Lispe_mlx_methods::method_shape(LispE* lisp) {
     }
 }
 
-// mlx::array - Crée un mx::array à partir de données numériques
-// Signature: deflib mlx_array(data (shape) (dtype))
+ // mlx::array - Create an mx::array from numeric data
+ // Signature: deflib mlx_array(data (shape) (dtype))
 Element* Lispe_mlx_methods::method_array(LispE* lisp) {
     Element* data_elem = lisp->get_variable("data");
     Element* shape_elem = lisp->get_variable("shape");
     Element* dtype_elem = lisp->get_variable("dtype");
 
     try {
-        // Convertir les données en mx::array
+        // Convert the data to mx::array
         mx::array arr = element_to_array(lisp, data_elem);
 
-        // Si shape est fourni, redimensionner
+        // If shape is provided, resize
         if (shape_elem != null_) {
             mx::Shape new_shape;
             element_to_shape(shape_elem, new_shape);
             arr = mx::reshape(arr, new_shape);
         }
 
-        // Si dtype est fourni, convertir le type
+        // If dtype is provided, cast the type
         if (dtype_elem != null_) {
             std::wstring dtype_str = dtype_elem->asString(lisp);
             mx::Dtype target_dtype = mx::float32; // Par défaut
@@ -2225,8 +2225,8 @@ Element* Lispe_mlx_methods::method_array(LispE* lisp) {
     }
 }
 
-// mlx::reshape - Redimensionne un array
-// Signature: deflib mlx_reshape(array shape)
+ // mlx::reshape - Reshape an array
+ // Signature: deflib mlx_reshape(array shape)
 Element* Lispe_mlx_methods::method_reshape(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* shape_elem = lisp->get_variable("shape");
@@ -2245,8 +2245,8 @@ Element* Lispe_mlx_methods::method_reshape(LispE* lisp) {
     }
 }
 
-// mlx::take - Extrait des éléments selon des indices
-// Signature: deflib mlx_take(array indices (axis))
+ // mlx::take - Extract elements according to indices
+ // Signature: deflib mlx_take(array indices (axis))
 Element* Lispe_mlx_methods::method_take(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* indices_elem = lisp->get_variable("indices");
@@ -2256,7 +2256,7 @@ Element* Lispe_mlx_methods::method_take(LispE* lisp) {
         mx::array arr = element_to_array(lisp, array_elem);
         mx::array indices = element_to_array(lisp, indices_elem);
 
-        // Déclarer result avec initialisation conditionnelle
+        // Declare result with conditional initialization
         mx::array result = (axis_elem != null_) ?
             mx::take(arr, indices, axis_elem->asInteger()) :
             mx::take(arr, indices);
@@ -2268,8 +2268,8 @@ Element* Lispe_mlx_methods::method_take(LispE* lisp) {
     }
 }
 
-// mlx::mean - Calcule la moyenne
-// Signature: deflib mlx_mean(array (axes) (keepdims))
+ // mlx::mean - Compute the mean
+ // Signature: deflib mlx_mean(array (axes) (keepdims))
 Element* Lispe_mlx_methods::method_mean(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -2291,8 +2291,8 @@ Element* Lispe_mlx_methods::method_mean(LispE* lisp) {
     }
 }
 
-// mlx::add - Addition élément par élément
-// Signature: deflib mlx_add(a b)
+ // mlx::add - Element-wise addition
+ // Signature: deflib mlx_add(a b)
 Element* Lispe_mlx_methods::method_add(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -2310,8 +2310,8 @@ Element* Lispe_mlx_methods::method_add(LispE* lisp) {
     }
 }
 
-// mlx::multiply - Multiplication élément par élément
-// Signature: deflib mlx_multiply(a b)
+ // mlx::multiply - Element-wise multiplication
+ // Signature: deflib mlx_multiply(a b)
 Element* Lispe_mlx_methods::method_multiply(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -2329,8 +2329,8 @@ Element* Lispe_mlx_methods::method_multiply(LispE* lisp) {
     }
 }
 
-// mlx::sum - Somme des éléments
-// Signature: deflib mlx_sum(array (axes) (keepdims))
+ // mlx::sum - Sum of elements
+ // Signature: deflib mlx_sum(array (axes) (keepdims))
 Element* Lispe_mlx_methods::method_sum(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -2352,8 +2352,8 @@ Element* Lispe_mlx_methods::method_sum(LispE* lisp) {
     }
 }
 
-// mlx::transpose - Transposition d'array
-// Signature: deflib mlx_transpose(array (axes))
+ // mlx::transpose - Transpose an array
+ // Signature: deflib mlx_transpose(array (axes))
 Element* Lispe_mlx_methods::method_transpose(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -2372,8 +2372,8 @@ Element* Lispe_mlx_methods::method_transpose(LispE* lisp) {
     }
 }
 
-// mlx::matmul - Multiplication matricielle
-// Signature: deflib mlx_matmul(a b)
+ // mlx::matmul - Matrix multiplication
+ // Signature: deflib mlx_matmul(a b)
 Element* Lispe_mlx_methods::method_matmul(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -2391,8 +2391,8 @@ Element* Lispe_mlx_methods::method_matmul(LispE* lisp) {
     }
 }
 
-// mlx::subtract - Soustraction élément par élément
-// Signature: deflib mlx_subtract(a b)
+ // mlx::subtract - Element-wise subtraction
+ // Signature: deflib mlx_subtract(a b)
 Element* Lispe_mlx_methods::method_subtract(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -2410,8 +2410,8 @@ Element* Lispe_mlx_methods::method_subtract(LispE* lisp) {
     }
 }
 
-// mlx::divide - Division élément par élément
-// Signature: deflib mlx_divide(a b)
+ // mlx::divide - Element-wise division
+ // Signature: deflib mlx_divide(a b)
 Element* Lispe_mlx_methods::method_divide(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -2429,8 +2429,8 @@ Element* Lispe_mlx_methods::method_divide(LispE* lisp) {
     }
 }
 
-// mlx::maximum - Maximum élément par élément
-// Signature: deflib mlx_maximum(a b)
+ // mlx::maximum - Element-wise maximum
+ // Signature: deflib mlx_maximum(a b)
 Element* Lispe_mlx_methods::method_maximum(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -2448,8 +2448,8 @@ Element* Lispe_mlx_methods::method_maximum(LispE* lisp) {
     }
 }
 
-// mlx::minimum - Minimum élément par élément
-// Signature: deflib mlx_minimum(a b)
+ // mlx::minimum - Element-wise minimum
+ // Signature: deflib mlx_minimum(a b)
 Element* Lispe_mlx_methods::method_minimum(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -2467,8 +2467,8 @@ Element* Lispe_mlx_methods::method_minimum(LispE* lisp) {
     }
 }
 
-// mlx::sqrt - Racine carrée élément par élément
-// Signature: deflib mlx_sqrt(array)
+ // mlx::sqrt - Element-wise square root
+ // Signature: deflib mlx_sqrt(array)
 Element* Lispe_mlx_methods::method_sqrt(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2484,8 +2484,8 @@ Element* Lispe_mlx_methods::method_sqrt(LispE* lisp) {
     }
 }
 
-// mlx::exp - Exponentielle élément par élément
-// Signature: deflib mlx_exp(array)
+ // mlx::exp - Element-wise exponential
+ // Signature: deflib mlx_exp(array)
 Element* Lispe_mlx_methods::method_exp(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2501,8 +2501,8 @@ Element* Lispe_mlx_methods::method_exp(LispE* lisp) {
     }
 }
 
-// mlx::log - Logarithme naturel élément par élément
-// Signature: deflib mlx_log(array)
+ // mlx::log - Element-wise natural logarithm
+ // Signature: deflib mlx_log(array)
 Element* Lispe_mlx_methods::method_log(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2518,8 +2518,8 @@ Element* Lispe_mlx_methods::method_log(LispE* lisp) {
     }
 }
 
-// mlx::abs - Valeur absolue élément par élément
-// Signature: deflib mlx_abs(array)
+ // mlx::abs - Element-wise absolute value
+ // Signature: deflib mlx_abs(array)
 Element* Lispe_mlx_methods::method_abs(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2535,14 +2535,14 @@ Element* Lispe_mlx_methods::method_abs(LispE* lisp) {
     }
 }
 
-// mlx::concatenate - Concatène des arrays le long d'un axe
-// Signature: deflib mlx_concatenate(arrays (axis))
+ // mlx::concatenate - Concatenate arrays along an axis
+ // Signature: deflib mlx_concatenate(arrays (axis))
 Element* Lispe_mlx_methods::method_concatenate(LispE* lisp) {
     Element* arrays_elem = lisp->get_variable("arrays");
     Element* axis_elem = lisp->get_variable("axis");
 
     try {
-        // Convertir la liste d'arrays
+        // Convert the list of arrays
         if (!arrays_elem->isList()) {
             throw new Error("Error in mlx_concatenate: arrays must be a list");
         }
@@ -2563,8 +2563,8 @@ Element* Lispe_mlx_methods::method_concatenate(LispE* lisp) {
     }
 }
 
-// mlx::split - Divise un array en plusieurs sous-arrays
-// Signature: deflib mlx_split(array indices_or_sections (axis))
+ // mlx::split - Split an array into multiple sub-arrays
+ // Signature: deflib mlx_split(array indices_or_sections (axis))
 Element* Lispe_mlx_methods::method_split(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* sections_elem = lisp->get_variable("indices_or_sections");
@@ -2576,18 +2576,18 @@ Element* Lispe_mlx_methods::method_split(LispE* lisp) {
 
         std::vector<mx::array> result_arrays;
 
-        // Si sections_elem est un entier, diviser en N parties égales
+        // If sections_elem is an integer, split into N equal parts
         if (sections_elem->isInteger()) {
             int num_sections = sections_elem->asInteger();
             result_arrays = mx::split(arr, num_sections, axis);
         } else {
-            // Sinon, c'est une liste d'indices
+            // Otherwise, it's a list of indices
             mx::Shape indices;
             element_to_shape(sections_elem, indices);
             result_arrays = mx::split(arr, indices, axis);
         }
 
-        // Créer une liste LispE contenant les résultats
+        // Create a LispE list containing the results
         List* result_list = lisp->provideList();
         for (auto& sub_arr : result_arrays) {
             mx::eval(sub_arr);
@@ -2601,12 +2601,12 @@ Element* Lispe_mlx_methods::method_split(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Fonctions d'activation
-// ============================================================================
+ // ============================================================================
+ // Activation functions
+ // ============================================================================
 
-// mlx::sigmoid - Fonction d'activation sigmoïde
-// Signature: deflib mlx_sigmoid(array)
+ // mlx::sigmoid - Sigmoid activation function
+ // Signature: deflib mlx_sigmoid(array)
 Element* Lispe_mlx_methods::method_sigmoid(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2622,8 +2622,8 @@ Element* Lispe_mlx_methods::method_sigmoid(LispE* lisp) {
     }
 }
 
-// mlx::relu - Fonction d'activation ReLU (max(0, x))
-// Signature: deflib mlx_relu(array)
+ // mlx::relu - ReLU activation function (max(0, x))
+ // Signature: deflib mlx_relu(array)
 Element* Lispe_mlx_methods::method_relu(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2640,8 +2640,8 @@ Element* Lispe_mlx_methods::method_relu(LispE* lisp) {
     }
 }
 
-// mlx::softmax - Fonction d'activation softmax
-// Signature: deflib mlx_softmax(array (axis))
+ // mlx::softmax - Softmax activation function
+ // Signature: deflib mlx_softmax(array (axis))
 Element* Lispe_mlx_methods::method_softmax(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -2660,8 +2660,8 @@ Element* Lispe_mlx_methods::method_softmax(LispE* lisp) {
     }
 }
 
-// mlx::tanh - Fonction d'activation tangente hyperbolique
-// Signature: deflib mlx_tanh(array)
+ // mlx::tanh - Hyperbolic tangent activation
+ // Signature: deflib mlx_tanh(array)
 Element* Lispe_mlx_methods::method_tanh(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2677,12 +2677,12 @@ Element* Lispe_mlx_methods::method_tanh(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Fonctions trigonométriques
-// ============================================================================
+ // ============================================================================
+ // Trigonometric functions
+ // ============================================================================
 
-// mlx::sin - Sinus élément par élément
-// Signature: deflib mlx_sin(array)
+ // mlx::sin - Element-wise sine
+ // Signature: deflib mlx_sin(array)
 Element* Lispe_mlx_methods::method_sin(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2698,8 +2698,8 @@ Element* Lispe_mlx_methods::method_sin(LispE* lisp) {
     }
 }
 
-// mlx::cos - Cosinus élément par élément
-// Signature: deflib mlx_cos(array)
+ // mlx::cos - Element-wise cosine
+ // Signature: deflib mlx_cos(array)
 Element* Lispe_mlx_methods::method_cos(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2715,8 +2715,8 @@ Element* Lispe_mlx_methods::method_cos(LispE* lisp) {
     }
 }
 
-// mlx::tan - Tangente élément par élément
-// Signature: deflib mlx_tan(array)
+ // mlx::tan - Element-wise tangent
+ // Signature: deflib mlx_tan(array)
 Element* Lispe_mlx_methods::method_tan(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2732,12 +2732,12 @@ Element* Lispe_mlx_methods::method_tan(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Fonctions de réduction avancées
-// ============================================================================
+ // ============================================================================
+ // Advanced reduction functions
+ // ============================================================================
 
-// mlx::argmax - Retourne les indices des valeurs maximales
-// Signature: deflib mlx_argmax(array (axis) (keepdims))
+ // mlx::argmax - Return indices of maximum values
+ // Signature: deflib mlx_argmax(array (axis) (keepdims))
 Element* Lispe_mlx_methods::method_argmax(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -2759,8 +2759,8 @@ Element* Lispe_mlx_methods::method_argmax(LispE* lisp) {
     }
 }
 
-// mlx::argmin - Retourne les indices des valeurs minimales
-// Signature: deflib mlx_argmin(array (axis) (keepdims))
+ // mlx::argmin - Return indices of minimum values
+ // Signature: deflib mlx_argmin(array (axis) (keepdims))
 Element* Lispe_mlx_methods::method_argmin(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -2782,12 +2782,12 @@ Element* Lispe_mlx_methods::method_argmin(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Fonctions supplémentaires
-// ============================================================================
+ // ============================================================================
+ // Additional functions
+ // ============================================================================
 
-// mlx::power - Élévation à une puissance élément par élément
-// Signature: deflib mlx_power(a b)
+ // mlx::power - Element-wise power
+ // Signature: deflib mlx_power(a b)
 Element* Lispe_mlx_methods::method_power(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -2805,8 +2805,8 @@ Element* Lispe_mlx_methods::method_power(LispE* lisp) {
     }
 }
 
-// mlx::negative - Négation élément par élément
-// Signature: deflib mlx_negative(array)
+ // mlx::negative - Element-wise negation
+ // Signature: deflib mlx_negative(array)
 Element* Lispe_mlx_methods::method_negative(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2822,8 +2822,8 @@ Element* Lispe_mlx_methods::method_negative(LispE* lisp) {
     }
 }
 
-// mlx::square - Carré élément par élément
-// Signature: deflib mlx_square(array)
+ // mlx::square - Element-wise square
+ // Signature: deflib mlx_square(array)
 Element* Lispe_mlx_methods::method_square(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -2839,47 +2839,47 @@ Element* Lispe_mlx_methods::method_square(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 1: Création d'arrays
-// ============================================================================
+ // ============================================================================
+ // Group 1: Array creation
+ // ============================================================================
 
-// Fonction helper pour parser le dtype
-// Types supportés: float16, float32, float64, bfloat16, complex64,
-//                  int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool
+ // Helper function to parse dtype
+ // Supported types: float16, float32, float64, bfloat16, complex64,
+                  //                  int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool
 mx::Dtype parse_dtype(LispE* lisp, Element* dtype_elem, mx::Dtype default_dtype = mx::float32) {
     if (dtype_elem == null_) return default_dtype;
 
     std::wstring dtype_str = dtype_elem->asString(lisp);
     
-    // Types flottants
+    // Floating types
     if (dtype_str == L"float16") return mx::float16;
     if (dtype_str == L"float32") return mx::float32;
     if (dtype_str == L"float64") return mx::float64;
     if (dtype_str == L"bfloat16") return mx::bfloat16;
     
-    // Type complexe
+    // Complex type
     if (dtype_str == L"complex64") return mx::complex64;
     
-    // Types entiers signés
+    // Signed integer types
     if (dtype_str == L"int8") return mx::int8;
     if (dtype_str == L"int16") return mx::int16;
     if (dtype_str == L"int32") return mx::int32;
     if (dtype_str == L"int64") return mx::int64;
     
-    // Types entiers non signés
+    // Unsigned integer types
     if (dtype_str == L"uint8") return mx::uint8;
     if (dtype_str == L"uint16") return mx::uint16;
     if (dtype_str == L"uint32") return mx::uint32;
     if (dtype_str == L"uint64") return mx::uint64;
     
-    // Type booléen
+    // Boolean type
     if (dtype_str == L"bool") return mx::bool_;
 
     return default_dtype;
 }
 
-// mlx::zeros - Crée un array rempli de zéros
-// Signature: deflib mlx_zeros(shape (dtype))
+ // mlx::zeros - Create an array filled with zeros
+ // Signature: deflib mlx_zeros(shape (dtype))
 Element* Lispe_mlx_methods::method_zeros(LispE* lisp) {
     Element* shape_elem = lisp->get_variable("shape");
     Element* dtype_elem = lisp->get_variable("dtype");
@@ -2898,8 +2898,8 @@ Element* Lispe_mlx_methods::method_zeros(LispE* lisp) {
     }
 }
 
-// mlx::ones - Crée un array rempli de uns
-// Signature: deflib mlx_ones(shape (dtype))
+ // mlx::ones - Create an array filled with ones
+ // Signature: deflib mlx_ones(shape (dtype))
 Element* Lispe_mlx_methods::method_ones(LispE* lisp) {
     Element* shape_elem = lisp->get_variable("shape");
     Element* dtype_elem = lisp->get_variable("dtype");
@@ -2918,8 +2918,8 @@ Element* Lispe_mlx_methods::method_ones(LispE* lisp) {
     }
 }
 
-// mlx::full - Crée un array rempli d'une valeur spécifique
-// Signature: deflib mlx_full(shape value (dtype))
+ // mlx::full - Create an array filled with a specific value
+ // Signature: deflib mlx_full(shape value (dtype))
 Element* Lispe_mlx_methods::method_full(LispE* lisp) {
     Element* shape_elem = lisp->get_variable("shape");
     Element* value_elem = lisp->get_variable("value");
@@ -2931,7 +2931,7 @@ Element* Lispe_mlx_methods::method_full(LispE* lisp) {
 
         mx::Dtype dtype = parse_dtype(lisp, dtype_elem, mx::float32);
 
-        // Créer le scalar value avec le bon type
+        // Create the scalar value with the correct type
         mx::array val_arr = mx::array(value_elem->asNumber());
         val_arr = mx::astype(val_arr, dtype);
 
@@ -2944,8 +2944,8 @@ Element* Lispe_mlx_methods::method_full(LispE* lisp) {
     }
 }
 
-// mlx::arange - Crée un array avec des valeurs espacées régulièrement
-// Signature: deflib mlx_arange(start stop (step) (dtype))
+ // mlx::arange - Create an array with regularly spaced values
+ // Signature: deflib mlx_arange(start stop (step) (dtype))
 Element* Lispe_mlx_methods::method_arange(LispE* lisp) {
     Element* start_elem = lisp->get_variable("start");
     Element* stop_elem = lisp->get_variable("stop");
@@ -2967,8 +2967,8 @@ Element* Lispe_mlx_methods::method_arange(LispE* lisp) {
     }
 }
 
-// mlx::linspace - Crée un array avec des valeurs espacées linéairement
-// Signature: deflib mlx_linspace(start stop num (dtype))
+ // mlx::linspace - Create an array with linearly spaced values
+ // Signature: deflib mlx_linspace(start stop num (dtype))
 Element* Lispe_mlx_methods::method_linspace(LispE* lisp) {
     Element* start_elem = lisp->get_variable("start");
     Element* stop_elem = lisp->get_variable("stop");
@@ -2990,8 +2990,8 @@ Element* Lispe_mlx_methods::method_linspace(LispE* lisp) {
     }
 }
 
-// mlx::eye - Crée une matrice identité
-// Signature: deflib mlx_eye(n (m) (dtype))
+ // mlx::eye - Create an identity matrix
+ // Signature: deflib mlx_eye(n (m) (dtype))
 Element* Lispe_mlx_methods::method_eye(LispE* lisp) {
     Element* n_elem = lisp->get_variable("n");
     Element* m_elem = lisp->get_variable("m");
@@ -3011,12 +3011,12 @@ Element* Lispe_mlx_methods::method_eye(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 2: Nombres aléatoires
-// ============================================================================
+ // ============================================================================
+ // Group 2: Random numbers
+ // ============================================================================
 
-// mlx::random::uniform - Génère des valeurs aléatoires uniformes
-// Signature: deflib mlx_random_uniform(shape (low) (high) (dtype))
+ // mlx::random::uniform - Generate uniform random values
+ // Signature: deflib mlx_random_uniform(shape (low) (high) (dtype))
 Element* Lispe_mlx_methods::method_random_uniform(LispE* lisp) {
     Element* shape_elem = lisp->get_variable("shape");
     Element* low_elem = lisp->get_variable("low");
@@ -3040,8 +3040,8 @@ Element* Lispe_mlx_methods::method_random_uniform(LispE* lisp) {
     }
 }
 
-// mlx::random::normal - Génère des valeurs aléatoires normales
-// Signature: deflib mlx_random_normal(shape (mean) (std) (dtype))
+ // mlx::random::normal - Generate normal random values
+ // Signature: deflib mlx_random_normal(shape (mean) (std) (dtype))
 Element* Lispe_mlx_methods::method_random_normal(LispE* lisp) {
     Element* shape_elem = lisp->get_variable("shape");
     Element* mean_elem = lisp->get_variable("mean");
@@ -3054,10 +3054,10 @@ Element* Lispe_mlx_methods::method_random_normal(LispE* lisp) {
 
         mx::Dtype dtype = parse_dtype(lisp, dtype_elem, mx::float32);
 
-        // Génère une distribution normale standard (mean=0, std=1)
+        // Generate a standard normal distribution (mean=0, std=1)
         mx::array result = mx::random::normal(shape, dtype);
 
-        // Appliquer mean et std si fournis: result = result * std + mean
+        // Apply mean and std if provided: result = result * std + mean
         if (std_elem != null_) {
             double std_val = std_elem->asNumber();
             result = mx::multiply(result, mx::array(static_cast<float>(std_val)));
@@ -3074,8 +3074,8 @@ Element* Lispe_mlx_methods::method_random_normal(LispE* lisp) {
     }
 }
 
-// mlx::random::randint - Génère des entiers aléatoires
-// Signature: deflib mlx_random_randint(low high shape (dtype))
+ // mlx::random::randint - Generate random integers
+ // Signature: deflib mlx_random_randint(low high shape (dtype))
 Element* Lispe_mlx_methods::method_random_randint(LispE* lisp) {
     Element* low_elem = lisp->get_variable("low");
     Element* high_elem = lisp->get_variable("high");
@@ -3100,12 +3100,12 @@ Element* Lispe_mlx_methods::method_random_randint(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 3: Mathématiques
-// ============================================================================
+ // ============================================================================
+ // Group 3: Mathematics
+ // ============================================================================
 
-// mlx::log2 - Logarithme base 2
-// Signature: deflib mlx_log2(array)
+ // mlx::log2 - Logarithm base 2
+ // Signature: deflib mlx_log2(array)
 Element* Lispe_mlx_methods::method_log2(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3118,8 +3118,8 @@ Element* Lispe_mlx_methods::method_log2(LispE* lisp) {
     }
 }
 
-// mlx::log10 - Logarithme base 10
-// Signature: deflib mlx_log10(array)
+ // mlx::log10 - Logarithm base 10
+ // Signature: deflib mlx_log10(array)
 Element* Lispe_mlx_methods::method_log10(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3132,8 +3132,8 @@ Element* Lispe_mlx_methods::method_log10(LispE* lisp) {
     }
 }
 
-// mlx::log1p - Logarithme de (1+x)
-// Signature: deflib mlx_log1p(array)
+ // mlx::log1p - Logarithm of (1+x)
+ // Signature: deflib mlx_log1p(array)
 Element* Lispe_mlx_methods::method_log1p(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3146,8 +3146,8 @@ Element* Lispe_mlx_methods::method_log1p(LispE* lisp) {
     }
 }
 
-// mlx::floor - Arrondi vers le bas
-// Signature: deflib mlx_floor(array)
+ // mlx::floor - Floor (round down)
+ // Signature: deflib mlx_floor(array)
 Element* Lispe_mlx_methods::method_floor(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3160,8 +3160,8 @@ Element* Lispe_mlx_methods::method_floor(LispE* lisp) {
     }
 }
 
-// mlx::ceil - Arrondi vers le haut
-// Signature: deflib mlx_ceil(array)
+ // mlx::ceil - Ceil (round up)
+ // Signature: deflib mlx_ceil(array)
 Element* Lispe_mlx_methods::method_ceil(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3174,8 +3174,8 @@ Element* Lispe_mlx_methods::method_ceil(LispE* lisp) {
     }
 }
 
-// mlx::round - Arrondi au plus proche
-// Signature: deflib mlx_round(array)
+ // mlx::round - Round to nearest
+ // Signature: deflib mlx_round(array)
 Element* Lispe_mlx_methods::method_round(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3188,9 +3188,9 @@ Element* Lispe_mlx_methods::method_round(LispE* lisp) {
     }
 }
 
-// mlx::clip - Limite les valeurs à un intervalle
-// Signature: deflib mlx_clip(array min max)
-// min et max peuvent être nil pour ne pas avoir de limite
+ // mlx::clip - Clip values to an interval
+ // Signature: deflib mlx_clip(array min max)
+ // min and max can be nil for no bound
 Element* Lispe_mlx_methods::method_clip(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* min_elem = lisp->get_variable("min");
@@ -3214,8 +3214,8 @@ Element* Lispe_mlx_methods::method_clip(LispE* lisp) {
     }
 }
 
-// mlx::reciprocal - Inverse (1/x)
-// Signature: deflib mlx_reciprocal(array)
+ // mlx::reciprocal - Reciprocal (1/x)
+ // Signature: deflib mlx_reciprocal(array)
 Element* Lispe_mlx_methods::method_reciprocal(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3228,8 +3228,8 @@ Element* Lispe_mlx_methods::method_reciprocal(LispE* lisp) {
     }
 }
 
-// mlx::rsqrt - Inverse de la racine carrée (1/sqrt(x))
-// Signature: deflib mlx_rsqrt(array)
+ // mlx::rsqrt - Reciprocal square root (1/sqrt(x))
+ // Signature: deflib mlx_rsqrt(array)
 Element* Lispe_mlx_methods::method_rsqrt(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3242,12 +3242,12 @@ Element* Lispe_mlx_methods::method_rsqrt(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 4: Trigonométrie inverse
-// ============================================================================
+ // ============================================================================
+ // Group 4: Inverse trigonometry
+ // ============================================================================
 
-// mlx::arcsin - Arc sinus
-// Signature: deflib mlx_arcsin(array)
+ // mlx::arcsin - Arcsine
+ // Signature: deflib mlx_arcsin(array)
 Element* Lispe_mlx_methods::method_arcsin(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3260,8 +3260,8 @@ Element* Lispe_mlx_methods::method_arcsin(LispE* lisp) {
     }
 }
 
-// mlx::arccos - Arc cosinus
-// Signature: deflib mlx_arccos(array)
+ // mlx::arccos - Arccosine
+ // Signature: deflib mlx_arccos(array)
 Element* Lispe_mlx_methods::method_arccos(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3274,8 +3274,8 @@ Element* Lispe_mlx_methods::method_arccos(LispE* lisp) {
     }
 }
 
-// mlx::arctan - Arc tangente
-// Signature: deflib mlx_arctan(array)
+ // mlx::arctan - Arctangent
+ // Signature: deflib mlx_arctan(array)
 Element* Lispe_mlx_methods::method_arctan(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3288,8 +3288,8 @@ Element* Lispe_mlx_methods::method_arctan(LispE* lisp) {
     }
 }
 
-// mlx::sinh - Sinus hyperbolique
-// Signature: deflib mlx_sinh(array)
+ // mlx::sinh - Hyperbolic sine
+ // Signature: deflib mlx_sinh(array)
 Element* Lispe_mlx_methods::method_sinh(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3302,8 +3302,8 @@ Element* Lispe_mlx_methods::method_sinh(LispE* lisp) {
     }
 }
 
-// mlx::cosh - Cosinus hyperbolique
-// Signature: deflib mlx_cosh(array)
+ // mlx::cosh - Hyperbolic cosine
+ // Signature: deflib mlx_cosh(array)
 Element* Lispe_mlx_methods::method_cosh(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3316,12 +3316,12 @@ Element* Lispe_mlx_methods::method_cosh(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 5: Réductions
-// ============================================================================
+ // ============================================================================
+ // Group 5: Reductions
+ // ============================================================================
 
-// mlx::prod - Produit des éléments
-// Signature: deflib mlx_prod(array (axes) (keepdims))
+ // mlx::prod - Product of elements
+ // Signature: deflib mlx_prod(array (axes) (keepdims))
 Element* Lispe_mlx_methods::method_prod(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -3341,8 +3341,8 @@ Element* Lispe_mlx_methods::method_prod(LispE* lisp) {
     }
 }
 
-// mlx::max - Maximum des éléments
-// Signature: deflib mlx_max(array (axes) (keepdims))
+ // mlx::max - Maximum of elements
+ // Signature: deflib mlx_max(array (axes) (keepdims))
 Element* Lispe_mlx_methods::method_max(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -3362,8 +3362,8 @@ Element* Lispe_mlx_methods::method_max(LispE* lisp) {
     }
 }
 
-// mlx::min - Minimum des éléments
-// Signature: deflib mlx_min(array (axes) (keepdims))
+ // mlx::min - Minimum of elements
+ // Signature: deflib mlx_min(array (axes) (keepdims))
 Element* Lispe_mlx_methods::method_min(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -3383,8 +3383,8 @@ Element* Lispe_mlx_methods::method_min(LispE* lisp) {
     }
 }
 
-// mlx::var - Variance des éléments
-// Signature: deflib mlx_var(array (axes) (keepdims) (ddof))
+ // mlx::var - Variance of elements
+ // Signature: deflib mlx_var(array (axes) (keepdims) (ddof))
 Element* Lispe_mlx_methods::method_var(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -3406,8 +3406,8 @@ Element* Lispe_mlx_methods::method_var(LispE* lisp) {
     }
 }
 
-// mlx::std - Écart-type des éléments
-// Signature: deflib mlx_std(array (axes) (keepdims) (ddof))
+ // mlx::std - Standard deviation of elements
+ // Signature: deflib mlx_std(array (axes) (keepdims) (ddof))
 Element* Lispe_mlx_methods::method_std(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -3430,8 +3430,8 @@ Element* Lispe_mlx_methods::method_std(LispE* lisp) {
     }
 }
 
-// mlx::all - Teste si tous les éléments sont vrais
-// Signature: deflib mlx_all(array (axes) (keepdims))
+ // mlx::all - Test if all elements are true
+ // Signature: deflib mlx_all(array (axes) (keepdims))
 Element* Lispe_mlx_methods::method_all(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -3451,8 +3451,8 @@ Element* Lispe_mlx_methods::method_all(LispE* lisp) {
     }
 }
 
-// mlx::any - Teste si au moins un élément est vrai
-// Signature: deflib mlx_any(array (axes) (keepdims))
+ // mlx::any - Test if any element is true
+ // Signature: deflib mlx_any(array (axes) (keepdims))
 Element* Lispe_mlx_methods::method_any(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -3472,12 +3472,12 @@ Element* Lispe_mlx_methods::method_any(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 6: Comparaisons
-// ============================================================================
+ // ============================================================================
+ // Group 6: Comparisons
+ // ============================================================================
 
-// mlx::equal - Comparaison d'égalité
-// Signature: deflib mlx_equal(a b)
+ // mlx::equal - Equality comparison
+ // Signature: deflib mlx_equal(a b)
 Element* Lispe_mlx_methods::method_equal(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -3492,8 +3492,8 @@ Element* Lispe_mlx_methods::method_equal(LispE* lisp) {
     }
 }
 
-// mlx::not_equal - Comparaison d'inégalité
-// Signature: deflib mlx_not_equal(a b)
+ // mlx::not_equal - Inequality comparison
+ // Signature: deflib mlx_not_equal(a b)
 Element* Lispe_mlx_methods::method_not_equal(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -3508,8 +3508,8 @@ Element* Lispe_mlx_methods::method_not_equal(LispE* lisp) {
     }
 }
 
-// mlx::greater - Comparaison supérieur
-// Signature: deflib mlx_greater(a b)
+ // mlx::greater - Greater-than comparison
+ // Signature: deflib mlx_greater(a b)
 Element* Lispe_mlx_methods::method_greater(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -3524,8 +3524,8 @@ Element* Lispe_mlx_methods::method_greater(LispE* lisp) {
     }
 }
 
-// mlx::less - Comparaison inférieur
-// Signature: deflib mlx_less(a b)
+ // mlx::less - Less-than comparison
+ // Signature: deflib mlx_less(a b)
 Element* Lispe_mlx_methods::method_less(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -3540,8 +3540,8 @@ Element* Lispe_mlx_methods::method_less(LispE* lisp) {
     }
 }
 
-// mlx::greater_equal - Comparaison supérieur ou égal
-// Signature: deflib mlx_greater_equal(a b)
+ // mlx::greater_equal - Greater-than-or-equal comparison
+ // Signature: deflib mlx_greater_equal(a b)
 Element* Lispe_mlx_methods::method_greater_equal(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -3556,8 +3556,8 @@ Element* Lispe_mlx_methods::method_greater_equal(LispE* lisp) {
     }
 }
 
-// mlx::less_equal - Comparaison inférieur ou égal
-// Signature: deflib mlx_less_equal(a b)
+ // mlx::less_equal - Less-than-or-equal comparison
+ // Signature: deflib mlx_less_equal(a b)
 Element* Lispe_mlx_methods::method_less_equal(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -3572,8 +3572,8 @@ Element* Lispe_mlx_methods::method_less_equal(LispE* lisp) {
     }
 }
 
-// mlx::where - Sélection conditionnelle
-// Signature: deflib mlx_where(condition x y)
+ // mlx::where - Conditional selection
+ // Signature: deflib mlx_where(condition x y)
 Element* Lispe_mlx_methods::method_where(LispE* lisp) {
     Element* cond_elem = lisp->get_variable("condition");
     Element* x_elem = lisp->get_variable("x");
@@ -3590,12 +3590,12 @@ Element* Lispe_mlx_methods::method_where(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 7: Manipulation
-// ============================================================================
+ // ============================================================================
+ // Group 7: Manipulation
+ // ============================================================================
 
-// mlx::flatten - Aplatit un array en 1D
-// Signature: deflib mlx_flatten(array (start_axis) (end_axis))
+ // mlx::flatten - Flatten an array to 1D
+ // Signature: deflib mlx_flatten(array (start_axis) (end_axis))
 Element* Lispe_mlx_methods::method_flatten(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* start_elem = lisp->get_variable("start_axis");
@@ -3613,8 +3613,8 @@ Element* Lispe_mlx_methods::method_flatten(LispE* lisp) {
     }
 }
 
-// mlx::squeeze - Supprime les dimensions de taille 1
-// Signature: deflib mlx_squeeze(array (axes))
+ // mlx::squeeze - Remove dimensions of size 1
+ // Signature: deflib mlx_squeeze(array (axes))
 Element* Lispe_mlx_methods::method_squeeze(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -3632,8 +3632,8 @@ Element* Lispe_mlx_methods::method_squeeze(LispE* lisp) {
     }
 }
 
-// mlx::expand_dims - Ajoute une dimension
-// Signature: deflib mlx_expand_dims(array axis)
+ // mlx::expand_dims - Add a dimension
+ // Signature: deflib mlx_expand_dims(array axis)
 Element* Lispe_mlx_methods::method_expand_dims(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -3649,8 +3649,8 @@ Element* Lispe_mlx_methods::method_expand_dims(LispE* lisp) {
     }
 }
 
-// mlx::stack - Empile des arrays le long d'un nouvel axe
-// Signature: deflib mlx_stack(arrays (axis))
+ // mlx::stack - Stack arrays along a new axis
+ // Signature: deflib mlx_stack(arrays (axis))
 Element* Lispe_mlx_methods::method_stack(LispE* lisp) {
     Element* arrays_elem = lisp->get_variable("arrays");
     Element* axis_elem = lisp->get_variable("axis");
@@ -3674,8 +3674,8 @@ Element* Lispe_mlx_methods::method_stack(LispE* lisp) {
     }
 }
 
-// mlx::tile - Répète un array selon les axes
-// Signature: deflib mlx_tile(array reps)
+ // mlx::tile - Repeat an array according to axes
+ // Signature: deflib mlx_tile(array reps)
 Element* Lispe_mlx_methods::method_tile(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* reps_elem = lisp->get_variable("reps");
@@ -3691,8 +3691,8 @@ Element* Lispe_mlx_methods::method_tile(LispE* lisp) {
     }
 }
 
-// mlx::repeat - Répète les éléments d'un array
-// Signature: deflib mlx_repeat(array repeats axis)
+ // mlx::repeat - Repeat elements of an array
+ // Signature: deflib mlx_repeat(array repeats axis)
 Element* Lispe_mlx_methods::method_repeat(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* repeats_elem = lisp->get_variable("repeats");
@@ -3710,8 +3710,8 @@ Element* Lispe_mlx_methods::method_repeat(LispE* lisp) {
     }
 }
 
-// mlx::pad - Rembourrage d'un array
-// Signature: deflib mlx_pad(array pad_width (value))
+ // mlx::pad - Pad an array
+ // Signature: deflib mlx_pad(array pad_width (value))
 Element* Lispe_mlx_methods::method_pad(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* pad_width_elem = lisp->get_variable("pad_width");
@@ -3724,19 +3724,19 @@ Element* Lispe_mlx_methods::method_pad(LispE* lisp) {
             mx::array(value_elem->asNumber()) :
             mx::array(0.0);
 
-        // pad_width peut être:
-        // - Un entier simple: padding uniforme sur tous les côtés
-        // - Une paire (before, after): padding uniforme par axe
-        // - Une liste de paires [[before, after], ...]: padding par axe
+        // pad_width can be:
+        // - A single integer: uniform padding on all sides
+        // - A pair (before, after): uniform padding per axis
+        // - A list of pairs [[before, after], ...]: padding per axis
         if (pad_width_elem->isNumber()) {
-            // Entier simple: padding uniforme
+            // Single integer: uniform padding
             int pad = pad_width_elem->asInteger();
             mx::array result = mx::pad(arr, pad, pad_val);
             return new MLXArray(std::move(result));
         } else if (pad_width_elem->isList()) {
             long sz = pad_width_elem->size();
             if (sz == 2 && !pad_width_elem->index(0)->isList()) {
-                // Paire simple (before, after)
+                // Simple pair (before, after)
                 std::pair<int, int> pad_pair(
                     pad_width_elem->index(0)->asInteger(),
                     pad_width_elem->index(1)->asInteger()
@@ -3744,7 +3744,7 @@ Element* Lispe_mlx_methods::method_pad(LispE* lisp) {
                 mx::array result = mx::pad(arr, pad_pair, pad_val);
                 return new MLXArray(std::move(result));
             } else {
-                // Liste de paires [[before, after], ...]
+                // List of pairs [[before, after], ...]
                 std::vector<std::pair<int, int>> pad_width;
                 for (long i = 0; i < sz; i++) {
                     Element* pair = pad_width_elem->index(i);
@@ -3754,7 +3754,7 @@ Element* Lispe_mlx_methods::method_pad(LispE* lisp) {
                             pair->index(1)->asInteger()
                         ));
                     } else {
-                        // Si c'est un entier, utiliser (val, val)
+                        // If it's an integer, use (val, val)
                         int val = pair->asInteger();
                         pad_width.push_back(std::make_pair(val, val));
                     }
@@ -3770,13 +3770,13 @@ Element* Lispe_mlx_methods::method_pad(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 8: Activation deep learning
-// ============================================================================
+ // ============================================================================
+ // Group 8: Deep learning activations
+ // ============================================================================
 
-// GELU - Gaussian Error Linear Unit
-// GELU(x) = 0.5 * x * (1 + erf(x / sqrt(2)))
-// Signature: deflib mlx_gelu(array)
+ // GELU - Gaussian Error Linear Unit
+ // GELU(x) = 0.5 * x * (1 + erf(x / sqrt(2)))
+ // Signature: deflib mlx_gelu(array)
 Element* Lispe_mlx_methods::method_gelu(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3794,9 +3794,9 @@ Element* Lispe_mlx_methods::method_gelu(LispE* lisp) {
     }
 }
 
-// GELU with PyTorch tanh approximation (used by Gemma 3)
-// gelu(x) = 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
-// Signature: deflib mlx_gelu_tanh(array)
+ // GELU with PyTorch tanh approximation (used by Gemma 3)
+ // gelu(x) = 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
+ // Signature: deflib mlx_gelu_tanh(array)
 Element* Lispe_mlx_methods::method_gelu_tanh(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3819,8 +3819,8 @@ Element* Lispe_mlx_methods::method_gelu_tanh(LispE* lisp) {
     }
 }
 
-// mlx::silu - Sigmoid Linear Unit (Swish)
-// Signature: deflib mlx_silu(array)
+ // mlx::silu - Sigmoid Linear Unit (Swish)
+ // Signature: deflib mlx_silu(array)
 Element* Lispe_mlx_methods::method_silu(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3834,9 +3834,9 @@ Element* Lispe_mlx_methods::method_silu(LispE* lisp) {
     }
 }
 
-// Leaky ReLU - Leaky Rectified Linear Unit
-// leaky_relu(x) = x if x > 0, else negative_slope * x
-// Signature: deflib mlx_leaky_relu(array (negative_slope))
+ // Leaky ReLU - Leaky Rectified Linear Unit
+ // leaky_relu(x) = x if x > 0, else negative_slope * x
+ // Signature: deflib mlx_leaky_relu(array (negative_slope))
 Element* Lispe_mlx_methods::method_leaky_relu(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* slope_elem = lisp->get_variable("negative_slope");
@@ -3856,9 +3856,9 @@ Element* Lispe_mlx_methods::method_leaky_relu(LispE* lisp) {
     }
 }
 
-// ELU - Exponential Linear Unit
-// elu(x) = x if x > 0, else alpha * (exp(x) - 1)
-// Signature: deflib mlx_elu(array (alpha))
+ // ELU - Exponential Linear Unit
+ // elu(x) = x if x > 0, else alpha * (exp(x) - 1)
+ // Signature: deflib mlx_elu(array (alpha))
 Element* Lispe_mlx_methods::method_elu(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* alpha_elem = lisp->get_variable("alpha");
@@ -3878,8 +3878,8 @@ Element* Lispe_mlx_methods::method_elu(LispE* lisp) {
     }
 }
 
-// mlx::selu - Scaled Exponential Linear Unit
-// Signature: deflib mlx_selu(array)
+ // mlx::selu - Scaled Exponential Linear Unit
+ // Signature: deflib mlx_selu(array)
 Element* Lispe_mlx_methods::method_selu(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3905,9 +3905,9 @@ Element* Lispe_mlx_methods::method_selu(LispE* lisp) {
     }
 }
 
-// Log Softmax
-// log_softmax(x) = x - logsumexp(x, axis, keepdims=true)
-// Signature: deflib mlx_log_softmax(array (axis))
+ // Log Softmax
+ // log_softmax(x) = x - logsumexp(x, axis, keepdims=true)
+ // Signature: deflib mlx_log_softmax(array (axis))
 Element* Lispe_mlx_methods::method_log_softmax(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -3923,12 +3923,12 @@ Element* Lispe_mlx_methods::method_log_softmax(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 9: Algèbre linéaire
-// ============================================================================
+ // ============================================================================
+ // Group 9: Linear algebra
+ // ============================================================================
 
-// linalg::norm - Norme vectorielle ou matricielle
-// Signature: deflib mlx_norm(array (ord) (axes) (keepdims))
+ // linalg::norm - Vector or matrix norm
+ // Signature: deflib mlx_norm(array (ord) (axes) (keepdims))
 Element* Lispe_mlx_methods::method_norm(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* ord_elem = lisp->get_variable("ord");
@@ -3939,7 +3939,7 @@ Element* Lispe_mlx_methods::method_norm(LispE* lisp) {
         mx::array arr = element_to_array(lisp, array_elem);
         bool keepdims = (keepdims_elem != null_) ? keepdims_elem->Boolean() : false;
 
-        // Helper pour extraire les axes
+        // Helper to extract axes
         auto get_axes = [&]() -> std::vector<int> {
             std::vector<int> axes;
             if (axes_elem->isList()) {
@@ -3966,8 +3966,8 @@ Element* Lispe_mlx_methods::method_norm(LispE* lisp) {
     }
 }
 
-// linalg::inv - Inverse de matrice
-// Signature: deflib mlx_inv(array)
+ // linalg::inv - Matrix inverse
+ // Signature: deflib mlx_inv(array)
 Element* Lispe_mlx_methods::method_inv(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3980,9 +3980,9 @@ Element* Lispe_mlx_methods::method_inv(LispE* lisp) {
     }
 }
 
-// linalg::svd - Décomposition en valeurs singulières
-// Signature: deflib mlx_svd(array)
-// Retourne une liste (U, S, Vt)
+ // linalg::svd - Singular Value Decomposition
+ // Signature: deflib mlx_svd(array)
+ // Returns a list (U, S, Vt)
 Element* Lispe_mlx_methods::method_svd(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -3990,12 +3990,12 @@ Element* Lispe_mlx_methods::method_svd(LispE* lisp) {
         mx::array arr = element_to_array(lisp, array_elem);
         std::vector<mx::array> usv = mx::linalg::svd(arr);
 
-        // Évaluer tous les résultats
+        // Evaluate all results
         for (auto& a : usv) {
             mx::eval(a);
         }
 
-        // Retourner une liste LispE [U, S, Vt]
+        // Return a LispE list [U, S, Vt]
         List* result = lisp->provideList();
         for (auto& a : usv) {
             result->append(new MLXArray(std::move(a)));
@@ -4006,9 +4006,9 @@ Element* Lispe_mlx_methods::method_svd(LispE* lisp) {
     }
 }
 
-// linalg::qr - Décomposition QR
-// Signature: deflib mlx_qr(array)
-// Retourne une liste (Q, R)
+ // linalg::qr - QR decomposition
+ // Signature: deflib mlx_qr(array)
+ // Returns a list (Q, R)
 Element* Lispe_mlx_methods::method_qr(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4019,7 +4019,7 @@ Element* Lispe_mlx_methods::method_qr(LispE* lisp) {
         mx::eval(qr.first);
         mx::eval(qr.second);
 
-        // Retourner une liste LispE [Q, R]
+        // Return a LispE list [Q, R]
         List* result = lisp->provideList();
         result->append(new MLXArray(std::move(qr.first)));
         result->append(new MLXArray(std::move(qr.second)));
@@ -4029,8 +4029,8 @@ Element* Lispe_mlx_methods::method_qr(LispE* lisp) {
     }
 }
 
-// linalg::cholesky - Décomposition de Cholesky
-// Signature: deflib mlx_cholesky(array (upper))
+ // linalg::cholesky - Cholesky decomposition
+ // Signature: deflib mlx_cholesky(array (upper))
 Element* Lispe_mlx_methods::method_cholesky(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* upper_elem = lisp->get_variable("upper");
@@ -4045,8 +4045,8 @@ Element* Lispe_mlx_methods::method_cholesky(LispE* lisp) {
     }
 }
 
-// linalg::solve - Résolution de système linéaire Ax = b
-// Signature: deflib mlx_solve(a b)
+ // linalg::solve - Solve linear system Ax = b
+ // Signature: deflib mlx_solve(a b)
 Element* Lispe_mlx_methods::method_solve(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -4061,52 +4061,52 @@ Element* Lispe_mlx_methods::method_solve(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Helper pour le mode-n unfolding (matricization)
-// ============================================================================
+ // ============================================================================
+ // Helper for mode-n unfolding (matricization)
+ // ============================================================================
 
-// Unfold un tenseur le long du mode n
-// Transforme un tenseur de shape [I0, I1, ..., IN-1] en matrice [In, I0*...*In-1*In+1*...*IN-1]
+ // Unfold a tensor along mode n
+ // Transform a tensor of shape [I0, I1, ..., IN-1] into a matrix [In, I0*...*In-1*In+1*...*IN-1]
 static mx::array mode_n_unfold(const mx::array& tensor, int mode) {
     auto shape = tensor.shape();
     int ndim = shape.size();
     
-    // Créer les axes pour la transposition: mode en premier, puis les autres
+    // Create axes for transposition: mode first, then the others
     std::vector<int> axes;
     axes.push_back(mode);
     for (int i = 0; i < ndim; i++) {
         if (i != mode) axes.push_back(i);
     }
     
-    // Transposer
+    // Transpose
     mx::array transposed = mx::transpose(tensor, axes);
     
-    // Calculer la nouvelle shape [In, prod(autres)]
+    // Compute the new shape [In, prod(others)]
     int mode_size = shape[mode];
     int other_size = 1;
     for (int i = 0; i < ndim; i++) {
         if (i != mode) other_size *= shape[i];
     }
     
-    // Reshape en matrice
+    // Reshape into a matrix
     return mx::reshape(transposed, {mode_size, other_size});
 }
 
-// Fold (inverse de unfold) - reconstruit le tenseur depuis une matrice
+ // Fold (inverse of unfold) - reconstruct the tensor from a matrix
 static mx::array mode_n_fold(const mx::array& matrix, int mode, const std::vector<int>& original_shape) {
     int ndim = original_shape.size();
     
-    // Shape après transposition (mode en premier)
+    // Shape after transposition (mode first)
     mx::Shape transposed_shape;
     transposed_shape.push_back(original_shape[mode]);
     for (int i = 0; i < ndim; i++) {
         if (i != mode) transposed_shape.push_back(original_shape[i]);
     }
     
-    // Reshape depuis matrice vers tenseur transposé
+    // Reshape from matrix to transposed tensor
     mx::array reshaped = mx::reshape(matrix, transposed_shape);
     
-    // Inverse de la transposition
+    // Inverse of the transposition
     std::vector<int> inverse_axes(ndim);
     inverse_axes[mode] = 0;
     int j = 1;
@@ -4117,15 +4117,15 @@ static mx::array mode_n_fold(const mx::array& matrix, int mode, const std::vecto
     return mx::transpose(reshaped, inverse_axes);
 }
 
-// n-mode product: tenseur × matrice le long du mode n
+ // n-mode product: tensor × matrix along mode n
 static mx::array n_mode_product(const mx::array& tensor, const mx::array& matrix, int mode) {
-    // Unfold le tenseur
+    // Unfold the tensor
     mx::array unfolded = mode_n_unfold(tensor, mode);
     
-    // Multiplier: matrix @ unfolded
+    // Multiply: matrix @ unfolded
     mx::array product = mx::matmul(matrix, unfolded);
     
-    // Reconstruire avec la nouvelle taille pour le mode
+    // Reconstruct with the new size for the mode
     auto original_shape = tensor.shape();
     std::vector<int> new_shape(original_shape.begin(), original_shape.end());
     new_shape[mode] = matrix.shape()[0];
@@ -4133,14 +4133,14 @@ static mx::array n_mode_product(const mx::array& tensor, const mx::array& matrix
     return mode_n_fold(product, mode, new_shape);
 }
 
-// ============================================================================
-// Tucker decomposition (HOSVD - Higher-Order SVD)
-// ============================================================================
+ // ============================================================================
+ // Tucker decomposition (HOSVD - Higher-Order SVD)
+ // ============================================================================
 
-// mlx_hosvd - Higher-Order SVD (Tucker decomposition non-itérative)
-// Signature: deflib mlx_hosvd(tensor ranks)
-// ranks: liste des rangs pour chaque mode (ou nil pour garder la dimension complète)
-// Retourne: (core, factors) où factors est une liste de matrices
+ // mlx_hosvd - Higher-Order SVD (non-iterative Tucker decomposition)
+ // Signature: deflib mlx_hosvd(tensor ranks)
+ // ranks: list of ranks for each mode (or nil to keep full dimension)
+ // Returns: (core, factors) where factors is a list of matrices
 Element* Lispe_mlx_methods::method_hosvd(LispE* lisp) {
     Element* tensor_elem = lisp->get_variable("tensor");
     Element* ranks_elem = lisp->get_variable("ranks");
@@ -4150,10 +4150,10 @@ Element* Lispe_mlx_methods::method_hosvd(LispE* lisp) {
         auto shape = tensor.shape();
         int ndim = shape.size();
         
-        // Parser les rangs
+        // Parse ranks
         std::vector<int> ranks(ndim);
         if (ranks_elem == null_ || !ranks_elem->isList()) {
-            // Rangs par défaut = dimensions originales
+            // Default ranks = original dimensions
             for (int i = 0; i < ndim; i++) {
                 ranks[i] = shape[i];
             }
@@ -4171,19 +4171,19 @@ Element* Lispe_mlx_methods::method_hosvd(LispE* lisp) {
             }
         }
         
-        // Calculer les facteurs par SVD de chaque mode-n unfolding
+        // Compute factors by SVD of each mode-n unfolding
         std::vector<mx::array> factors;
         mx::array core = tensor;
         
         for (int mode = 0; mode < ndim; mode++) {
-            // Unfold le tenseur courant
+            // Unfold the current tensor
             mx::array unfolded = mode_n_unfold(core, mode);
             
             // SVD
             auto usv = mx::linalg::svd(unfolded);
             mx::array U = usv[0];
             
-            // Tronquer U aux rangs demandés
+            // Truncate U to requested ranks
             int rank = ranks[mode];
             if (rank < U.shape()[1]) {
                 U = mx::slice(U, {0, 0}, {(int)U.shape()[0], rank});
@@ -4191,17 +4191,17 @@ Element* Lispe_mlx_methods::method_hosvd(LispE* lisp) {
             
             factors.push_back(U);
             
-            // Projeter le core: core = U^T × core (mode-n product avec U^T)
+            // Project the core: core = U^T × core (mode-n product with U^T)
             core = n_mode_product(core, mx::transpose(U), mode);
         }
         
-        // Évaluer
+        // Evaluate
         mx::eval(core);
         for (auto& f : factors) {
             mx::eval(f);
         }
         
-        // Retourner (core, factors)
+        // Return (core, factors)
         List* factors_list = lisp->provideList();
         for (auto& f : factors) {
             factors_list->append(new MLXArray(std::move(f)));
@@ -4217,12 +4217,12 @@ Element* Lispe_mlx_methods::method_hosvd(LispE* lisp) {
     }
 }
 
-// mlx_tucker - Tucker decomposition (HOOI - Higher-Order Orthogonal Iteration)
-// Signature: deflib mlx_tucker(tensor ranks (max_iter) (tol))
-// ranks: liste des rangs pour chaque mode
-// max_iter: nombre maximum d'itérations (défaut: 50)
-// tol: tolérance pour la convergence (défaut: 1e-5)
-// Retourne: (core, factors) où factors est une liste de matrices
+ // mlx_tucker - Tucker decomposition (HOOI - Higher-Order Orthogonal Iteration)
+ // Signature: deflib mlx_tucker(tensor ranks (max_iter) (tol))
+ // ranks: list of ranks for each mode
+ // max_iter: maximum number of iterations (default: 50)
+ // tol: tolerance for convergence (default: 1e-5)
+ // Returns: (core, factors) where factors is a list of matrices
 Element* Lispe_mlx_methods::method_tucker(LispE* lisp) {
     Element* tensor_elem = lisp->get_variable("tensor");
     Element* ranks_elem = lisp->get_variable("ranks");
@@ -4234,7 +4234,7 @@ Element* Lispe_mlx_methods::method_tucker(LispE* lisp) {
         auto shape = tensor.shape();
         int ndim = shape.size();
         
-        // Parser les rangs
+        // Parse ranks
         std::vector<int> ranks(ndim);
         if (ranks_elem == null_ || !ranks_elem->isList()) {
             throw new Error("Error in mlx_tucker: ranks must be a list of integers");
@@ -4254,7 +4254,7 @@ Element* Lispe_mlx_methods::method_tucker(LispE* lisp) {
         int max_iter = (max_iter_elem != null_) ? max_iter_elem->asInteger() : 50;
         double tol = (tol_elem != null_) ? tol_elem->asFloat() : 1e-5;
         
-        // Initialisation avec HOSVD
+        // Initialization with HOSVD
         std::vector<mx::array> factors;
         factors.reserve(ndim);
         for (int mode = 0; mode < ndim; mode++) {
@@ -4268,11 +4268,11 @@ Element* Lispe_mlx_methods::method_tucker(LispE* lisp) {
             factors.push_back(std::move(U));
         }
         
-        // HOOI: itération jusqu'à convergence
+        // HOOI: iterate until convergence
         double prev_fit = 0.0;
         for (int iter = 0; iter < max_iter; iter++) {
             for (int mode = 0; mode < ndim; mode++) {
-                // Calculer Y = tensor ×_1 U1^T ×_2 U2^T ... (sauf mode n)
+                // Compute Y = tensor ×_1 U1^T ×_2 U2^T ... (except mode n)
                 mx::array Y = tensor;
                 for (int m = 0; m < ndim; m++) {
                     if (m != mode) {
@@ -4280,10 +4280,10 @@ Element* Lispe_mlx_methods::method_tucker(LispE* lisp) {
                     }
                 }
                 
-                // Unfold Y selon le mode courant
+                // Unfold Y according to the current mode
                 mx::array unfolded = mode_n_unfold(Y, mode);
                 
-                // SVD et mise à jour du facteur
+                // SVD and update factor
                 auto usv = mx::linalg::svd(unfolded);
                 mx::array U = usv[0];
                 int rank = ranks[mode];
@@ -4293,13 +4293,13 @@ Element* Lispe_mlx_methods::method_tucker(LispE* lisp) {
                 factors[mode] = U;
             }
             
-            // Calculer le core
+            // Compute the core
             mx::array core = tensor;
             for (int m = 0; m < ndim; m++) {
                 core = n_mode_product(core, mx::transpose(factors[m]), m);
             }
             
-            // Vérifier la convergence (norme du core)
+            // Check convergence (core norm)
             mx::array norm_sq = mx::sum(mx::square(core));
             mx::eval(norm_sq);
             double fit = std::sqrt(norm_sq.item<float>());
@@ -4310,19 +4310,19 @@ Element* Lispe_mlx_methods::method_tucker(LispE* lisp) {
             prev_fit = fit;
         }
         
-        // Calculer le core final
+        // Compute final core
         mx::array core = tensor;
         for (int m = 0; m < ndim; m++) {
             core = n_mode_product(core, mx::transpose(factors[m]), m);
         }
         
-        // Évaluer
+        // Evaluate
         mx::eval(core);
         for (auto& f : factors) {
             mx::eval(f);
         }
         
-        // Retourner (core, factors)
+        // Return (core, factors)
         List* factors_list = lisp->provideList();
         for (auto& f : factors) {
             factors_list->append(new MLXArray(std::move(f)));
@@ -4338,11 +4338,11 @@ Element* Lispe_mlx_methods::method_tucker(LispE* lisp) {
     }
 }
 
-// mlx_tucker_reconstruct - Reconstruit un tenseur à partir de sa décomposition Tucker
-// Signature: deflib mlx_tucker_reconstruct(core factors)
-// core: tenseur noyau
-// factors: liste des matrices de facteurs
-// Retourne: tenseur reconstruit
+ // mlx_tucker_reconstruct - Reconstruct a tensor from its Tucker decomposition
+ // Signature: deflib mlx_tucker_reconstruct(core factors)
+ // core: core tensor
+ // factors: list of factor matrices
+ // Returns: reconstructed tensor
 Element* Lispe_mlx_methods::method_tucker_reconstruct(LispE* lisp) {
     Element* core_elem = lisp->get_variable("core");
     Element* factors_elem = lisp->get_variable("factors");
@@ -4359,7 +4359,7 @@ Element* Lispe_mlx_methods::method_tucker_reconstruct(LispE* lisp) {
             throw new Error("Error in mlx_tucker_reconstruct: number of factors must match core dimensions");
         }
         
-        // Reconstruire: tensor = core ×_1 U1 ×_2 U2 ... ×_n Un
+        // Reconstruct: tensor = core ×_1 U1 ×_2 U2 ... ×_n Un
         mx::array result = core;
         for (int mode = 0; mode < ndim; mode++) {
             Element* factor_elem = factors_elem->index(mode);
@@ -4374,19 +4374,19 @@ Element* Lispe_mlx_methods::method_tucker_reconstruct(LispE* lisp) {
     }
 }
 
-// mlx_tucker_compression_ratio - Calcule le ratio de compression d'une décomposition Tucker
-// Signature: deflib mlx_tucker_compression_ratio(original_shape core factors)
-// original_shape: forme du tenseur original (liste d'entiers)
-// core: tenseur noyau
-// factors: liste des matrices de facteurs
-// Retourne: dictionnaire avec ratio, original_size, compressed_size
+ // mlx_tucker_compression_ratio - Compute compression ratio of a Tucker decomposition
+ // Signature: deflib mlx_tucker_compression_ratio(original_shape core factors)
+ // original_shape: original tensor shape (list of ints)
+ // core: core tensor
+ // factors: list of factor matrices
+ // Returns: dictionary with ratio, original_size, compressed_size
 Element* Lispe_mlx_methods::method_tucker_compression_ratio(LispE* lisp) {
     Element* shape_elem = lisp->get_variable("original_shape");
     Element* core_elem = lisp->get_variable("core");
     Element* factors_elem = lisp->get_variable("factors");
 
     try {
-        // Calculer la taille originale
+        // Compute original size
         long original_size = 1;
         if (!shape_elem->isList()) {
             throw new Error("Error in mlx_tucker_compression_ratio: original_shape must be a list");
@@ -4395,11 +4395,11 @@ Element* Lispe_mlx_methods::method_tucker_compression_ratio(LispE* lisp) {
             original_size *= shape_elem->index(i)->asInteger();
         }
         
-        // Calculer la taille du core
+        // Compute core size
         mx::array core = element_to_array(lisp, core_elem);
         long core_size = core.size();
         
-        // Calculer la taille des facteurs
+        // Compute factors size
         if (!factors_elem->isList()) {
             throw new Error("Error in mlx_tucker_compression_ratio: factors must be a list");
         }
@@ -4414,7 +4414,7 @@ Element* Lispe_mlx_methods::method_tucker_compression_ratio(LispE* lisp) {
         long compressed_size = core_size + factors_size;
         double ratio = (double)original_size / (double)compressed_size;
         
-        // Retourner un dictionnaire
+        // Return a dictionary
         Dictionary* dict = lisp->provideDictionary();
         u_ustring key_ratio = U"ratio";
         u_ustring key_original = U"original_size";
@@ -4433,11 +4433,11 @@ Element* Lispe_mlx_methods::method_tucker_compression_ratio(LispE* lisp) {
     }
 }
 
-// mlx_khatri_rao_product - Produit de Khatri-Rao (produit colonne par colonne de Kronecker)
-// Signature: deflib mlx_khatri_rao_product(a b)
-// a: matrice de taille (I, K)
-// b: matrice de taille (J, K)
-// Retourne: matrice de taille (I*J, K)
+ // mlx_khatri_rao_product - Khatri-Rao product (column-wise Kronecker product)
+ // Signature: deflib mlx_khatri_rao_product(a b)
+ // a: matrix of size (I, K)
+ // b: matrix of size (J, K)
+ // Returns: matrix of size (I*J, K)
 Element* Lispe_mlx_methods::method_khatri_rao_product(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -4460,15 +4460,15 @@ Element* Lispe_mlx_methods::method_khatri_rao_product(LispE* lisp) {
         }
         int K = K_a;
         
-        // Khatri-Rao: pour chaque colonne k, faire le produit de Kronecker des colonnes
+        // Khatri-Rao: for each column k, do the Kronecker product of the columns
         // result[:, k] = kron(a[:, k], b[:, k])
-        // Résultat: matrice de taille (I*J, K)
+        // Result: matrix of size (I*J, K)
         
-        // Méthode efficace: utiliser le broadcasting
-        // a[:, None, :] a forme (I, 1, K)
-        // b[None, :, :] a forme (1, J, K)
-        // Le produit a forme (I, J, K)
-        // Puis reshape en (I*J, K)
+        // Efficient method: use broadcasting
+        // a[:, None, :] has shape (I, 1, K)
+        // b[None, :, :] has shape (1, J, K)
+        // The product has shape (I, J, K)
+        // Then reshape to (I*J, K)
         
         mx::array a_expanded = mx::reshape(a, {I, 1, K});
         mx::array b_expanded = mx::reshape(b, {1, J, K});
@@ -4482,12 +4482,12 @@ Element* Lispe_mlx_methods::method_khatri_rao_product(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 10: Opérations logiques et tests
-// ============================================================================
+ // ============================================================================
+ // Group 10: Logical operations and tests
+ // ============================================================================
 
-// logical_and - ET logique élément par élément
-// Signature: deflib mlx_logical_and(a b)
+ // logical_and - Element-wise logical AND
+ // Signature: deflib mlx_logical_and(a b)
 Element* Lispe_mlx_methods::method_logical_and(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -4502,8 +4502,8 @@ Element* Lispe_mlx_methods::method_logical_and(LispE* lisp) {
     }
 }
 
-// logical_or - OU logique élément par élément
-// Signature: deflib mlx_logical_or(a b)
+ // logical_or - Element-wise logical OR
+ // Signature: deflib mlx_logical_or(a b)
 Element* Lispe_mlx_methods::method_logical_or(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -4518,8 +4518,8 @@ Element* Lispe_mlx_methods::method_logical_or(LispE* lisp) {
     }
 }
 
-// logical_not - NON logique élément par élément
-// Signature: deflib mlx_logical_not(array)
+ // logical_not - Element-wise logical NOT
+ // Signature: deflib mlx_logical_not(array)
 Element* Lispe_mlx_methods::method_logical_not(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4532,8 +4532,8 @@ Element* Lispe_mlx_methods::method_logical_not(LispE* lisp) {
     }
 }
 
-// isnan - Test si les valeurs sont NaN
-// Signature: deflib mlx_isnan(array)
+ // isnan - Test if values are NaN
+ // Signature: deflib mlx_isnan(array)
 Element* Lispe_mlx_methods::method_isnan(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4546,8 +4546,8 @@ Element* Lispe_mlx_methods::method_isnan(LispE* lisp) {
     }
 }
 
-// isinf - Test si les valeurs sont infinies
-// Signature: deflib mlx_isinf(array)
+ // isinf - Test if values are infinite
+ // Signature: deflib mlx_isinf(array)
 Element* Lispe_mlx_methods::method_isinf(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4560,8 +4560,8 @@ Element* Lispe_mlx_methods::method_isinf(LispE* lisp) {
     }
 }
 
-// isfinite - Test si les valeurs sont finies (ni NaN ni inf)
-// Signature: deflib mlx_isfinite(array)
+ // isfinite - Test if values are finite (neither NaN nor inf)
+ // Signature: deflib mlx_isfinite(array)
 Element* Lispe_mlx_methods::method_isfinite(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4575,13 +4575,13 @@ Element* Lispe_mlx_methods::method_isfinite(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 11: Manipulation avancée
-// ============================================================================
+ // ============================================================================
+ // Group 11: Advanced manipulation
+ // ============================================================================
 
-// flip - Inverser l'array selon les axes spécifiés
-// Implémentation manuelle car mx::flip n'existe pas dans MLX 0.29.3
-// Signature: deflib mlx_flip(array (axes))
+ // flip - Flip the array along specified axes
+ // Manual implementation because mx::flip does not exist in MLX 0.29.3
+ // Signature: deflib mlx_flip(array (axes))
 Element* Lispe_mlx_methods::method_flip(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -4591,7 +4591,7 @@ Element* Lispe_mlx_methods::method_flip(LispE* lisp) {
         auto shape = arr.shape();
         int ndim = shape.size();
 
-        // Déterminer les axes à inverser
+        // Determine axes to flip
         std::vector<int> axes;
         if (axes_elem != null_) {
             if (axes_elem->isList()) {
@@ -4606,17 +4606,17 @@ Element* Lispe_mlx_methods::method_flip(LispE* lisp) {
                 axes.push_back(ax);
             }
         } else {
-            // Par défaut, inverser tous les axes
+            // By default, flip all axes
             for (int i = 0; i < ndim; i++) {
                 axes.push_back(i);
             }
         }
 
-        // Inverser chaque axe en utilisant take avec indices inversés
+        // Flip each axis using take with reversed indices
         mx::array result = arr;
         for (int axis : axes) {
             int dim_size = shape[axis];
-            // Créer indices inversés: [dim_size-1, dim_size-2, ..., 1, 0]
+            // Create reversed indices: [dim_size-1, dim_size-2, ..., 1, 0]
             std::vector<int32_t> rev_indices(dim_size);
             for (int i = 0; i < dim_size; i++) {
                 rev_indices[i] = dim_size - 1 - i;
@@ -4631,8 +4631,8 @@ Element* Lispe_mlx_methods::method_flip(LispE* lisp) {
     }
 }
 
-// roll - Décaler circulairement les éléments
-// Signature: deflib mlx_roll(array shift (axis))
+ // roll - Circularly shift elements
+ // Signature: deflib mlx_roll(array shift (axis))
 Element* Lispe_mlx_methods::method_roll(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* shift_elem = lisp->get_variable("shift");
@@ -4652,8 +4652,8 @@ Element* Lispe_mlx_methods::method_roll(LispE* lisp) {
     }
 }
 
-// sort - Trier l'array selon un axe
-// Signature: deflib mlx_sort(array (axis))
+ // sort - Sort the array along an axis
+ // Signature: deflib mlx_sort(array (axis))
 Element* Lispe_mlx_methods::method_sort(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -4668,8 +4668,8 @@ Element* Lispe_mlx_methods::method_sort(LispE* lisp) {
     }
 }
 
-// argsort - Indices qui trieraient l'array
-// Signature: deflib mlx_argsort(array (axis))
+ // argsort - Indices that would sort the array
+ // Signature: deflib mlx_argsort(array (axis))
 Element* Lispe_mlx_methods::method_argsort(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -4684,50 +4684,50 @@ Element* Lispe_mlx_methods::method_argsort(LispE* lisp) {
     }
 }
 
-// argwhere - Indices où la condition est vraie
-// Signature: deflib mlx_argwhere(array)
-// Retourne un array [N, 1] pour 1D où N est le nombre d'éléments non-nuls
-// Implémentation manuelle car mx::argwhere n'existe pas dans MLX C++
+ // argwhere - Indices where condition is true
+ // Signature: deflib mlx_argwhere(array)
+ // Returns an array [N, 1] for 1D where N is number of non-zero elements
+ // Manual implementation because mx::argwhere does not exist in MLX C++
 Element* Lispe_mlx_methods::method_argwhere(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
     try {
         mx::array arr = element_to_array(lisp, array_elem);
         
-        // Aplatir l'array si nécessaire
+        // Flatten the array if necessary
         mx::array flat = mx::flatten(arr);
         int size = flat.shape()[0];
         
-        // Créer un array d'indices [0, 1, 2, ..., size-1]
+        // Create an array of indices [0, 1, 2, ..., size-1]
         mx::array indices = mx::arange(0, size, 1, mx::int32);
         
-        // Convertir en booléen si pas déjà
+        // Convert to boolean if not already
         mx::array mask = mx::astype(flat, mx::bool_);
         
-        // Utiliser where pour sélectionner les indices où mask est vrai
-        // where(cond, x, y) - on veut les indices, donc on utilise une astuce:
-        // On compte d'abord combien d'éléments sont vrais
+        // Use where to select indices where mask is true
+        // where(cond, x, y) - we want the indices, so we use a trick:
+        // First count how many elements are true
         mx::array sum = mx::sum(mask, false);
         mx::eval(sum);  // Force l'évaluation pour obtenir la valeur
         
-        // Récupérer le nombre d'éléments vrais
+        // Get the number of true elements
         int32_t* sum_ptr = sum.data<int32_t>();
         int num_true = (sum_ptr != nullptr) ? *sum_ptr : 0;
         
         if (num_true == 0) {
-            // Retourner un array vide [0, 1]
+            // Return an empty array [0, 1]
             return new MLXArray(mx::zeros({0, 1}, mx::int32));
         }
         
-        // Créer le résultat en utilisant une boucle sur les données
-        // D'abord évaluer le masque
+        // Create the result using a loop over data
+        // First evaluate the mask
         mx::eval(mask);
         mx::eval(indices);
         
         bool* mask_data = mask.data<bool>();
         int32_t* indices_data = indices.data<int32_t>();
         
-        // Collecter les indices où mask est vrai
+        // Collect indices where mask is true
         std::vector<int32_t> result_indices;
         result_indices.reserve(num_true);
         
@@ -4737,7 +4737,7 @@ Element* Lispe_mlx_methods::method_argwhere(LispE* lisp) {
             }
         }
         
-        // Créer l'array de résultat [N, 1]
+        // Create the result array [N, 1]
         mx::array result = mx::array(result_indices.data(), {(int)result_indices.size(), 1}, mx::int32);
         return new MLXArray(std::move(result));
     } catch (const std::exception& e) {
@@ -4745,8 +4745,8 @@ Element* Lispe_mlx_methods::method_argwhere(LispE* lisp) {
     }
 }
 
-// moveaxis - Déplacer des axes vers de nouvelles positions
-// Signature: deflib mlx_moveaxis(array source destination)
+ // moveaxis - Move axes to new positions
+ // Signature: deflib mlx_moveaxis(array source destination)
 Element* Lispe_mlx_methods::method_moveaxis(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* source_elem = lisp->get_variable("source");
@@ -4763,8 +4763,8 @@ Element* Lispe_mlx_methods::method_moveaxis(LispE* lisp) {
     }
 }
 
-// swapaxes - Échanger deux axes
-// Signature: deflib mlx_swapaxes(array axis1 axis2)
+ // swapaxes - Swap two axes
+ // Signature: deflib mlx_swapaxes(array axis1 axis2)
 Element* Lispe_mlx_methods::method_swapaxes(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* axis1_elem = lisp->get_variable("axis1");
@@ -4781,8 +4781,8 @@ Element* Lispe_mlx_methods::method_swapaxes(LispE* lisp) {
     }
 }
 
-// broadcast_to - Diffuser l'array vers une nouvelle forme
-// Signature: deflib mlx_broadcast_to(array shape)
+ // broadcast_to - Broadcast the array to a new shape
+ // Signature: deflib mlx_broadcast_to(array shape)
 Element* Lispe_mlx_methods::method_broadcast_to(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* shape_elem = lisp->get_variable("shape");
@@ -4799,12 +4799,12 @@ Element* Lispe_mlx_methods::method_broadcast_to(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 12: Création avancée
-// ============================================================================
+ // ============================================================================
+ // Group 12: Advanced creation
+ // ============================================================================
 
-// identity - Matrice identité (alias de eye)
-// Signature: deflib mlx_identity(n (dtype))
+ // identity - Identity matrix (alias of eye)
+ // Signature: deflib mlx_identity(n (dtype))
 Element* Lispe_mlx_methods::method_identity(LispE* lisp) {
     Element* n_elem = lisp->get_variable("n");
     Element* dtype_elem = lisp->get_variable("dtype");
@@ -4819,8 +4819,8 @@ Element* Lispe_mlx_methods::method_identity(LispE* lisp) {
     }
 }
 
-// tri - Matrice triangulaire inférieure remplie de 1
-// Signature: deflib mlx_tri(n (m) (k) (dtype))
+ // tri - Lower-triangular matrix filled with 1
+ // Signature: deflib mlx_tri(n (m) (k) (dtype))
 Element* Lispe_mlx_methods::method_tri(LispE* lisp) {
     Element* n_elem = lisp->get_variable("n");
     Element* m_elem = lisp->get_variable("m");
@@ -4839,8 +4839,8 @@ Element* Lispe_mlx_methods::method_tri(LispE* lisp) {
     }
 }
 
-// tril - Extraire la partie triangulaire inférieure
-// Signature: deflib mlx_tril(array (k))
+ // tril - Extract lower triangular part
+ // Signature: deflib mlx_tril(array (k))
 Element* Lispe_mlx_methods::method_tril(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* k_elem = lisp->get_variable("k");
@@ -4855,8 +4855,8 @@ Element* Lispe_mlx_methods::method_tril(LispE* lisp) {
     }
 }
 
-// triu - Extraire la partie triangulaire supérieure
-// Signature: deflib mlx_triu(array (k))
+ // triu - Extract upper triangular part
+ // Signature: deflib mlx_triu(array (k))
 Element* Lispe_mlx_methods::method_triu(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* k_elem = lisp->get_variable("k");
@@ -4871,9 +4871,9 @@ Element* Lispe_mlx_methods::method_triu(LispE* lisp) {
     }
 }
 
-// meshgrid - Créer des matrices de coordonnées
-// Signature: deflib mlx_meshgrid(arrays (indexing))
-// indexing: "xy" (default) ou "ij"
+ // meshgrid - Create coordinate matrices
+ // Signature: deflib mlx_meshgrid(arrays (indexing))
+ // indexing: "xy" (default) or "ij"
 Element* Lispe_mlx_methods::method_meshgrid(LispE* lisp) {
     Element* arrays_elem = lisp->get_variable("arrays");
     Element* indexing_elem = lisp->get_variable("indexing");
@@ -4896,7 +4896,7 @@ Element* Lispe_mlx_methods::method_meshgrid(LispE* lisp) {
 
         std::vector<mx::array> result_arrays = mx::meshgrid(input_arrays, sparse, indexing);
 
-        // Évaluer et retourner comme liste LispE
+        // Evaluate and return as LispE list
         List* result = lisp->provideList();
         for (auto& arr : result_arrays) {
             mx::eval(arr);
@@ -4908,12 +4908,12 @@ Element* Lispe_mlx_methods::method_meshgrid(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 13: Algèbre linéaire avancée
-// ============================================================================
+ // ============================================================================
+ // Group 13: Advanced linear algebra
+ // ============================================================================
 
-// mlx::linalg::pinv - Calcule la pseudo-inverse de Moore-Penrose
-// Signature: deflib mlx_pinv(array)
+ // mlx::linalg::pinv - Compute Moore-Penrose pseudo-inverse
+ // Signature: deflib mlx_pinv(array)
 Element* Lispe_mlx_methods::method_pinv(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4926,9 +4926,9 @@ Element* Lispe_mlx_methods::method_pinv(LispE* lisp) {
     }
 }
 
-// mlx::linalg::eig - Calcule les valeurs propres et vecteurs propres
-// Signature: deflib mlx_eig(array)
-// Retourne une liste (eigenvalues eigenvectors)
+ // mlx::linalg::eig - Compute eigenvalues and eigenvectors
+ // Signature: deflib mlx_eig(array)
+ // Returns a list (eigenvalues eigenvectors)
 Element* Lispe_mlx_methods::method_eig(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4947,8 +4947,8 @@ Element* Lispe_mlx_methods::method_eig(LispE* lisp) {
     }
 }
 
-// mlx::linalg::eigvals - Calcule uniquement les valeurs propres
-// Signature: deflib mlx_eigvals(array)
+ // mlx::linalg::eigvals - Compute eigenvalues only
+ // Signature: deflib mlx_eigvals(array)
 Element* Lispe_mlx_methods::method_eigvals(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4961,9 +4961,9 @@ Element* Lispe_mlx_methods::method_eigvals(LispE* lisp) {
     }
 }
 
-// mlx::linalg::lu - Décomposition LU
-// Signature: deflib mlx_lu(array)
-// Retourne une liste (P L U)
+ // mlx::linalg::lu - LU decomposition
+ // Signature: deflib mlx_lu(array)
+ // Returns a list (P L U)
 Element* Lispe_mlx_methods::method_lu(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -4982,8 +4982,8 @@ Element* Lispe_mlx_methods::method_lu(LispE* lisp) {
     }
 }
 
-// mlx::linalg::cross - Produit vectoriel de deux vecteurs
-// Signature: deflib mlx_cross(a b (axis))
+ // mlx::linalg::cross - Cross product of two vectors
+ // Signature: deflib mlx_cross(a b (axis))
 Element* Lispe_mlx_methods::method_cross(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -5005,12 +5005,12 @@ Element* Lispe_mlx_methods::method_cross(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 14: I/O de modèles
-// ============================================================================
+ // ============================================================================
+ // Group 14: Model I/O
+ // ============================================================================
 
-// mlx::save - Sauvegarde un array en format NPY
-// Signature: deflib mlx_save(file array)
+ // mlx::save - Save an array in NPY format
+ // Signature: deflib mlx_save(file array)
 Element* Lispe_mlx_methods::method_save(LispE* lisp) {
     Element* file_elem = lisp->get_variable("file");
     Element* array_elem = lisp->get_variable("array");
@@ -5026,8 +5026,8 @@ Element* Lispe_mlx_methods::method_save(LispE* lisp) {
     }
 }
 
-// mlx::load - Charge un array depuis un fichier NPY
-// Signature: deflib mlx_load(file)
+ // mlx::load - Load an array from a NPY file
+ // Signature: deflib mlx_load(file)
 Element* Lispe_mlx_methods::method_load(LispE* lisp) {
     Element* file_elem = lisp->get_variable("file");
 
@@ -5040,9 +5040,9 @@ Element* Lispe_mlx_methods::method_load(LispE* lisp) {
     }
 }
 
-// mlx::load_safetensors - Charge un fichier safetensors
-// Signature: deflib mlx_load_safetensors(file)
-// Retourne une liste (tensors_dict metadata_dict)
+ // mlx::load_safetensors - Load a safetensors file
+ // Signature: deflib mlx_load_safetensors(file)
+ // Returns a list (tensors_dict metadata_dict)
 Element* Lispe_mlx_methods::method_load_safetensors(LispE* lisp) {
     Element* file_elem = lisp->get_variable("file");
 
@@ -5050,7 +5050,7 @@ Element* Lispe_mlx_methods::method_load_safetensors(LispE* lisp) {
         std::string filename = file_elem->toString(lisp);
         auto [tensors, metadata] = mx::load_safetensors(filename);
 
-        // Créer le dictionnaire des tenseurs
+        // Create the tensors dictionary
         Dictionary* tensors_dict = lisp->provideDictionary();
         for (auto& [name, arr] : tensors) {
             mx::eval(arr);
@@ -5059,7 +5059,7 @@ Element* Lispe_mlx_methods::method_load_safetensors(LispE* lisp) {
             tensors_dict->recording(key_copy, mlx_arr);
         }
 
-        // Créer le dictionnaire des métadonnées
+        // Create the metadata dictionary
         Dictionary* metadata_dict = lisp->provideDictionary();
         for (auto& [key, value] : metadata) {
             std::string key_copy = key;  // Copie non-const
@@ -5068,7 +5068,7 @@ Element* Lispe_mlx_methods::method_load_safetensors(LispE* lisp) {
             metadata_dict->recording(key_copy, str_val);
         }
 
-        // Retourner une liste (tensors, metadata)
+        // Return a list (tensors, metadata)
         List* result = lisp->provideList();
         result->append(tensors_dict);
         result->append(metadata_dict);
@@ -5078,8 +5078,8 @@ Element* Lispe_mlx_methods::method_load_safetensors(LispE* lisp) {
     }
 }
 
-// mlx::save_safetensors - Sauvegarde en format safetensors
-// Signature: deflib mlx_save_safetensors(file arrays (metadata))
+ // mlx::save_safetensors - Save in safetensors format
+ // Signature: deflib mlx_save_safetensors(file arrays (metadata))
 Element* Lispe_mlx_methods::method_save_safetensors(LispE* lisp) {
     Element* file_elem = lisp->get_variable("file");
     Element* arrays_elem = lisp->get_variable("arrays");
@@ -5088,7 +5088,7 @@ Element* Lispe_mlx_methods::method_save_safetensors(LispE* lisp) {
     try {
         std::string filename = file_elem->toString(lisp);
 
-        // Convertir le dictionnaire LispE en unordered_map
+        // Convert LispE dictionary to unordered_map
         if (!arrays_elem->isDictionary()) {
             throw new Error("Error in mlx_save_safetensors: arrays must be a dictionary");
         }
@@ -5104,7 +5104,7 @@ Element* Lispe_mlx_methods::method_save_safetensors(LispE* lisp) {
             tensors.emplace(name, arr);
         }
 
-        // Convertir les métadonnées si présentes
+        // Convert metadata if present
         std::unordered_map<std::string, std::string> metadata;
         if (metadata_elem != null_ && metadata_elem->isDictionary()) {
             Dictionary* meta_dict = (Dictionary*)metadata_elem;
@@ -5124,9 +5124,9 @@ Element* Lispe_mlx_methods::method_save_safetensors(LispE* lisp) {
     }
 }
 
-// mlx::load_gguf - Charge un fichier GGUF
-// Signature: deflib mlx_load_gguf(file)
-// Retourne une liste (arrays_dict metadata_dict)
+ // mlx::load_gguf - Load a GGUF file
+ // Signature: deflib mlx_load_gguf(file)
+ // Returns a list (arrays_dict metadata_dict)
 Element* Lispe_mlx_methods::method_load_gguf(LispE* lisp) {
     Element* file_elem = lisp->get_variable("file");
 
@@ -5134,7 +5134,7 @@ Element* Lispe_mlx_methods::method_load_gguf(LispE* lisp) {
         std::string filename = file_elem->toString(lisp);
         auto [arrays, metadata] = mx::load_gguf(filename);
 
-        // Créer le dictionnaire des arrays
+        // Create the arrays dictionary
         Dictionary* arrays_dict = lisp->provideDictionary();
         for (auto& [name, arr] : arrays) {
             mx::eval(arr);
@@ -5143,7 +5143,7 @@ Element* Lispe_mlx_methods::method_load_gguf(LispE* lisp) {
             arrays_dict->recording(key_copy, mlx_arr);
         }
 
-        // Créer le dictionnaire des métadonnées
+        // Create the metadata dictionary
         // GGUFMetaData = std::variant<std::monostate, array, std::string, std::vector<std::string>>
         Dictionary* metadata_dict = lisp->provideDictionary();
         for (auto& [key, value] : metadata) {
@@ -5169,7 +5169,7 @@ Element* Lispe_mlx_methods::method_load_gguf(LispE* lisp) {
             }
         }
 
-        // Retourner une liste (arrays, metadata)
+        // Return a list (arrays, metadata)
         List* result = lisp->provideList();
         result->append(arrays_dict);
         result->append(metadata_dict);
@@ -5179,8 +5179,8 @@ Element* Lispe_mlx_methods::method_load_gguf(LispE* lisp) {
     }
 }
 
-// mlx::save_gguf - Sauvegarde en format GGUF
-// Signature: deflib mlx_save_gguf(file arrays (metadata))
+ // mlx::save_gguf - Save in GGUF format
+ // Signature: deflib mlx_save_gguf(file arrays (metadata))
 Element* Lispe_mlx_methods::method_save_gguf(LispE* lisp) {
     Element* file_elem = lisp->get_variable("file");
     Element* arrays_elem = lisp->get_variable("arrays");
@@ -5189,7 +5189,7 @@ Element* Lispe_mlx_methods::method_save_gguf(LispE* lisp) {
     try {
         std::string filename = file_elem->toString(lisp);
 
-        // Convertir le dictionnaire LispE en unordered_map
+        // Convert LispE dictionary to unordered_map
         if (!arrays_elem->isDictionary()) {
             throw new Error("Error in mlx_save_gguf: arrays must be a dictionary");
         }
@@ -5205,8 +5205,8 @@ Element* Lispe_mlx_methods::method_save_gguf(LispE* lisp) {
             arrays_map.emplace(name, arr);
         }
 
-        // Convertir les métadonnées si présentes
-        // Pour simplifier, on ne supporte que les métadonnées de type string
+        // Convert metadata if present
+        // For simplicity, only support string-type metadata
         std::unordered_map<std::string, mx::GGUFMetaData> metadata;
         if (metadata_elem != null_ && metadata_elem->isDictionary()) {
             Dictionary* meta_dict = (Dictionary*)metadata_elem;
@@ -5235,13 +5235,13 @@ Element* Lispe_mlx_methods::method_save_gguf(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 15: Quantification et mémoire
-// ============================================================================
+ // ============================================================================
+ // Group 15: Quantization and memory
+ // ============================================================================
 
-// mlx::quantize - Quantifie une matrice
-// Signature: deflib mlx_quantize(array (group_size) (bits))
-// Retourne une liste (w scales biases)
+ // mlx::quantize - Quantize a matrix
+ // Signature: deflib mlx_quantize(array (group_size) (bits))
+ // Returns a list (w scales biases)
 Element* Lispe_mlx_methods::method_quantize(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
     Element* group_size_elem = lisp->get_variable("group_size");
@@ -5272,8 +5272,8 @@ Element* Lispe_mlx_methods::method_quantize(LispE* lisp) {
     }
 }
 
-// mlx::dequantize - Dé-quantifie une matrice
-// Signature: deflib mlx_dequantize(w scales (biases) (group_size) (bits))
+ // mlx::dequantize - Dequantize a matrix
+ // Signature: deflib mlx_dequantize(w scales (biases) (group_size) (bits))
 Element* Lispe_mlx_methods::method_dequantize(LispE* lisp) {
     Element* w_elem = lisp->get_variable("w");
     Element* scales_elem = lisp->get_variable("scales");
@@ -5306,8 +5306,8 @@ Element* Lispe_mlx_methods::method_dequantize(LispE* lisp) {
     }
 }
 
-// mlx::quantized_matmul - Multiplication matricielle quantifiée
-// Signature: deflib mlx_quantized_matmul(x w scales (biases) (transposed) (group_size) (bits))
+ // mlx::quantized_matmul - Quantized matrix multiplication
+ // Signature: deflib mlx_quantized_matmul(x w scales (biases) (transposed) (group_size) (bits))
 Element* Lispe_mlx_methods::method_quantized_matmul(LispE* lisp) {
     Element* x_elem = lisp->get_variable("x");
     Element* w_elem = lisp->get_variable("w");
@@ -5348,8 +5348,8 @@ Element* Lispe_mlx_methods::method_quantized_matmul(LispE* lisp) {
     }
 }
 
-// mlx::synchronize - Synchronise les opérations GPU
-// Signature: deflib mlx_synchronize()
+ // mlx::synchronize - Synchronize GPU operations
+ // Signature: deflib mlx_synchronize()
 Element* Lispe_mlx_methods::method_synchronize(LispE* lisp) {
     try {
         mx::synchronize();
@@ -5359,8 +5359,8 @@ Element* Lispe_mlx_methods::method_synchronize(LispE* lisp) {
     }
 }
 
-// mlx::clear_cache - Nettoie le cache mémoire
-// Signature: deflib mlx_clear_cache()
+ // mlx::clear_cache - Clear memory cache
+ // Signature: deflib mlx_clear_cache()
 Element* Lispe_mlx_methods::method_clear_cache(LispE* lisp) {
     try {
         mx::clear_cache();
@@ -5370,8 +5370,8 @@ Element* Lispe_mlx_methods::method_clear_cache(LispE* lisp) {
     }
 }
 
-// mlx::get_active_memory - Retourne la mémoire active en bytes
-// Signature: deflib mlx_get_active_memory()
+ // mlx::get_active_memory - Return active memory in bytes
+ // Signature: deflib mlx_get_active_memory()
 Element* Lispe_mlx_methods::method_get_active_memory(LispE* lisp) {
     try {
         size_t mem = mx::get_active_memory();
@@ -5381,8 +5381,8 @@ Element* Lispe_mlx_methods::method_get_active_memory(LispE* lisp) {
     }
 }
 
-// mlx::get_peak_memory - Retourne la mémoire pic en bytes
-// Signature: deflib mlx_get_peak_memory()
+ // mlx::get_peak_memory - Return peak memory in bytes
+ // Signature: deflib mlx_get_peak_memory()
 Element* Lispe_mlx_methods::method_get_peak_memory(LispE* lisp) {
     try {
         size_t mem = mx::get_peak_memory();
@@ -5392,8 +5392,8 @@ Element* Lispe_mlx_methods::method_get_peak_memory(LispE* lisp) {
     }
 }
 
-// mlx::get_cache_memory - Retourne la mémoire cache en bytes
-// Signature: deflib mlx_get_cache_memory()
+ // mlx::get_cache_memory - Return cache memory in bytes
+ // Signature: deflib mlx_get_cache_memory()
 Element* Lispe_mlx_methods::method_get_cache_memory(LispE* lisp) {
     try {
         size_t mem = mx::get_cache_memory();
@@ -5403,9 +5403,9 @@ Element* Lispe_mlx_methods::method_get_cache_memory(LispE* lisp) {
     }
 }
 
-// mlx::set_memory_limit - Définit la limite mémoire
-// Signature: deflib mlx_set_memory_limit(limit)
-// Retourne la limite précédente
+ // mlx::set_memory_limit - Set memory limit
+ // Signature: deflib mlx_set_memory_limit(limit)
+ // Returns previous limit
 Element* Lispe_mlx_methods::method_set_memory_limit(LispE* lisp) {
     Element* limit_elem = lisp->get_variable("limit");
 
@@ -5418,9 +5418,9 @@ Element* Lispe_mlx_methods::method_set_memory_limit(LispE* lisp) {
     }
 }
 
-// mlx::set_cache_limit - Définit la limite du cache
-// Signature: deflib mlx_set_cache_limit(limit)
-// Retourne la limite précédente
+ // mlx::set_cache_limit - Set cache limit
+ // Signature: deflib mlx_set_cache_limit(limit)
+ // Returns previous limit
 Element* Lispe_mlx_methods::method_set_cache_limit(LispE* lisp) {
     Element* limit_elem = lisp->get_variable("limit");
 
@@ -5433,12 +5433,12 @@ Element* Lispe_mlx_methods::method_set_cache_limit(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 16: Opérations supplémentaires
-// ============================================================================
+ // ============================================================================
+ // Group 16: Additional operations
+ // ============================================================================
 
-// mx::slice - Extraire une tranche d'un array
-// Signature: deflib mlx_slice(array start stop (strides))
+ // mx::slice - Extract a slice from an array
+ // Signature: deflib mlx_slice(array start stop (strides))
 Element* Lispe_mlx_methods::method_slice(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* start_elem = lisp->get_variable("start");
@@ -5448,7 +5448,7 @@ Element* Lispe_mlx_methods::method_slice(LispE* lisp) {
     try {
         mx::array arr = element_to_array(lisp, arr_elem);
 
-        // Convertir start en Shape
+        // Convert start to Shape
         mx::Shape start;
         if (start_elem->isList()) {
             for (long i = 0; i < start_elem->size(); i++) {
@@ -5458,7 +5458,7 @@ Element* Lispe_mlx_methods::method_slice(LispE* lisp) {
             start.push_back(start_elem->asInteger());
         }
 
-        // Convertir stop en Shape
+        // Convert stop to Shape
         mx::Shape stop;
         if (stop_elem->isList()) {
             for (long i = 0; i < stop_elem->size(); i++) {
@@ -5469,7 +5469,7 @@ Element* Lispe_mlx_methods::method_slice(LispE* lisp) {
         }
 
         if (strides_elem != null_ && strides_elem->type != v_emptyatom) {
-            // Convertir strides en Shape
+            // Convert strides to Shape
             mx::Shape strides;
             if (strides_elem->isList()) {
                 for (long i = 0; i < strides_elem->size(); i++) {
@@ -5489,8 +5489,8 @@ Element* Lispe_mlx_methods::method_slice(LispE* lisp) {
     }
 }
 
-// mx::trace - Calcule la trace d'une matrice (somme de la diagonale)
-// Signature: deflib mlx_trace(array (offset) (axis1) (axis2))
+ // mx::trace - Compute the trace of a matrix (sum of diagonal)
+ // Signature: deflib mlx_trace(array (offset) (axis1) (axis2))
 Element* Lispe_mlx_methods::method_trace(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* offset_elem = lisp->get_variable("offset");
@@ -5515,8 +5515,8 @@ Element* Lispe_mlx_methods::method_trace(LispE* lisp) {
     }
 }
 
-// mx::diagonal - Extraire la diagonale d'une matrice
-// Signature: deflib mlx_diagonal(array (offset) (axis1) (axis2))
+ // mx::diagonal - Extract the diagonal of a matrix
+ // Signature: deflib mlx_diagonal(array (offset) (axis1) (axis2))
 Element* Lispe_mlx_methods::method_diagonal(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* offset_elem = lisp->get_variable("offset");
@@ -5537,8 +5537,8 @@ Element* Lispe_mlx_methods::method_diagonal(LispE* lisp) {
     }
 }
 
-// mx::diag - Créer une matrice diagonale à partir d'un vecteur ou extraire la diagonale
-// Signature: deflib mlx_diag(array (k))
+ // mx::diag - Create a diagonal matrix from a vector or extract the diagonal
+ // Signature: deflib mlx_diag(array (k))
 Element* Lispe_mlx_methods::method_diag(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* k_elem = lisp->get_variable("k");
@@ -5555,8 +5555,8 @@ Element* Lispe_mlx_methods::method_diag(LispE* lisp) {
     }
 }
 
-// mx::tensordot - Produit tensoriel
-// Signature: deflib mlx_tensordot(a b (axes))
+ // mx::tensordot - Tensor product
+ // Signature: deflib mlx_tensordot(a b (axes))
 Element* Lispe_mlx_methods::method_tensordot(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -5579,8 +5579,8 @@ Element* Lispe_mlx_methods::method_tensordot(LispE* lisp) {
     }
 }
 
-// mx::inner - Produit intérieur de deux vecteurs
-// Signature: deflib mlx_inner(a b)
+ // mx::inner - Inner product of two vectors
+ // Signature: deflib mlx_inner(a b)
 Element* Lispe_mlx_methods::method_inner(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -5596,8 +5596,8 @@ Element* Lispe_mlx_methods::method_inner(LispE* lisp) {
     }
 }
 
-// mx::outer - Produit extérieur de deux vecteurs
-// Signature: deflib mlx_outer(a b)
+ // mx::outer - Outer product of two vectors
+ // Signature: deflib mlx_outer(a b)
 Element* Lispe_mlx_methods::method_outer(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -5613,8 +5613,8 @@ Element* Lispe_mlx_methods::method_outer(LispE* lisp) {
     }
 }
 
-// mx::cumsum - Somme cumulative
-// Signature: deflib mlx_cumsum(array (axis) (reverse) (inclusive))
+ // mx::cumsum - Cumulative sum
+ // Signature: deflib mlx_cumsum(array (axis) (reverse) (inclusive))
 Element* Lispe_mlx_methods::method_cumsum(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("thearray");
     Element* axis_elem = lisp->get_variable("theaxis");
@@ -5640,8 +5640,8 @@ Element* Lispe_mlx_methods::method_cumsum(LispE* lisp) {
     }
 }
 
-// mx::cumprod - Produit cumulatif
-// Signature: deflib mlx_cumprod(array (axis) (reverse) (inclusive))
+ // mx::cumprod - Cumulative product
+ // Signature: deflib mlx_cumprod(array (axis) (reverse) (inclusive))
 Element* Lispe_mlx_methods::method_cumprod(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("thearray");
     Element* axis_elem = lisp->get_variable("theaxis");
@@ -5667,8 +5667,8 @@ Element* Lispe_mlx_methods::method_cumprod(LispE* lisp) {
     }
 }
 
-// mx::topk - Retourne les k plus grandes valeurs
-// Signature: deflib mlx_topk(array k (axis))
+ // mx::topk - Return the k largest values
+ // Signature: deflib mlx_topk(array k (axis))
 Element* Lispe_mlx_methods::method_topk(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* k_elem = lisp->get_variable("k");
@@ -5691,8 +5691,8 @@ Element* Lispe_mlx_methods::method_topk(LispE* lisp) {
     }
 }
 
-// mx::partition - Partitionne l'array autour du k-ième élément
-// Signature: deflib mlx_partition(array kth (axis))
+ // mx::partition - Partition the array around the k-th element
+ // Signature: deflib mlx_partition(array kth (axis))
 Element* Lispe_mlx_methods::method_partition(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* kth_elem = lisp->get_variable("kth");
@@ -5715,12 +5715,12 @@ Element* Lispe_mlx_methods::method_partition(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 17: FFT (Transformées de Fourier)
-// ============================================================================
+ // ============================================================================
+ // Group 17: FFT (Fourier Transforms)
+ // ============================================================================
 
-// mlx_fft - Transformée de Fourier 1D
-// Signature: deflib mlx_fft(array (n) (axis))
+ // mlx_fft - 1D Fourier transform
+ // Signature: deflib mlx_fft(array (n) (axis))
 Element* Lispe_mlx_methods::method_fft(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* n_elem = lisp->get_variable("n");
@@ -5748,8 +5748,8 @@ Element* Lispe_mlx_methods::method_fft(LispE* lisp) {
     }
 }
 
-// mlx_ifft - Transformée de Fourier inverse 1D
-// Signature: deflib mlx_ifft(array (n) (axis))
+ // mlx_ifft - 1D inverse Fourier transform
+ // Signature: deflib mlx_ifft(array (n) (axis))
 Element* Lispe_mlx_methods::method_ifft(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* n_elem = lisp->get_variable("n");
@@ -5777,8 +5777,8 @@ Element* Lispe_mlx_methods::method_ifft(LispE* lisp) {
     }
 }
 
-// mlx_fft2 - Transformée de Fourier 2D
-// Signature: deflib mlx_fft2(array (s) (axes))
+ // mlx_fft2 - 2D Fourier transform
+ // Signature: deflib mlx_fft2(array (s) (axes))
 Element* Lispe_mlx_methods::method_fft2(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* s_elem = lisp->get_variable("s");
@@ -5806,8 +5806,8 @@ Element* Lispe_mlx_methods::method_fft2(LispE* lisp) {
     }
 }
 
-// mlx_ifft2 - Transformée de Fourier inverse 2D
-// Signature: deflib mlx_ifft2(array (s) (axes))
+ // mlx_ifft2 - 2D inverse Fourier transform
+ // Signature: deflib mlx_ifft2(array (s) (axes))
 Element* Lispe_mlx_methods::method_ifft2(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* s_elem = lisp->get_variable("s");
@@ -5835,8 +5835,8 @@ Element* Lispe_mlx_methods::method_ifft2(LispE* lisp) {
     }
 }
 
-// mlx_fftn - Transformée de Fourier N-dimensionnelle
-// Signature: deflib mlx_fftn(array (s) (axes))
+ // mlx_fftn - N-dimensional Fourier transform
+ // Signature: deflib mlx_fftn(array (s) (axes))
 Element* Lispe_mlx_methods::method_fftn(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* s_elem = lisp->get_variable("s");
@@ -5865,8 +5865,8 @@ Element* Lispe_mlx_methods::method_fftn(LispE* lisp) {
     }
 }
 
-// mlx_ifftn - Transformée de Fourier inverse N-dimensionnelle
-// Signature: deflib mlx_ifftn(array (s) (axes))
+ // mlx_ifftn - N-dimensional inverse Fourier transform
+ // Signature: deflib mlx_ifftn(array (s) (axes))
 Element* Lispe_mlx_methods::method_ifftn(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* s_elem = lisp->get_variable("s");
@@ -5895,8 +5895,8 @@ Element* Lispe_mlx_methods::method_ifftn(LispE* lisp) {
     }
 }
 
-// mlx_rfft - Transformée de Fourier réelle 1D
-// Signature: deflib mlx_rfft(array (n) (axis))
+ // mlx_rfft - Real 1D Fourier transform
+ // Signature: deflib mlx_rfft(array (n) (axis))
 Element* Lispe_mlx_methods::method_rfft(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* n_elem = lisp->get_variable("n");
@@ -5923,8 +5923,8 @@ Element* Lispe_mlx_methods::method_rfft(LispE* lisp) {
     }
 }
 
-// mlx_irfft - Transformée de Fourier réelle inverse 1D
-// Signature: deflib mlx_irfft(array (n) (axis))
+ // mlx_irfft - Real 1D inverse Fourier transform
+ // Signature: deflib mlx_irfft(array (n) (axis))
 Element* Lispe_mlx_methods::method_irfft(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* n_elem = lisp->get_variable("n");
@@ -5951,8 +5951,8 @@ Element* Lispe_mlx_methods::method_irfft(LispE* lisp) {
     }
 }
 
-// mlx_rfft2 - Transformée de Fourier réelle 2D
-// Signature: deflib mlx_rfft2(array (s) (axes))
+ // mlx_rfft2 - Real 2D Fourier transform
+ // Signature: deflib mlx_rfft2(array (s) (axes))
 Element* Lispe_mlx_methods::method_rfft2(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* s_elem = lisp->get_variable("s");
@@ -5980,8 +5980,8 @@ Element* Lispe_mlx_methods::method_rfft2(LispE* lisp) {
     }
 }
 
-// mlx_irfft2 - Transformée de Fourier réelle inverse 2D
-// Signature: deflib mlx_irfft2(array (s) (axes))
+ // mlx_irfft2 - Real 2D inverse Fourier transform
+ // Signature: deflib mlx_irfft2(array (s) (axes))
 Element* Lispe_mlx_methods::method_irfft2(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* s_elem = lisp->get_variable("s");
@@ -6009,8 +6009,8 @@ Element* Lispe_mlx_methods::method_irfft2(LispE* lisp) {
     }
 }
 
-// mlx_rfftn - Transformée de Fourier réelle N-dimensionnelle
-// Signature: deflib mlx_rfftn(array (s) (axes))
+ // mlx_rfftn - Real N-dimensional Fourier transform
+ // Signature: deflib mlx_rfftn(array (s) (axes))
 Element* Lispe_mlx_methods::method_rfftn(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* s_elem = lisp->get_variable("s");
@@ -6039,8 +6039,8 @@ Element* Lispe_mlx_methods::method_rfftn(LispE* lisp) {
     }
 }
 
-// mlx_irfftn - Transformée de Fourier réelle inverse N-dimensionnelle
-// Signature: deflib mlx_irfftn(array (s) (axes))
+ // mlx_irfftn - Real N-dimensional inverse Fourier transform
+ // Signature: deflib mlx_irfftn(array (s) (axes))
 Element* Lispe_mlx_methods::method_irfftn(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* s_elem = lisp->get_variable("s");
@@ -6069,8 +6069,8 @@ Element* Lispe_mlx_methods::method_irfftn(LispE* lisp) {
     }
 }
 
-// mlx_fftshift - Décale la composante fréquence zéro au centre
-// Signature: deflib mlx_fftshift(array (axes))
+ // mlx_fftshift - Shift the zero-frequency component to the center
+ // Signature: deflib mlx_fftshift(array (axes))
 Element* Lispe_mlx_methods::method_fftshift(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -6091,8 +6091,8 @@ Element* Lispe_mlx_methods::method_fftshift(LispE* lisp) {
     }
 }
 
-// mlx_ifftshift - Inverse de fftshift
-// Signature: deflib mlx_ifftshift(array (axes))
+ // mlx_ifftshift - Inverse of fftshift
+ // Signature: deflib mlx_ifftshift(array (axes))
 Element* Lispe_mlx_methods::method_ifftshift(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -6113,12 +6113,12 @@ Element* Lispe_mlx_methods::method_ifftshift(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 18: Fonctions mathématiques avancées
-// ============================================================================
+ // ============================================================================
+ // Group 18: Advanced math functions
+ // ============================================================================
 
-// mlx_arctan2 - Arc tangente à 2 arguments (angle en radians)
-// Signature: deflib mlx_arctan2(a b)
+ // mlx_arctan2 - Two-argument arctangent (angle in radians)
+ // Signature: deflib mlx_arctan2(a b)
 Element* Lispe_mlx_methods::method_arctan2(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6133,8 +6133,8 @@ Element* Lispe_mlx_methods::method_arctan2(LispE* lisp) {
     }
 }
 
-// mlx_arcsinh - Sinus hyperbolique inverse
-// Signature: deflib mlx_arcsinh(array)
+ // mlx_arcsinh - Inverse hyperbolic sine
+ // Signature: deflib mlx_arcsinh(array)
 Element* Lispe_mlx_methods::method_arcsinh(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6147,8 +6147,8 @@ Element* Lispe_mlx_methods::method_arcsinh(LispE* lisp) {
     }
 }
 
-// mlx_arccosh - Cosinus hyperbolique inverse
-// Signature: deflib mlx_arccosh(array)
+ // mlx_arccosh - Inverse hyperbolic cosine
+ // Signature: deflib mlx_arccosh(array)
 Element* Lispe_mlx_methods::method_arccosh(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6161,8 +6161,8 @@ Element* Lispe_mlx_methods::method_arccosh(LispE* lisp) {
     }
 }
 
-// mlx_arctanh - Tangente hyperbolique inverse
-// Signature: deflib mlx_arctanh(array)
+ // mlx_arctanh - Inverse hyperbolic tangent
+ // Signature: deflib mlx_arctanh(array)
 Element* Lispe_mlx_methods::method_arctanh(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6175,8 +6175,8 @@ Element* Lispe_mlx_methods::method_arctanh(LispE* lisp) {
     }
 }
 
-// mlx_degrees - Conversion radians vers degrés
-// Signature: deflib mlx_degrees(array)
+ // mlx_degrees - Convert radians to degrees
+ // Signature: deflib mlx_degrees(array)
 Element* Lispe_mlx_methods::method_degrees(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6189,8 +6189,8 @@ Element* Lispe_mlx_methods::method_degrees(LispE* lisp) {
     }
 }
 
-// mlx_radians - Conversion degrés vers radians
-// Signature: deflib mlx_radians(array)
+ // mlx_radians - Convert degrees to radians
+ // Signature: deflib mlx_radians(array)
 Element* Lispe_mlx_methods::method_radians(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6203,8 +6203,8 @@ Element* Lispe_mlx_methods::method_radians(LispE* lisp) {
     }
 }
 
-// mlx_erf - Fonction erreur de Gauss
-// Signature: deflib mlx_erf(array)
+ // mlx_erf - Gaussian error function
+ // Signature: deflib mlx_erf(array)
 Element* Lispe_mlx_methods::method_erf(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6217,8 +6217,8 @@ Element* Lispe_mlx_methods::method_erf(LispE* lisp) {
     }
 }
 
-// mlx_erfinv - Fonction erreur inverse
-// Signature: deflib mlx_erfinv(array)
+ // mlx_erfinv - Inverse error function
+ // Signature: deflib mlx_erfinv(array)
 Element* Lispe_mlx_methods::method_erfinv(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6231,8 +6231,8 @@ Element* Lispe_mlx_methods::method_erfinv(LispE* lisp) {
     }
 }
 
-// mlx_expm1 - exp(x) - 1 (précis pour petits x)
-// Signature: deflib mlx_expm1(array)
+ // mlx_expm1 - exp(x) - 1 (accurate for small x)
+ // Signature: deflib mlx_expm1(array)
 Element* Lispe_mlx_methods::method_expm1(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6245,8 +6245,8 @@ Element* Lispe_mlx_methods::method_expm1(LispE* lisp) {
     }
 }
 
-// mlx_logaddexp - log(exp(a) + exp(b)) (numériquement stable)
-// Signature: deflib mlx_logaddexp(a b)
+ // mlx_logaddexp - log(exp(a) + exp(b)) (numerically stable)
+ // Signature: deflib mlx_logaddexp(a b)
 Element* Lispe_mlx_methods::method_logaddexp(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6261,8 +6261,8 @@ Element* Lispe_mlx_methods::method_logaddexp(LispE* lisp) {
     }
 }
 
-// mlx_sign - Signe (-1, 0, ou 1)
-// Signature: deflib mlx_sign(array)
+ // mlx_sign - Sign (-1, 0, or 1)
+ // Signature: deflib mlx_sign(array)
 Element* Lispe_mlx_methods::method_sign(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6275,8 +6275,8 @@ Element* Lispe_mlx_methods::method_sign(LispE* lisp) {
     }
 }
 
-// mlx_kron - Produit de Kronecker
-// Signature: deflib mlx_kron(a b)
+ // mlx_kron - Kronecker product
+ // Signature: deflib mlx_kron(a b)
 Element* Lispe_mlx_methods::method_kron(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6291,12 +6291,12 @@ Element* Lispe_mlx_methods::method_kron(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 19: Opérations bitwise
-// ============================================================================
+ // ============================================================================
+ // Group 19: Bitwise operations
+ // ============================================================================
 
-// mlx_bitwise_and - ET bit à bit
-// Signature: deflib mlx_bitwise_and(a b)
+ // mlx_bitwise_and - Bitwise AND
+ // Signature: deflib mlx_bitwise_and(a b)
 Element* Lispe_mlx_methods::method_bitwise_and(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6311,8 +6311,8 @@ Element* Lispe_mlx_methods::method_bitwise_and(LispE* lisp) {
     }
 }
 
-// mlx_bitwise_or - OU bit à bit
-// Signature: deflib mlx_bitwise_or(a b)
+ // mlx_bitwise_or - Bitwise OR
+ // Signature: deflib mlx_bitwise_or(a b)
 Element* Lispe_mlx_methods::method_bitwise_or(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6327,8 +6327,8 @@ Element* Lispe_mlx_methods::method_bitwise_or(LispE* lisp) {
     }
 }
 
-// mlx_bitwise_xor - XOR bit à bit
-// Signature: deflib mlx_bitwise_xor(a b)
+ // mlx_bitwise_xor - Bitwise XOR
+ // Signature: deflib mlx_bitwise_xor(a b)
 Element* Lispe_mlx_methods::method_bitwise_xor(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6343,8 +6343,8 @@ Element* Lispe_mlx_methods::method_bitwise_xor(LispE* lisp) {
     }
 }
 
-// mlx_bitwise_invert - NON bit à bit (complément)
-// Signature: deflib mlx_bitwise_invert(array)
+ // mlx_bitwise_invert - Bitwise NOT (complement)
+ // Signature: deflib mlx_bitwise_invert(array)
 Element* Lispe_mlx_methods::method_bitwise_invert(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -6357,8 +6357,8 @@ Element* Lispe_mlx_methods::method_bitwise_invert(LispE* lisp) {
     }
 }
 
-// mlx_left_shift - Décalage à gauche
-// Signature: deflib mlx_left_shift(a b)
+ // mlx_left_shift - Left shift
+ // Signature: deflib mlx_left_shift(a b)
 Element* Lispe_mlx_methods::method_left_shift(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6373,8 +6373,8 @@ Element* Lispe_mlx_methods::method_left_shift(LispE* lisp) {
     }
 }
 
-// mlx_right_shift - Décalage à droite
-// Signature: deflib mlx_right_shift(a b)
+ // mlx_right_shift - Right shift
+ // Signature: deflib mlx_right_shift(a b)
 Element* Lispe_mlx_methods::method_right_shift(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6389,12 +6389,12 @@ Element* Lispe_mlx_methods::method_right_shift(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 20: Division et reste
-// ============================================================================
+ // ============================================================================
+ // Group 20: Division and remainder
+ // ============================================================================
 
-// mlx_divmod - Retourne quotient et reste comme liste
-// Signature: deflib mlx_divmod(a b)
+ // mlx_divmod - Return quotient and remainder as a list
+ // Signature: deflib mlx_divmod(a b)
 Element* Lispe_mlx_methods::method_divmod(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6416,8 +6416,8 @@ Element* Lispe_mlx_methods::method_divmod(LispE* lisp) {
     }
 }
 
-// mlx_floor_divide - Division entière (floor(a/b))
-// Signature: deflib mlx_floor_divide(a b)
+ // mlx_floor_divide - Integer division (floor(a/b))
+ // Signature: deflib mlx_floor_divide(a b)
 Element* Lispe_mlx_methods::method_floor_divide(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6432,8 +6432,8 @@ Element* Lispe_mlx_methods::method_floor_divide(LispE* lisp) {
     }
 }
 
-// mlx_remainder - Reste de la division (modulo)
-// Signature: deflib mlx_remainder(a b)
+ // mlx_remainder - Division remainder (modulo)
+ // Signature: deflib mlx_remainder(a b)
 Element* Lispe_mlx_methods::method_remainder(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -6448,12 +6448,12 @@ Element* Lispe_mlx_methods::method_remainder(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 21: Opérations cumulatives et logsumexp
-// ============================================================================
+ // ============================================================================
+ // Group 21: Cumulative operations and logsumexp
+ // ============================================================================
 
-// mlx_cummax - Maximum cumulatif
-// Signature: deflib mlx_cummax(array (axis) (reverse) (inclusive))
+ // mlx_cummax - Cumulative maximum
+ // Signature: deflib mlx_cummax(array (axis) (reverse) (inclusive))
 Element* Lispe_mlx_methods::method_cummax(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -6479,8 +6479,8 @@ Element* Lispe_mlx_methods::method_cummax(LispE* lisp) {
     }
 }
 
-// mlx_cummin - Minimum cumulatif
-// Signature: deflib mlx_cummin(array (axis) (reverse) (inclusive))
+ // mlx_cummin - Cumulative minimum
+ // Signature: deflib mlx_cummin(array (axis) (reverse) (inclusive))
 Element* Lispe_mlx_methods::method_cummin(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -6506,8 +6506,8 @@ Element* Lispe_mlx_methods::method_cummin(LispE* lisp) {
     }
 }
 
-// mlx_logsumexp - log(sum(exp(x))) numériquement stable
-// Signature: deflib mlx_logsumexp(array (axes) (keepdims))
+ // mlx_logsumexp - log(sum(exp(x))) numerically stable
+ // Signature: deflib mlx_logsumexp(array (axes) (keepdims))
 Element* Lispe_mlx_methods::method_logsumexp(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* axes_elem = lisp->get_variable("axes");
@@ -6531,8 +6531,8 @@ Element* Lispe_mlx_methods::method_logsumexp(LispE* lisp) {
     }
 }
 
-// mlx_logcumsumexp - logsumexp cumulatif
-// Signature: deflib mlx_logcumsumexp(array (axis) (reverse) (inclusive))
+ // mlx_logcumsumexp - Cumulative logsumexp
+ // Signature: deflib mlx_logcumsumexp(array (axis) (reverse) (inclusive))
 Element* Lispe_mlx_methods::method_logcumsumexp(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* axis_elem = lisp->get_variable("axis");
@@ -6558,12 +6558,12 @@ Element* Lispe_mlx_methods::method_logcumsumexp(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 22: Convolutions (deep learning)
-// ============================================================================
+ // ============================================================================
+ // Group 22: Convolutions (deep learning)
+ // ============================================================================
 
-// mlx_conv1d - Convolution 1D
-// Signature: deflib mlx_conv1d(input weight (stride) (padding) (dilation) (groups))
+ // mlx_conv1d - 1D convolution
+ // Signature: deflib mlx_conv1d(input weight (stride) (padding) (dilation) (groups))
 Element* Lispe_mlx_methods::method_conv1d(LispE* lisp) {
     Element* input_elem = lisp->get_variable("input");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6588,9 +6588,9 @@ Element* Lispe_mlx_methods::method_conv1d(LispE* lisp) {
     }
 }
 
-// mlx_conv2d - Convolution 2D
-// Signature: deflib mlx_conv2d(input weight (stride) (padding) (dilation) (groups))
-// stride, padding, dilation peuvent être des entiers ou des listes de 2 entiers
+ // mlx_conv2d - 2D convolution
+ // Signature: deflib mlx_conv2d(input weight (stride) (padding) (dilation) (groups))
+ // stride, padding, dilation can be integers or lists of 2 integers
 Element* Lispe_mlx_methods::method_conv2d(LispE* lisp) {
     Element* input_elem = lisp->get_variable("input");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6603,7 +6603,7 @@ Element* Lispe_mlx_methods::method_conv2d(LispE* lisp) {
         mx::array input = element_to_array(lisp, input_elem);
         mx::array weight = element_to_array(lisp, weight_elem);
 
-        // Stride par défaut: {1, 1}
+        // Default stride: {1, 1}
         std::pair<int, int> stride = {1, 1};
         if (stride_elem != null_ && stride_elem->type != v_emptyatom) {
             if (stride_elem->isList()) {
@@ -6615,7 +6615,7 @@ Element* Lispe_mlx_methods::method_conv2d(LispE* lisp) {
             }
         }
 
-        // Padding par défaut: {0, 0}
+        // Default padding: {0, 0}
         std::pair<int, int> padding = {0, 0};
         if (padding_elem != null_ && padding_elem->type != v_emptyatom) {
             if (padding_elem->isList()) {
@@ -6627,7 +6627,7 @@ Element* Lispe_mlx_methods::method_conv2d(LispE* lisp) {
             }
         }
 
-        // Dilation par défaut: {1, 1}
+        // Default dilation: {1, 1}
         std::pair<int, int> dilation = {1, 1};
         if (dilation_elem != null_ && dilation_elem->type != v_emptyatom) {
             if (dilation_elem->isList()) {
@@ -6648,9 +6648,9 @@ Element* Lispe_mlx_methods::method_conv2d(LispE* lisp) {
     }
 }
 
-// mlx_conv3d - Convolution 3D
-// Signature: deflib mlx_conv3d(input weight (stride) (padding) (dilation) (groups))
-// stride, padding, dilation peuvent être des entiers ou des listes de 3 entiers
+ // mlx_conv3d - 3D convolution
+ // Signature: deflib mlx_conv3d(input weight (stride) (padding) (dilation) (groups))
+ // stride, padding, dilation can be integers or lists of 3 integers
 Element* Lispe_mlx_methods::method_conv3d(LispE* lisp) {
     Element* input_elem = lisp->get_variable("input");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6663,7 +6663,7 @@ Element* Lispe_mlx_methods::method_conv3d(LispE* lisp) {
         mx::array input = element_to_array(lisp, input_elem);
         mx::array weight = element_to_array(lisp, weight_elem);
 
-        // Stride par défaut: {1, 1, 1}
+        // Default stride: {1, 1, 1}
         std::tuple<int, int, int> stride = {1, 1, 1};
         if (stride_elem != null_ && stride_elem->type != v_emptyatom) {
             if (stride_elem->isList()) {
@@ -6676,7 +6676,7 @@ Element* Lispe_mlx_methods::method_conv3d(LispE* lisp) {
             }
         }
 
-        // Padding par défaut: {0, 0, 0}
+        // Default padding: {0, 0, 0}
         std::tuple<int, int, int> padding = {0, 0, 0};
         if (padding_elem != null_ && padding_elem->type != v_emptyatom) {
             if (padding_elem->isList()) {
@@ -6689,7 +6689,7 @@ Element* Lispe_mlx_methods::method_conv3d(LispE* lisp) {
             }
         }
 
-        // Dilation par défaut: {1, 1, 1}
+        // Default dilation: {1, 1, 1}
         std::tuple<int, int, int> dilation = {1, 1, 1};
         if (dilation_elem != null_ && dilation_elem->type != v_emptyatom) {
             if (dilation_elem->isList()) {
@@ -6711,8 +6711,8 @@ Element* Lispe_mlx_methods::method_conv3d(LispE* lisp) {
     }
 }
 
-// mlx_conv_transpose1d - Convolution transposée 1D (déconvolution)
-// Signature: deflib mlx_conv_transpose1d(input weight (stride) (padding) (dilation) (output_padding) (groups))
+ // mlx_conv_transpose1d - 1D transposed convolution (deconvolution)
+ // Signature: deflib mlx_conv_transpose1d(input weight (stride) (padding) (dilation) (output_padding) (groups))
 Element* Lispe_mlx_methods::method_conv_transpose1d(LispE* lisp) {
     Element* input_elem = lisp->get_variable("input");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6739,8 +6739,8 @@ Element* Lispe_mlx_methods::method_conv_transpose1d(LispE* lisp) {
     }
 }
 
-// mlx_conv_transpose2d - Convolution transposée 2D (déconvolution)
-// Signature: deflib mlx_conv_transpose2d(input weight (stride) (padding) (dilation) (output_padding) (groups))
+ // mlx_conv_transpose2d - 2D transposed convolution (deconvolution)
+ // Signature: deflib mlx_conv_transpose2d(input weight (stride) (padding) (dilation) (output_padding) (groups))
 Element* Lispe_mlx_methods::method_conv_transpose2d(LispE* lisp) {
     Element* input_elem = lisp->get_variable("input");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6754,7 +6754,7 @@ Element* Lispe_mlx_methods::method_conv_transpose2d(LispE* lisp) {
         mx::array input = element_to_array(lisp, input_elem);
         mx::array weight = element_to_array(lisp, weight_elem);
 
-        // Stride par défaut: {1, 1}
+        // Default stride: {1, 1}
         std::pair<int, int> stride = {1, 1};
         if (stride_elem != null_ && stride_elem->type != v_emptyatom) {
             if (stride_elem->isList()) {
@@ -6766,7 +6766,7 @@ Element* Lispe_mlx_methods::method_conv_transpose2d(LispE* lisp) {
             }
         }
 
-        // Padding par défaut: {0, 0}
+        // Default padding: {0, 0}
         std::pair<int, int> padding = {0, 0};
         if (padding_elem != null_ && padding_elem->type != v_emptyatom) {
             if (padding_elem->isList()) {
@@ -6778,7 +6778,7 @@ Element* Lispe_mlx_methods::method_conv_transpose2d(LispE* lisp) {
             }
         }
 
-        // Dilation par défaut: {1, 1}
+        // Default dilation: {1, 1}
         std::pair<int, int> dilation = {1, 1};
         if (dilation_elem != null_ && dilation_elem->type != v_emptyatom) {
             if (dilation_elem->isList()) {
@@ -6790,7 +6790,7 @@ Element* Lispe_mlx_methods::method_conv_transpose2d(LispE* lisp) {
             }
         }
 
-        // Output padding par défaut: {0, 0}
+        // Default output padding: {0, 0}
         std::pair<int, int> output_padding = {0, 0};
         if (output_padding_elem != null_ && output_padding_elem->type != v_emptyatom) {
             if (output_padding_elem->isList()) {
@@ -6811,8 +6811,8 @@ Element* Lispe_mlx_methods::method_conv_transpose2d(LispE* lisp) {
     }
 }
 
-// mlx_conv_transpose3d - Convolution transposée 3D (déconvolution)
-// Signature: deflib mlx_conv_transpose3d(input weight (stride) (padding) (dilation) (output_padding) (groups))
+ // mlx_conv_transpose3d - 3D transposed convolution (deconvolution)
+ // Signature: deflib mlx_conv_transpose3d(input weight (stride) (padding) (dilation) (output_padding) (groups))
 Element* Lispe_mlx_methods::method_conv_transpose3d(LispE* lisp) {
     Element* input_elem = lisp->get_variable("input");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6826,7 +6826,7 @@ Element* Lispe_mlx_methods::method_conv_transpose3d(LispE* lisp) {
         mx::array input = element_to_array(lisp, input_elem);
         mx::array weight = element_to_array(lisp, weight_elem);
 
-        // Stride par défaut: {1, 1, 1}
+        // Default stride: {1, 1, 1}
         std::tuple<int, int, int> stride = {1, 1, 1};
         if (stride_elem != null_ && stride_elem->type != v_emptyatom) {
             if (stride_elem->isList()) {
@@ -6839,7 +6839,7 @@ Element* Lispe_mlx_methods::method_conv_transpose3d(LispE* lisp) {
             }
         }
 
-        // Padding par défaut: {0, 0, 0}
+        // Default padding: {0, 0, 0}
         std::tuple<int, int, int> padding = {0, 0, 0};
         if (padding_elem != null_ && padding_elem->type != v_emptyatom) {
             if (padding_elem->isList()) {
@@ -6852,7 +6852,7 @@ Element* Lispe_mlx_methods::method_conv_transpose3d(LispE* lisp) {
             }
         }
 
-        // Dilation par défaut: {1, 1, 1}
+        // Default dilation: {1, 1, 1}
         std::tuple<int, int, int> dilation = {1, 1, 1};
         if (dilation_elem != null_ && dilation_elem->type != v_emptyatom) {
             if (dilation_elem->isList()) {
@@ -6865,7 +6865,7 @@ Element* Lispe_mlx_methods::method_conv_transpose3d(LispE* lisp) {
             }
         }
 
-        // Output padding par défaut: {0, 0, 0}
+        // Default output padding: {0, 0, 0}
         std::tuple<int, int, int> output_padding = {0, 0, 0};
         if (output_padding_elem != null_ && output_padding_elem->type != v_emptyatom) {
             if (output_padding_elem->isList()) {
@@ -6887,8 +6887,8 @@ Element* Lispe_mlx_methods::method_conv_transpose3d(LispE* lisp) {
     }
 }
 
-// mlx_conv_general - Convolution générale N-dimensionnelle
-// Signature: deflib mlx_conv_general(input weight (stride) (padding_lo) (padding_hi) (kernel_dilation) (input_dilation) (groups) (flip))
+ // mlx_conv_general - General N-dimensional convolution
+ // Signature: deflib mlx_conv_general(input weight (stride) (padding_lo) (padding_hi) (kernel_dilation) (input_dilation) (groups) (flip))
 Element* Lispe_mlx_methods::method_conv_general(LispE* lisp) {
     Element* input_elem = lisp->get_variable("input");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6940,13 +6940,13 @@ Element* Lispe_mlx_methods::method_conv_general(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 23: Opérations spécialisées ML
-// ============================================================================
+ // ============================================================================
+ // Group 23: ML specialized operations
+ // ============================================================================
 
-// mlx_rms_norm - Root Mean Square normalization (utilisé dans LLaMA, Gemma)
-// Signature: deflib mlx_rms_norm(x (weight) (eps) (gemma_style))
-// gemma_style: si true, applique (1 + weight) au lieu de weight (défaut: false)
+ // mlx_rms_norm - Root Mean Square normalization (used in LLaMA, Gemma)
+ // Signature: deflib mlx_rms_norm(x (weight) (eps) (gemma_style))
+ // gemma_style: if true, apply (1 + weight) instead of weight (default: false)
 Element* Lispe_mlx_methods::method_rms_norm(LispE* lisp) {
     Element* x_elem = lisp->get_variable("x");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6956,19 +6956,19 @@ Element* Lispe_mlx_methods::method_rms_norm(LispE* lisp) {
     try {
         mx::array x = element_to_array(lisp, x_elem);
 
-        // Eps par défaut: 1e-5
+        // Eps default: 1e-5
         float eps = (eps_elem != null_ && eps_elem->type != v_emptyatom) ? eps_elem->asNumber() : 1e-5f;
         
-        // Gemma style: utilise (1 + weight) au lieu de weight
+        // Gemma style: uses (1 + weight) instead of weight
         bool gemma_style = (gemma_style_elem != null_ && gemma_style_elem->type != v_emptyatom) 
                            ? gemma_style_elem->Boolean() : false;
 
-        // Weight est optionnel
+        // Weight is optional
         std::optional<mx::array> weight = std::nullopt;
         if (weight_elem != null_ && weight_elem->type != v_emptyatom) {
             mx::array w = element_to_array(lisp, weight_elem);
             if (gemma_style) {
-                // Gemma utilise (1 + weight) au lieu de weight
+                // Gemma uses (1 + weight) instead of weight
                 w = mx::add(mx::ones_like(w), w);
             }
             weight = w;
@@ -6981,8 +6981,8 @@ Element* Lispe_mlx_methods::method_rms_norm(LispE* lisp) {
     }
 }
 
-// mlx_layer_norm - Layer normalization
-// Signature: deflib mlx_layer_norm(x (weight) (bias) (eps))
+ // mlx_layer_norm - Layer normalization
+ // Signature: deflib mlx_layer_norm(x (weight) (bias) (eps))
 Element* Lispe_mlx_methods::method_layer_norm(LispE* lisp) {
     Element* x_elem = lisp->get_variable("x");
     Element* weight_elem = lisp->get_variable("weight");
@@ -6992,19 +6992,19 @@ Element* Lispe_mlx_methods::method_layer_norm(LispE* lisp) {
     try {
         mx::array x = element_to_array(lisp, x_elem);
 
-        // Weight est optionnel
+        // Weight is optional
         std::optional<mx::array> weight = std::nullopt;
         if (weight_elem != null_ && weight_elem->type != v_emptyatom) {
             weight = element_to_array(lisp, weight_elem);
         }
 
-        // Bias est optionnel
+        // Bias is optional
         std::optional<mx::array> bias = std::nullopt;
         if (bias_elem != null_ && bias_elem->type != v_emptyatom) {
             bias = element_to_array(lisp, bias_elem);
         }
 
-        // Eps par défaut: 1e-5
+        // Eps default: 1e-5
         float eps = (eps_elem != null_ && eps_elem->type != v_emptyatom) ? eps_elem->asNumber() : 1e-5f;
 
         mx::array result = mx::fast::layer_norm(x, weight, bias, eps);
@@ -7014,8 +7014,8 @@ Element* Lispe_mlx_methods::method_layer_norm(LispE* lisp) {
     }
 }
 
-// mlx_rope - Rotary Position Embedding
-// Signature: deflib mlx_rope(x dims (traditional) (base) (scale) (offset) (freqs))
+ // mlx_rope - Rotary Position Embedding
+ // Signature: deflib mlx_rope(x dims (traditional) (base) (scale) (offset) (freqs))
 Element* Lispe_mlx_methods::method_rope(LispE* lisp) {
     Element* x_elem = lisp->get_variable("x");
     Element* dims_elem = lisp->get_variable("dims");
@@ -7029,22 +7029,22 @@ Element* Lispe_mlx_methods::method_rope(LispE* lisp) {
         mx::array x = element_to_array(lisp, x_elem);
         int dims = dims_elem->asInteger();
 
-        // Traditional par défaut: false
+        // Traditional default: false
         bool traditional = (traditional_elem != null_ && traditional_elem->type != v_emptyatom) ? traditional_elem->Boolean() : false;
 
-        // Base par défaut: 10000.0
+        // Base default: 10000.0
         std::optional<float> base = std::nullopt;
         if (base_elem != null_ && base_elem->type != v_emptyatom) {
             base = base_elem->asNumber();
         }
 
-        // Scale par défaut: 1.0
+        // Scale default: 1.0
         float scale = (scale_elem != null_ && scale_elem->type != v_emptyatom) ? scale_elem->asNumber() : 1.0f;
 
-        // Offset par défaut: 0
+        // Offset default: 0
         int offset = (offset_elem != null_ && offset_elem->type != v_emptyatom) ? offset_elem->asInteger() : 0;
 
-        // Freqs est optionnel
+        // Freqs is optional
         std::optional<mx::array> freqs = std::nullopt;
         if (freqs_elem != null_ && freqs_elem->type != v_emptyatom) {
             freqs = element_to_array(lisp, freqs_elem);
@@ -7057,8 +7057,8 @@ Element* Lispe_mlx_methods::method_rope(LispE* lisp) {
     }
 }
 
-// mlx_scaled_dot_product_attention - Attention mechanism
-// Signature: deflib mlx_scaled_dot_product_attention(queries keys values scale (mask_mode) (mask_arrays) (sinks))
+ // mlx_scaled_dot_product_attention - Attention mechanism
+ // Signature: deflib mlx_scaled_dot_product_attention(queries keys values scale (mask_mode) (mask_arrays) (sinks))
 Element* Lispe_mlx_methods::method_scaled_dot_product_attention(LispE* lisp) {
     Element* queries_elem = lisp->get_variable("queries");
     Element* keys_elem = lisp->get_variable("keys");
@@ -7074,13 +7074,13 @@ Element* Lispe_mlx_methods::method_scaled_dot_product_attention(LispE* lisp) {
         mx::array values = element_to_array(lisp, values_elem);
         float scale = scale_elem->asNumber();
 
-        // Mask mode par défaut: "" (pas de masque)
+        // Mask mode default: "" (no mask)
         std::string mask_mode = "";
         if (mask_mode_elem != null_ && mask_mode_elem->type != v_emptyatom) {
             mask_mode = mask_mode_elem->toString(lisp);
         }
 
-        // Mask arrays est optionnel
+        // Mask arrays optional
         std::vector<mx::array> mask_arrs;
         if (mask_arrays_elem != null_ && mask_arrays_elem->type != v_emptyatom && mask_arrays_elem->isList()) {
             long sz = mask_arrays_elem->size();
@@ -7089,7 +7089,7 @@ Element* Lispe_mlx_methods::method_scaled_dot_product_attention(LispE* lisp) {
             }
         }
 
-        // Sinks est optionnel (pour attention sinks)
+        // Sinks optional (for attention sinks)
         std::optional<mx::array> sinks;
         if (sinks_elem != null_ && sinks_elem->type != v_emptyatom) {
             sinks = element_to_array(lisp, sinks_elem);
@@ -7102,8 +7102,8 @@ Element* Lispe_mlx_methods::method_scaled_dot_product_attention(LispE* lisp) {
     }
 }
 
-// mlx_einsum - Einstein summation convention
-// Signature: deflib mlx_einsum(subscripts operands)
+ // mlx_einsum - Einstein summation convention
+ // Signature: deflib mlx_einsum(subscripts operands)
 Element* Lispe_mlx_methods::method_einsum(LispE* lisp) {
     Element* subscripts_elem = lisp->get_variable("subscripts");
     Element* operands_elem = lisp->get_variable("operands");
@@ -7111,7 +7111,7 @@ Element* Lispe_mlx_methods::method_einsum(LispE* lisp) {
     try {
         std::string subscripts = subscripts_elem->toString(lisp);
 
-        // Collecter les operands (doit être une liste d'arrays)
+        // Collect operands (must be a list of arrays)
         std::vector<mx::array> operands;
         if (!operands_elem->isList()) {
             throw new Error("Error in mlx_einsum: operands must be a list of arrays");
@@ -7129,12 +7129,12 @@ Element* Lispe_mlx_methods::method_einsum(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 24: Manipulation et création avancée
-// ============================================================================
+ // ============================================================================
+ // Group 24: Advanced manipulation and creation
+ // ============================================================================
 
-// mlx_dtype - Retourne le type d'un array sous forme de chaîne
-// Signature: deflib mlx_dtype(array)
+ // mlx_dtype - Return the type of an array as a string
+ // Signature: deflib mlx_dtype(array)
 Element* Lispe_mlx_methods::method_dtype(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -7165,8 +7165,8 @@ Element* Lispe_mlx_methods::method_dtype(LispE* lisp) {
     }
 }
 
-// mlx_astype - Conversion de type explicite
-// Signature: deflib mlx_astype(array dtype)
+ // mlx_astype - Explicit type conversion
+ // Signature: deflib mlx_astype(array dtype)
 Element* Lispe_mlx_methods::method_astype(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* dtype_elem = lisp->get_variable("dtype");
@@ -7174,7 +7174,7 @@ Element* Lispe_mlx_methods::method_astype(LispE* lisp) {
     try {
         mx::array arr = element_to_array(lisp, arr_elem);
 
-        // Parser le dtype
+        // Parse dtype
         std::string dtype_str = dtype_elem->toString(lisp);
         mx::Dtype target_dtype = mx::float32; // Par défaut
 
@@ -7215,15 +7215,15 @@ Element* Lispe_mlx_methods::method_astype(LispE* lisp) {
     }
 }
 
-// mlx_copy - Copie explicite d'un array
-// Signature: deflib mlx_copy(array)
+ // mlx_copy - Explicit copy of an array
+ // Signature: deflib mlx_copy(array)
 Element* Lispe_mlx_methods::method_copy(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
     try {
         mx::array arr = element_to_array(lisp, arr_elem);
 
-        // Créer une copie en faisant une opération qui force la copie
+        // Create a copy by performing an operation that forces copy
         mx::array result = mx::array(arr);
         return new MLXArray(std::move(result));
     } catch (const std::exception& e) {
@@ -7231,8 +7231,8 @@ Element* Lispe_mlx_methods::method_copy(LispE* lisp) {
     }
 }
 
-// mlx_zeros_like - Crée des zéros avec même forme
-// Signature: deflib mlx_zeros_like(array)
+ // mlx_zeros_like - Create zeros with same shape
+ // Signature: deflib mlx_zeros_like(array)
 Element* Lispe_mlx_methods::method_zeros_like(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -7246,8 +7246,8 @@ Element* Lispe_mlx_methods::method_zeros_like(LispE* lisp) {
     }
 }
 
-// mlx_ones_like - Crée des uns avec même forme
-// Signature: deflib mlx_ones_like(array)
+ // mlx_ones_like - Create ones with same shape
+ // Signature: deflib mlx_ones_like(array)
 Element* Lispe_mlx_methods::method_ones_like(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -7261,8 +7261,8 @@ Element* Lispe_mlx_methods::method_ones_like(LispE* lisp) {
     }
 }
 
-// mlx_nan_to_num - Remplace NaN et inf par des valeurs
-// Signature: deflib mlx_nan_to_num(array (nan) (posinf) (neginf))
+ // mlx_nan_to_num - Replace NaN and inf with values
+ // Signature: deflib mlx_nan_to_num(array (nan) (posinf) (neginf))
 Element* Lispe_mlx_methods::method_nan_to_num(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* nan_elem = lisp->get_variable("nan");
@@ -7291,8 +7291,8 @@ Element* Lispe_mlx_methods::method_nan_to_num(LispE* lisp) {
     }
 }
 
-// mlx_atleast_1d - Convertit en au moins 1D
-// Signature: deflib mlx_atleast_1d(array)
+ // mlx_atleast_1d - Convert to at least 1D
+ // Signature: deflib mlx_atleast_1d(array)
 Element* Lispe_mlx_methods::method_atleast_1d(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -7306,8 +7306,8 @@ Element* Lispe_mlx_methods::method_atleast_1d(LispE* lisp) {
     }
 }
 
-// mlx_atleast_2d - Convertit en au moins 2D
-// Signature: deflib mlx_atleast_2d(array)
+ // mlx_atleast_2d - Convert to at least 2D
+ // Signature: deflib mlx_atleast_2d(array)
 Element* Lispe_mlx_methods::method_atleast_2d(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -7321,8 +7321,8 @@ Element* Lispe_mlx_methods::method_atleast_2d(LispE* lisp) {
     }
 }
 
-// mlx_atleast_3d - Convertit en au moins 3D
-// Signature: deflib mlx_atleast_3d(array)
+ // mlx_atleast_3d - Convert to at least 3D
+ // Signature: deflib mlx_atleast_3d(array)
 Element* Lispe_mlx_methods::method_atleast_3d(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -7336,8 +7336,8 @@ Element* Lispe_mlx_methods::method_atleast_3d(LispE* lisp) {
     }
 }
 
-// mlx_array_equal - Test d'égalité de deux arrays
-// Signature: deflib mlx_array_equal(a b (equal_nan))
+ // mlx_array_equal - Equality test for two arrays
+ // Signature: deflib mlx_array_equal(a b (equal_nan))
 Element* Lispe_mlx_methods::method_array_equal(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -7356,8 +7356,8 @@ Element* Lispe_mlx_methods::method_array_equal(LispE* lisp) {
     }
 }
 
-// mlx_allclose - Test de proximité avec tolérance
-// Signature: deflib mlx_allclose(a b (rtol) (atol) (equal_nan))
+ // mlx_allclose - Approximate equality with tolerance
+ // Signature: deflib mlx_allclose(a b (rtol) (atol) (equal_nan))
 Element* Lispe_mlx_methods::method_allclose(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -7380,19 +7380,19 @@ Element* Lispe_mlx_methods::method_allclose(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 25: Random avancé
-// ============================================================================
+ // ============================================================================
+ // Group 25: Advanced random
+ // ============================================================================
 
-// mlx_random_bernoulli - Distribution de Bernoulli
-// Signature: deflib mlx_random_bernoulli(p (shape))
+ // mlx_random_bernoulli - Bernoulli distribution
+ // Signature: deflib mlx_random_bernoulli(p (shape))
 Element* Lispe_mlx_methods::method_random_bernoulli(LispE* lisp) {
     Element* p_elem = lisp->get_variable("p");
     Element* shape_elem = lisp->get_variable("shape");
 
     try {
         if (shape_elem != null_ && shape_elem->type != v_emptyatom) {
-            // Avec shape spécifié
+            // With shape specified
             mx::Shape shape;
             element_to_shape(shape_elem, shape);
             
@@ -7402,7 +7402,7 @@ Element* Lispe_mlx_methods::method_random_bernoulli(LispE* lisp) {
             
             return new MLXArray(std::move(result));
         } else {
-            // Sans shape, utilise la forme de p
+            // Without shape, use shape of p
             mx::array result = p_elem->isNumber()
                 ? mx::random::bernoulli(mx::array(p_elem->asNumber()))
                 : mx::random::bernoulli(element_to_array(lisp, p_elem));
@@ -7414,8 +7414,8 @@ Element* Lispe_mlx_methods::method_random_bernoulli(LispE* lisp) {
     }
 }
 
-// mlx_random_truncated_normal - Distribution normale tronquée
-// Signature: deflib mlx_random_truncated_normal(lower upper (shape) (dtype))
+ // mlx_random_truncated_normal - Truncated normal distribution
+ // Signature: deflib mlx_random_truncated_normal(lower upper (shape) (dtype))
 Element* Lispe_mlx_methods::method_random_truncated_normal(LispE* lisp) {
     Element* lower_elem = lisp->get_variable("lower");
     Element* upper_elem = lisp->get_variable("upper");
@@ -7437,8 +7437,8 @@ Element* Lispe_mlx_methods::method_random_truncated_normal(LispE* lisp) {
     }
 }
 
-// mlx_random_gumbel - Distribution de Gumbel
-// Signature: deflib mlx_random_gumbel(shape (dtype))
+ // mlx_random_gumbel - Gumbel distribution
+ // Signature: deflib mlx_random_gumbel(shape (dtype))
 Element* Lispe_mlx_methods::method_random_gumbel(LispE* lisp) {
     Element* shape_elem = lisp->get_variable("shape");
     Element* dtype_elem = lisp->get_variable("dtype");
@@ -7455,8 +7455,8 @@ Element* Lispe_mlx_methods::method_random_gumbel(LispE* lisp) {
     }
 }
 
-// mlx_random_categorical - Distribution catégorielle
-// Signature: deflib mlx_random_categorical(logits (axis) (num_samples) (shape))
+ // mlx_random_categorical - Categorical distribution
+ // Signature: deflib mlx_random_categorical(logits (axis) (num_samples) (shape))
 Element* Lispe_mlx_methods::method_random_categorical(LispE* lisp) {
     Element* logits_elem = lisp->get_variable("logits");
     Element* axis_elem = lisp->get_variable("axis");
@@ -7468,18 +7468,18 @@ Element* Lispe_mlx_methods::method_random_categorical(LispE* lisp) {
         int axis = (axis_elem != null_ && axis_elem->type != v_emptyatom) ? axis_elem->asInteger() : -1;
         
         if (shape_elem != null_ && shape_elem->type != v_emptyatom) {
-            // Version avec shape
+            // Version with shape
             mx::Shape shape;
             element_to_shape(shape_elem, shape);
             mx::array result = mx::random::categorical(logits, axis, shape);
             return new MLXArray(std::move(result));
         } else if (num_samples_elem != null_ && num_samples_elem->type != v_emptyatom) {
-            // Version avec num_samples
+            // Version with num_samples
             int num_samples = num_samples_elem->asInteger();
             mx::array result = mx::random::categorical(logits, axis, num_samples);
             return new MLXArray(std::move(result));
         } else {
-            // Version simple
+            // Simple version
             mx::array result = mx::random::categorical(logits, axis);
             return new MLXArray(std::move(result));
         }
@@ -7488,8 +7488,8 @@ Element* Lispe_mlx_methods::method_random_categorical(LispE* lisp) {
     }
 }
 
-// mlx_random_laplace - Distribution de Laplace
-// Signature: deflib mlx_random_laplace(shape (loc) (scale) (dtype))
+ // mlx_random_laplace - Laplace distribution
+ // Signature: deflib mlx_random_laplace(shape (loc) (scale) (dtype))
 Element* Lispe_mlx_methods::method_random_laplace(LispE* lisp) {
     Element* shape_elem = lisp->get_variable("shape");
     Element* loc_elem = lisp->get_variable("loc");
@@ -7511,8 +7511,8 @@ Element* Lispe_mlx_methods::method_random_laplace(LispE* lisp) {
     }
 }
 
-// mlx_random_multivariate_normal - Distribution normale multivariée
-// Signature: deflib mlx_random_multivariate_normal(mean cov (shape) (dtype))
+ // mlx_random_multivariate_normal - Multivariate normal distribution
+ // Signature: deflib mlx_random_multivariate_normal(mean cov (shape) (dtype))
 Element* Lispe_mlx_methods::method_random_multivariate_normal(LispE* lisp) {
     Element* mean_elem = lisp->get_variable("mean");
     Element* cov_elem = lisp->get_variable("cov");
@@ -7528,7 +7528,7 @@ Element* Lispe_mlx_methods::method_random_multivariate_normal(LispE* lisp) {
         if (shape_elem != null_ && shape_elem->type != v_emptyatom) {
             element_to_shape(shape_elem, shape);
         }
-        // Si shape est vide, on prend {} comme shape
+        // If shape is empty, take {} as shape
         
         mx::array result = mx::random::multivariate_normal(mean, cov, shape, dtype);
         return new MLXArray(std::move(result));
@@ -7537,8 +7537,8 @@ Element* Lispe_mlx_methods::method_random_multivariate_normal(LispE* lisp) {
     }
 }
 
-// mlx_random_permutation - Permutation aléatoire
-// Signature: deflib mlx_random_permutation(x (axis))
+ // mlx_random_permutation - Random permutation
+ // Signature: deflib mlx_random_permutation(x (axis))
 Element* Lispe_mlx_methods::method_random_permutation(LispE* lisp) {
     Element* x_elem = lisp->get_variable("x");
     Element* axis_elem = lisp->get_variable("axis");
@@ -7547,12 +7547,12 @@ Element* Lispe_mlx_methods::method_random_permutation(LispE* lisp) {
         int axis = (axis_elem != null_ && axis_elem->type != v_emptyatom) ? axis_elem->asInteger() : 0;
         
         if (x_elem->isNumber()) {
-            // Version avec entier: permutation de arange(x)
+            // Version with integer: permutation of arange(x)
             int x = x_elem->asInteger();
             mx::array result = mx::random::permutation(x);
             return new MLXArray(std::move(result));
         } else {
-            // Version avec array: permutation des éléments
+            // Version with array: permutation of elements
             mx::array x = element_to_array(lisp, x_elem);
             mx::array result = mx::random::permutation(x, axis);
             return new MLXArray(std::move(result));
@@ -7562,12 +7562,12 @@ Element* Lispe_mlx_methods::method_random_permutation(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 26: Algèbre linéaire avancée
-// ============================================================================
+ // ============================================================================
+ // Group 26: Advanced linear algebra
+ // ============================================================================
 
-// mlx_tri_inv - Inverse de matrice triangulaire
-// Signature: deflib mlx_tri_inv(array (upper))
+ // mlx_tri_inv - Inverse of triangular matrix
+ // Signature: deflib mlx_tri_inv(array (upper))
 Element* Lispe_mlx_methods::method_tri_inv(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* upper_elem = lisp->get_variable("upper");
@@ -7583,8 +7583,8 @@ Element* Lispe_mlx_methods::method_tri_inv(LispE* lisp) {
     }
 }
 
-// mlx_cholesky_inv - Inverse via décomposition de Cholesky
-// Signature: deflib mlx_cholesky_inv(array (upper))
+ // mlx_cholesky_inv - Inverse via Cholesky decomposition
+ // Signature: deflib mlx_cholesky_inv(array (upper))
 Element* Lispe_mlx_methods::method_cholesky_inv(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* upper_elem = lisp->get_variable("upper");
@@ -7600,9 +7600,9 @@ Element* Lispe_mlx_methods::method_cholesky_inv(LispE* lisp) {
     }
 }
 
-// mlx_lu_factor - Factorisation LU avec pivoting
-// Signature: deflib mlx_lu_factor(array)
-// Retourne: liste (L_and_U, pivots)
+ // mlx_lu_factor - LU factorization with pivoting
+ // Signature: deflib mlx_lu_factor(array)
+ // Returns: list (L_and_U, pivots)
 Element* Lispe_mlx_methods::method_lu_factor(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
 
@@ -7622,8 +7622,8 @@ Element* Lispe_mlx_methods::method_lu_factor(LispE* lisp) {
     }
 }
 
-// mlx_solve_triangular - Résolution de système triangulaire
-// Signature: deflib mlx_solve_triangular(a b (upper))
+ // mlx_solve_triangular - Solve triangular system
+ // Signature: deflib mlx_solve_triangular(a b (upper))
 Element* Lispe_mlx_methods::method_solve_triangular(LispE* lisp) {
     Element* a_elem = lisp->get_variable("a");
     Element* b_elem = lisp->get_variable("b");
@@ -7641,8 +7641,8 @@ Element* Lispe_mlx_methods::method_solve_triangular(LispE* lisp) {
     }
 }
 
-// mlx_eigvalsh - Valeurs propres d'une matrice hermitienne/symétrique
-// Signature: deflib mlx_eigvalsh(array (UPLO))
+ // mlx_eigvalsh - Eigenvalues of Hermitian/symmetric matrix
+ // Signature: deflib mlx_eigvalsh(array (UPLO))
 Element* Lispe_mlx_methods::method_eigvalsh(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* uplo_elem = lisp->get_variable("UPLO");
@@ -7658,9 +7658,9 @@ Element* Lispe_mlx_methods::method_eigvalsh(LispE* lisp) {
     }
 }
 
-// mlx_eigh - Valeurs propres et vecteurs propres d'une matrice hermitienne/symétrique
-// Signature: deflib mlx_eigh(array (UPLO))
-// Retourne: liste (eigenvalues, eigenvectors)
+ // mlx_eigh - Eigenvalues and eigenvectors of Hermitian/symmetric matrix
+ // Signature: deflib mlx_eigh(array (UPLO))
+ // Returns: list (eigenvalues, eigenvectors)
 Element* Lispe_mlx_methods::method_eigh(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* uplo_elem = lisp->get_variable("UPLO");
@@ -7682,12 +7682,12 @@ Element* Lispe_mlx_methods::method_eigh(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 27: Gather/Scatter avancé
-// ============================================================================
+ // ============================================================================
+ // Group 27: Advanced gather/scatter
+ // ============================================================================
 
-// mlx_take_along_axis - Extraction le long d'un axe selon indices
-// Signature: deflib mlx_take_along_axis(array indices axis)
+ // mlx_take_along_axis - Take along an axis according to indices
+ // Signature: deflib mlx_take_along_axis(array indices axis)
 Element* Lispe_mlx_methods::method_take_along_axis(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* indices_elem = lisp->get_variable("indices");
@@ -7705,8 +7705,8 @@ Element* Lispe_mlx_methods::method_take_along_axis(LispE* lisp) {
     }
 }
 
-// mlx_put_along_axis - Insertion le long d'un axe selon indices
-// Signature: deflib mlx_put_along_axis(array indices values axis)
+ // mlx_put_along_axis - Put along an axis according to indices
+ // Signature: deflib mlx_put_along_axis(array indices values axis)
 Element* Lispe_mlx_methods::method_put_along_axis(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* indices_elem = lisp->get_variable("indices");
@@ -7726,8 +7726,8 @@ Element* Lispe_mlx_methods::method_put_along_axis(LispE* lisp) {
     }
 }
 
-// mlx_gather - Gather array entries given indices and slices
-// Signature: deflib mlx_gather(array indices axis slice_sizes)
+ // mlx_gather - Gather array entries given indices and slices
+ // Signature: deflib mlx_gather(array indices axis slice_sizes)
 Element* Lispe_mlx_methods::method_gather(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* indices_elem = lisp->get_variable("indices");
@@ -7749,8 +7749,8 @@ Element* Lispe_mlx_methods::method_gather(LispE* lisp) {
     }
 }
 
-// mlx_scatter - Scatter updates into array at given indices
-// Signature: deflib mlx_scatter(array indices updates axis)
+ // mlx_scatter - Scatter updates into array at given indices
+ // Signature: deflib mlx_scatter(array indices updates axis)
 Element* Lispe_mlx_methods::method_scatter(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* indices_elem = lisp->get_variable("indices");
@@ -7770,8 +7770,8 @@ Element* Lispe_mlx_methods::method_scatter(LispE* lisp) {
     }
 }
 
-// mlx_scatter_add - Scatter and add updates at given indices
-// Signature: deflib mlx_scatter_add(array indices updates axis)
+ // mlx_scatter_add - Scatter and add updates at given indices
+ // Signature: deflib mlx_scatter_add(array indices updates axis)
 Element* Lispe_mlx_methods::method_scatter_add(LispE* lisp) {
     Element* arr_elem = lisp->get_variable("array");
     Element* indices_elem = lisp->get_variable("indices");
@@ -7791,8 +7791,8 @@ Element* Lispe_mlx_methods::method_scatter_add(LispE* lisp) {
     }
 }
 
-// mlx_slice_update - Update a slice of the source array
-// Signature: deflib mlx_slice_update(src update start stop (strides))
+ // mlx_slice_update - Update a slice of the source array
+ // Signature: deflib mlx_slice_update(src update start stop (strides))
 Element* Lispe_mlx_methods::method_slice_update(LispE* lisp) {
     Element* src_elem = lisp->get_variable("src");
     Element* update_elem = lisp->get_variable("update");
@@ -7824,8 +7824,8 @@ Element* Lispe_mlx_methods::method_slice_update(LispE* lisp) {
     }
 }
 
-// mlx_conjugate - Conjugué complexe d'un array
-// Signature: deflib mlx_conjugate(array)
+ // mlx_conjugate - Conjugué complexe d'un array
+ // Signature: deflib mlx_conjugate(array)
 Element* Lispe_mlx_methods::method_conjugate(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -7838,8 +7838,8 @@ Element* Lispe_mlx_methods::method_conjugate(LispE* lisp) {
     }
 }
 
-// mlx_real - Extrait la partie réelle d'un array complexe
-// Signature: deflib mlx_real(array)
+ // mlx_real - Extract the real part of a complex array
+ // Signature: deflib mlx_real(array)
 Element* Lispe_mlx_methods::method_real(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -7852,8 +7852,8 @@ Element* Lispe_mlx_methods::method_real(LispE* lisp) {
     }
 }
 
-// mlx_imag - Extrait la partie imaginaire d'un array complexe
-// Signature: deflib mlx_imag(array)
+ // mlx_imag - Extract the imaginary part of a complex array
+ // Signature: deflib mlx_imag(array)
 Element* Lispe_mlx_methods::method_imag(LispE* lisp) {
     Element* array_elem = lisp->get_variable("array");
 
@@ -7866,14 +7866,14 @@ Element* Lispe_mlx_methods::method_imag(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Groupe 29: Opérations fusionnées pour LLM
-// ============================================================================
+ // ============================================================================
+ // Group 29: Fused operations for LLM
+ // ============================================================================
 
-// mlx_fused_mlp - MLP fusionné : down_proj(gelu(gate_proj(x)) * up_proj(x))
-// Signature: deflib mlx_fused_mlp(x gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b (group_size) (bits))
-// Cette fonction fusionne les 3 multiplications matricielles quantifiées du MLP en un seul appel C++
-// pour permettre à MLX d'optimiser le graphe de calcul et réduire l'overhead de l'interpréteur LispE.
+ // mlx_fused_mlp - Fused MLP: down_proj(gelu(gate_proj(x)) * up_proj(x))
+ // Signature: deflib mlx_fused_mlp(x gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b (group_size) (bits))
+ // This function fuses the 3 quantized matrix multiplications of the MLP into a single C++ call
+ // to allow MLX to optimize the computation graph and reduce LispE interpreter overhead.
 Element* Lispe_mlx_methods::method_fused_mlp(LispE* lisp) {
     Element* x_elem = lisp->get_variable("x");
     Element* gate_w_elem = lisp->get_variable("gate_w");
@@ -7944,40 +7944,40 @@ Element* Lispe_mlx_methods::method_fused_mlp(LispE* lisp) {
         // Step 4: output = down_proj(hidden) - quantized matmul
         mx::array result = mx::quantized_matmul(hidden, down_w, down_s, down_b, true, group_size, bits);
         
-        // Ne pas appeler mx::eval ici pour permettre à MLX d'optimiser le graphe complet
-        // L'évaluation sera faite au moment où les valeurs sont réellement nécessaires
+        // Do not call mx::eval here to allow MLX to optimize the full graph
+        // Evaluation will be done when values are actually needed
         return new MLXArray(std::move(result));
     } catch (const std::exception& e) {
         throw new Error("Error in mlx_fused_mlp: " + std::string(e.what()));
     }
 }
 
-// ============================================================================
-// mlx_fused_moe - MoE fusionné pour GPT-OSS et modèles similaires
-// ============================================================================
-// Signature: deflib mlx_fused_moe(x expert_indices expert_weights
-//                                  gate_w gate_s gate_qb gate_lb
-//                                  up_w up_s up_qb up_lb
-//                                  down_w down_s down_qb down_lb
-//                                  num_experts experts_per_tok (group_size) (bits) (activation))
+ // ============================================================================
+ // mlx_fused_moe - Fused MoE for GPT-OSS and similar models
+ // ============================================================================
+ // Signature: deflib mlx_fused_moe(x expert_indices expert_weights
+                                  //                                  gate_w gate_s gate_qb gate_lb
+                                  //                                  up_w up_s up_qb up_lb
+                                  //                                  down_w down_s down_qb down_lb
+                                  //                                  num_experts experts_per_tok (group_size) (bits) (activation))
 //
-// Cette fonction fusionne tout le calcul MoE en C++ pour éviter les boucles LispE
-// et permettre à MLX d'optimiser le graphe de calcul complet.
+ // This function fuses all MoE computation in C++ to avoid LispE loops
+ // and let MLX optimize the full computation graph.
 //
-// Arguments:
-//   x: input [B, L, hidden_size]
-//   expert_indices: indices des top-k experts [B, L, k] (pré-calculés)
-//   expert_weights: poids des experts [B, L, k] (pré-calculés, normalisés)
-//   gate_w, gate_s, gate_qb, gate_lb: poids gate_proj (weight, scales, quant_biases, linear_bias)
-//   up_w, up_s, up_qb, up_lb: poids up_proj
-//   down_w, down_s, down_qb, down_lb: poids down_proj
-//   num_experts: nombre total d'experts
-//   experts_per_tok: nombre d'experts par token (k)
-//   group_size: taille de groupe pour la quantification (default: 64)
-//   bits: bits de quantification (default: 8)
-//   activation: "swiglu" ou "gelu" (default: "swiglu")
+ // Arguments:
+   //   x: input [B, L, hidden_size]
+   //   expert_indices: indices of top-k experts [B, L, k] (precomputed)
+   //   expert_weights: experts weights [B, L, k] (precomputed, normalized)
+   //   gate_w, gate_s, gate_qb, gate_lb: gate_proj weights (weight, scales, quant_biases, linear_bias)
+   //   up_w, up_s, up_qb, up_lb: up_proj weights
+   //   down_w, down_s, down_qb, down_lb: down_proj weights
+   //   num_experts: total number of experts
+   //   experts_per_tok: number of experts per token (k)
+   //   group_size: group size for quantization (default: 64)
+   //   bits: quantization bits (default: 8)
+   //   activation: "swiglu" or "gelu" (default: "swiglu")
 //
-// Retourne: output [B, L, hidden_size]
+ // Returns: output [B, L, hidden_size]
 Element* Lispe_mlx_methods::method_fused_moe(LispE* lisp) {
     Element* x_elem = lisp->get_variable("x");
     Element* expert_indices_elem = lisp->get_variable("expert_indices");
@@ -8063,37 +8063,37 @@ Element* Lispe_mlx_methods::method_fused_moe(LispE* lisp) {
             activation = std::string(ws.begin(), ws.end());
         }
         
-        // Obtenir les dimensions
+        // Get dimensions
         auto x_shape = x.shape();
         int B = x_shape[0];
         int L = x_shape[1];
         int hidden_size = x_shape[2];
         
-        // Cette fonction optimisée ne supporte que L=1 (génération token par token)
-        // Pour le prefill (L>1), utiliser l'implémentation LispE
+        // This optimized function only supports L=1 (token-by-token generation)
+        // For prefill (L>1), use the LispE implementation
         if (L != 1) {
             throw new Error("mlx_fused_moe: Only L=1 supported. Use LispE implementation for prefill (L>1).");
         }
         
-        // Initialiser output à zéros [B, L, hidden_size]
+        // Initialize output to zeros [B, L, hidden_size]
         mx::array output = mx::zeros({B, L, hidden_size}, mx::float32);
         
-        // Pour L=1 (génération token par token), on peut utiliser les indices MLX directement
-        // sans forcer l'évaluation. On boucle seulement sur k (4 experts actifs).
+        // For L=1 (token-by-token generation), we can use MLX indices directly
+        // without forcing evaluation. Loop only on k (4 active experts).
         
         for (int k = 0; k < experts_per_tok; k++) {
-            // Extraire l'indice d'expert pour ce slot: [B, L] -> [B]
+            // Extract expert index for this slot: [B, L] -> [B]
             mx::array slot_indices = mx::squeeze(mx::slice(expert_indices, 
                 {0, 0, k}, {B, L, k + 1}), 2);
             
-            // Extraire les poids pour ce slot: [B, L, 1]
+            // Extract weights for this slot: [B, L, 1]
             mx::array slot_weights = mx::slice(expert_weights, 
                 {0, 0, k}, {B, L, k + 1});
             
-            // Pour B=1, L=1: slot_indices est [1], on peut l'utiliser directement avec take
+            // For B=1, L=1: slot_indices is [1], we can use it directly with take
             mx::array flat_indices = mx::reshape(slot_indices, {B});
             
-            // Extraire les poids de l'expert sélectionné
+            // Extract the selected expert weights
             mx::array e_gate_w = mx::squeeze(mx::take(gate_w, flat_indices, 0), 0);
             mx::array e_gate_s = mx::squeeze(mx::take(gate_s, flat_indices, 0), 0);
             std::optional<mx::array> e_gate_qb = std::nullopt;
@@ -8169,7 +8169,7 @@ Element* Lispe_mlx_methods::method_fused_moe(LispE* lisp) {
                 expert_out = mx::add(expert_out, *e_down_lb);
             }
             
-            // Pondérer par le poids du slot et accumuler
+            // Weight by slot weight and accumulate
             mx::array weighted_out = mx::multiply(expert_out, slot_weights);
             output = mx::add(output, weighted_out);
         }
@@ -8180,17 +8180,17 @@ Element* Lispe_mlx_methods::method_fused_moe(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// mlx_fused_moe_batch - Version batch du MoE (déquantifie puis matmul batché)
-// ============================================================================
-// Même signature que mlx_fused_moe mais utilise une approche batch:
-// - Extrait les k experts d'un coup avec take
-// - Déquantifie en batch
-// - Matmul batché avec broadcasting
-// - Somme pondérée finale
+ // ============================================================================
+ // mlx_fused_moe_batch - Batch version of MoE (dequantize then batched matmul)
+ // ============================================================================
+ // Same signature as mlx_fused_moe but uses a batch approach:
+ // - Extract the k experts at once with take
+ // - Dequantize in batch
+ // - Batched matmul with broadcasting
+ // - Final weighted sum
 //
-// Avantage potentiel: moins d'opérations séparées dans le graphe MLX
-// Inconvénient: déquantification explicite (mais seulement 4 experts, pas 32)
+ // Potential advantage: fewer separate operations in MLX graph
+ // Drawback: explicit dequantization (but only 4 experts, not 32)
 Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
     Element* x_elem = lisp->get_variable("x");
     Element* expert_indices_elem = lisp->get_variable("expert_indices");
@@ -8276,13 +8276,13 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
             activation = std::string(ws.begin(), ws.end());
         }
         
-        // Obtenir les dimensions
+        // Get dimensions
         auto x_shape = x.shape();
         int B = x_shape[0];
         int L = x_shape[1];
         int hidden_size = x_shape[2];
         
-        // Cette fonction optimisée ne supporte que L=1, B=1 (génération token par token)
+        // This optimized function only supports L=1, B=1 (token-by-token generation)
         if (L != 1 || B != 1) {
             throw new Error("mlx_fused_moe_batch: Only B=1, L=1 supported. Use LispE implementation for prefill.");
         }
@@ -8292,10 +8292,10 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
         // expert_indices: [1, 1, k] -> flat_indices: [k]
         mx::array flat_indices = mx::reshape(expert_indices, {k});
         
-        // expert_weights: [1, 1, k] -> weights: [k, 1, 1] pour broadcasting
+        // expert_weights: [1, 1, k] -> weights: [k, 1, 1] for broadcasting
         mx::array weights = mx::reshape(expert_weights, {k, 1, 1});
         
-        // === Extraire les k experts en batch ===
+        // === Extract k experts in batch ===
         // gate_w: [num_experts, out, in_packed] -> batch_gate_w: [k, out, in_packed]
         mx::array batch_gate_w = mx::take(gate_w, flat_indices, 0);
         mx::array batch_gate_s = mx::take(gate_s, flat_indices, 0);
@@ -8330,20 +8330,20 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
             batch_down_lb = mx::take(*down_lb, flat_indices, 0);
         }
         
-        // === Déquantifier en batch ===
+        // === Dequantize in batch ===
         // batch_gate_w: [k, out, in_packed] -> batch_gate_full: [k, out, in]
         mx::array batch_gate_full = mx::dequantize(batch_gate_w, batch_gate_s, batch_gate_qb, group_size, bits);
         mx::array batch_up_full = mx::dequantize(batch_up_w, batch_up_s, batch_up_qb, group_size, bits);
         mx::array batch_down_full = mx::dequantize(batch_down_w, batch_down_s, batch_down_qb, group_size, bits);
         
-        // === Préparer x pour le batch ===
+        // === Prepare x for the batch ===
         // x: [1, 1, hidden] -> x_batch: [k, 1, hidden]
         mx::array x_squeezed = mx::squeeze(x, 0);  // [1, hidden]
         mx::array x_batch = mx::broadcast_to(x_squeezed, {k, 1, hidden_size});
         
-        // === Matmul batché ===
+        // === Batched matmul ===
         // gate_proj: x_batch [k, 1, hidden] @ batch_gate_full^T [k, hidden, out] -> [k, 1, intermediate]
-        // Avec transpose=true sur la dernière dim de batch_gate_full: [k, out, in] -> [k, in, out]
+        // With transpose=true on the last dim of batch_gate_full: [k, out, in] -> [k, in, out]
         mx::array batch_gate_t = mx::transpose(batch_gate_full, {0, 2, 1});  // [k, in, out]
         mx::array gate_out = mx::matmul(x_batch, batch_gate_t);  // [k, 1, intermediate]
         if (batch_gate_lb.has_value()) {
@@ -8360,7 +8360,7 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
             up_out = mx::add(up_out, lb_expanded);
         }
         
-        // === Activation (swiglu ou gelu) ===
+        // === Activation (swiglu or gelu) ===
         mx::array hidden = [&]() -> mx::array {
             if (activation == "swiglu") {
                 const float alpha = 1.702f;
@@ -8393,14 +8393,14 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
             expert_out = mx::add(expert_out, lb_expanded);
         }
         
-        // === Pondération et somme ===
+        // === Weighting and sum ===
         // expert_out: [k, 1, hidden], weights: [k, 1, 1]
         mx::array weighted = mx::multiply(expert_out, weights);  // [k, 1, hidden]
         
-        // Somme sur la dimension k: [k, 1, hidden] -> [1, hidden]
+        // Sum along k dimension: [k, 1, hidden] -> [1, hidden]
         mx::array summed = mx::sum(weighted, 0, false);  // [1, hidden]
         
-        // Reshape en [B, L, hidden] = [1, 1, hidden]
+        // Reshape to [B, L, hidden] = [1, 1, hidden]
         mx::array output = mx::reshape(summed, {1, 1, hidden_size});
         
         return new MLXArray(std::move(output));
@@ -8409,9 +8409,9 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// mlx_eval: Force l'évaluation d'un tableau MLX
-// ============================================================================
+ // ============================================================================
+ // mlx_eval: Force evaluation of an MLX array
+ // ============================================================================
 Element* Lispe_mlx_methods::method_eval(LispE* lisp) {
     try {
         Element* array_elem = lisp->get_variable(U"array");
@@ -8429,9 +8429,9 @@ Element* Lispe_mlx_methods::method_eval(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// mlx_tolist: Convertit un tableau MLX en liste LispE (floats, integers, numbers)
-// ============================================================================
+ // ============================================================================
+ // mlx_tolist: Convert an MLX array to a LispE list (floats, integers, numbers)
+ // ============================================================================
 Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
     try {
         Element* array_elem = lisp->get_variable(U"array");
@@ -8442,14 +8442,14 @@ Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
         MLXArray* mlx_arr = static_cast<MLXArray*>(array_elem);
         mx::array& arr = mlx_arr->array;
         
-        // Force l'évaluation pour accéder aux données
+        // Force evaluation to access data
         mx::eval(arr);
         
         long sz = arr.size();
         
         switch (arr.dtype()) {
             case mx::float32: {
-                // Retourner un Floats (float)
+                // Return Floats (float)
                 Floats* result = lisp->provideFloats();
                 const float* data = arr.data<float>();
                 for (long i = 0; i < sz; i++) {
@@ -8458,7 +8458,7 @@ Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
                 return result;
             }
             case mx::float64: {
-                // Retourner un Numbers (double)
+                // Return Numbers (double)
                 Numbers* result = lisp->provideNumbers();
                 const double* data = arr.data<double>();
                 for (long i = 0; i < sz; i++) {
@@ -8467,7 +8467,7 @@ Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
                 return result;
             }
             case mx::int32: {
-                // Retourner un Integers (long)
+                // Return Integers (long)
                 Integers* result = lisp->provideIntegers();
                 const int32_t* data = arr.data<int32_t>();
                 for (long i = 0; i < sz; i++) {
@@ -8476,7 +8476,7 @@ Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
                 return result;
             }
             case mx::int64: {
-                // Retourner un Integers (long)
+                // Return Integers (long)
                 Integers* result = lisp->provideIntegers();
                 const int64_t* data = arr.data<int64_t>();
                 for (long i = 0; i < sz; i++) {
@@ -8551,7 +8551,7 @@ Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
                 return result;
             }
             case mx::bool_: {
-                // bool -> integers (0 ou 1)
+                // bool -> integers (0 or 1)
                 Integers* result = lisp->provideIntegers();
                 const bool* data = arr.data<bool>();
                 for (long i = 0; i < sz; i++) {
@@ -8560,7 +8560,7 @@ Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
                 return result;
             }
             default: {
-                // Par défaut, essayer de convertir en floats
+                // By default, try to convert to floats
                 Floats* result = lisp->provideFloats();
                 for (long i = 0; i < sz; i++) {
                     result->liste.push_back(0.0f);
@@ -8573,21 +8573,21 @@ Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
     }
 }
 
-// ============================================================================
-// Fonction d'initialisation du module
-// ============================================================================
+ // ============================================================================
+ // Module initialization function
+ // ============================================================================
 
 extern "C" {
 Exporting bool InitialisationModule(LispE* lisp) {
-    // Allouer le type pour MLX arrays
+    // Allocate the type for MLX arrays
     std::string mlx_array_type_key = "mlx_array";
     t_mlx_array = lisp->encode(mlx_array_type_key);
 
-    // Allouer le type pour MLX shapes
+    // Allocate the type for MLX shapes
     std::string mlx_shape_type_key = "mlx_shape";
     t_mlx_shape = lisp->encode(mlx_shape_type_key);
 
-    // Enregistrer les méthodes MLX
+    // Register the MLX methods
     lisp->extension("deflib mlx_shape(data)",
                     new Lispe_mlx_methods(mlx_method_shape));
 
@@ -8648,7 +8648,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_split(array indices_or_sections (axis))",
                     new Lispe_mlx_methods(mlx_method_split));
 
-    // Fonctions d'activation
+    // Activation functions
     lisp->extension("deflib mlx_sigmoid(array)",
                     new Lispe_mlx_methods(mlx_method_sigmoid));
 
@@ -8661,7 +8661,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_tanh(array)",
                     new Lispe_mlx_methods(mlx_method_tanh));
 
-    // Fonctions trigonométriques
+    // Trigonometric functions
     lisp->extension("deflib mlx_sin(array)",
                     new Lispe_mlx_methods(mlx_method_sin));
 
@@ -8671,14 +8671,14 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_tan(array)",
                     new Lispe_mlx_methods(mlx_method_tan));
 
-    // Fonctions de réduction avancées
+    // Advanced reduction functions
     lisp->extension("deflib mlx_argmax(array (axis) (keepdims))",
                     new Lispe_mlx_methods(mlx_method_argmax));
 
     lisp->extension("deflib mlx_argmin(array (axis) (keepdims))",
                     new Lispe_mlx_methods(mlx_method_argmin));
 
-    // Fonctions supplémentaires
+    // Additional functions
     lisp->extension("deflib mlx_power(a b)",
                     new Lispe_mlx_methods(mlx_method_power));
 
@@ -8688,7 +8688,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_square(array)",
                     new Lispe_mlx_methods(mlx_method_square));
 
-    // Groupe 1: Création d'arrays
+    // Group 1: Array creation
     lisp->extension("deflib mlx_zeros(shape (dtype))",
                     new Lispe_mlx_methods(mlx_method_zeros));
 
@@ -8707,7 +8707,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_eye(n (m) (dtype))",
                     new Lispe_mlx_methods(mlx_method_eye));
 
-    // Groupe 2: Nombres aléatoires
+    // Group 2: Random numbers
     lisp->extension("deflib mlx_random_uniform(shape (low) (high) (dtype))",
                     new Lispe_mlx_methods(mlx_method_random_uniform));
 
@@ -8717,7 +8717,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_random_randint(low high shape (dtype))",
                     new Lispe_mlx_methods(mlx_method_random_randint));
 
-    // Groupe 3: Mathématiques
+    // Group 3: Mathematics
     lisp->extension("deflib mlx_log2(array)",
                     new Lispe_mlx_methods(mlx_method_log2));
 
@@ -8745,7 +8745,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_rsqrt(array)",
                     new Lispe_mlx_methods(mlx_method_rsqrt));
 
-    // Groupe 4: Trigonométrie inverse
+    // Group 4: Inverse trigonometry
     lisp->extension("deflib mlx_arcsin(array)",
                     new Lispe_mlx_methods(mlx_method_arcsin));
 
@@ -8761,7 +8761,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_cosh(array)",
                     new Lispe_mlx_methods(mlx_method_cosh));
 
-    // Groupe 5: Réductions
+    // Group 5: Reductions
     lisp->extension("deflib mlx_prod(array (axes) (keepdims))",
                     new Lispe_mlx_methods(mlx_method_prod));
 
@@ -8783,7 +8783,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_any(array (axes) (keepdims))",
                     new Lispe_mlx_methods(mlx_method_any));
 
-    // Groupe 6: Comparaisons
+    // Group 6: Comparisons
     lisp->extension("deflib mlx_equal(a b)",
                     new Lispe_mlx_methods(mlx_method_equal));
 
@@ -8805,7 +8805,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_where(condition x y)",
                     new Lispe_mlx_methods(mlx_method_where));
 
-    // Groupe 7: Manipulation
+    // Group 7: Manipulation
     lisp->extension("deflib mlx_flatten(array (start_axis) (end_axis))",
                     new Lispe_mlx_methods(mlx_method_flatten));
 
@@ -8827,7 +8827,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_pad(array pad_width (value))",
                     new Lispe_mlx_methods(mlx_method_pad));
 
-    // Groupe 8: Activation deep learning
+    // Group 8: Deep learning activations
     lisp->extension("deflib mlx_gelu(array)",
                     new Lispe_mlx_methods(mlx_method_gelu));
 
@@ -8849,7 +8849,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_log_softmax(array (axis))",
                     new Lispe_mlx_methods(mlx_method_log_softmax));
 
-    // Groupe 9: Algèbre linéaire
+    // Group 9: Linear algebra
     lisp->extension("deflib mlx_norm(array (ord) (axes) (keepdims))",
                     new Lispe_mlx_methods(mlx_method_norm));
 
@@ -8883,7 +8883,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_khatri_rao_product(a b)",
                     new Lispe_mlx_methods(mlx_method_khatri_rao_product));
 
-    // Groupe 10: Opérations logiques et tests
+    // Group 10: Logical operations and tests
     lisp->extension("deflib mlx_logical_and(a b)",
                     new Lispe_mlx_methods(mlx_method_logical_and));
 
@@ -8902,7 +8902,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_isfinite(array)",
                     new Lispe_mlx_methods(mlx_method_isfinite));
 
-    // Groupe 11: Manipulation avancée
+    // Group 11: Advanced manipulation
     lisp->extension("deflib mlx_flip(array (axes))",
                     new Lispe_mlx_methods(mlx_method_flip));
 
@@ -8927,7 +8927,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_broadcast_to(array shape)",
                     new Lispe_mlx_methods(mlx_method_broadcast_to));
 
-    // Groupe 12: Création avancée
+    // Group 12: Advanced creation
     lisp->extension("deflib mlx_identity(n (dtype))",
                     new Lispe_mlx_methods(mlx_method_identity));
 
@@ -8943,7 +8943,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_meshgrid(arrays (indexing))",
                     new Lispe_mlx_methods(mlx_method_meshgrid));
 
-    // Groupe 13: Algèbre linéaire avancée
+    // Group 13: Advanced linear algebra
     lisp->extension("deflib mlx_pinv(array)",
                     new Lispe_mlx_methods(mlx_method_pinv));
 
@@ -8959,7 +8959,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_cross(a b (axis))",
                     new Lispe_mlx_methods(mlx_method_cross));
 
-    // Groupe 14: I/O de modèles
+    // Group 14: Model I/O
     lisp->extension("deflib mlx_save(file array)",
                     new Lispe_mlx_methods(mlx_method_save));
 
@@ -8978,7 +8978,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_save_gguf(file arrays (metadata))",
                     new Lispe_mlx_methods(mlx_method_save_gguf));
 
-    // Groupe 15: Quantification et mémoire
+    // Group 15: Quantization and memory
     lisp->extension("deflib mlx_quantize(array (group_size) (bits))",
                     new Lispe_mlx_methods(mlx_method_quantize));
 
@@ -9009,7 +9009,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_set_cache_limit(limit)",
                     new Lispe_mlx_methods(mlx_method_set_cache_limit));
 
-    // Groupe 16: Opérations supplémentaires
+    // Group 16: Additional operations
     lisp->extension("deflib mlx_slice(array start stop (strides))",
                     new Lispe_mlx_methods(mlx_method_slice));
 
@@ -9043,7 +9043,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_partition(array kth (axis))",
                     new Lispe_mlx_methods(mlx_method_partition));
 
-    // Groupe 17: FFT (Transformées de Fourier)
+    // Group 17: FFT (Fourier Transforms)
     lisp->extension("deflib mlx_fft(array (n) (axis))",
                     new Lispe_mlx_methods(mlx_method_fft));
 
@@ -9086,7 +9086,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_ifftshift(array (axes))",
                     new Lispe_mlx_methods(mlx_method_ifftshift));
 
-    // Groupe 18: Fonctions mathématiques avancées
+    // Group 18: Advanced math functions
     lisp->extension("deflib mlx_arctan2(a b)",
                     new Lispe_mlx_methods(mlx_method_arctan2));
 
@@ -9123,7 +9123,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_kron(a b)",
                     new Lispe_mlx_methods(mlx_method_kron));
 
-    // Groupe 19: Opérations bitwise
+    // Group 19: Bitwise operations
     lisp->extension("deflib mlx_bitwise_and(a b)",
                     new Lispe_mlx_methods(mlx_method_bitwise_and));
 
@@ -9142,7 +9142,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_right_shift(a b)",
                     new Lispe_mlx_methods(mlx_method_right_shift));
 
-    // Groupe 20: Division et reste
+    // Group 20: Division and remainder
     lisp->extension("deflib mlx_divmod(a b)",
                     new Lispe_mlx_methods(mlx_method_divmod));
 
@@ -9152,7 +9152,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_remainder(a b)",
                     new Lispe_mlx_methods(mlx_method_remainder));
 
-    // Groupe 21: Opérations cumulatives et logsumexp
+    // Group 21: Cumulative operations and logsumexp
     lisp->extension("deflib mlx_cummax(array (axis) (thereverse) (inclusive))",
                     new Lispe_mlx_methods(mlx_method_cummax));
 
@@ -9165,7 +9165,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_logcumsumexp(array (axis) (thereverse) (inclusive))",
                     new Lispe_mlx_methods(mlx_method_logcumsumexp));
 
-    // Groupe 22: Convolutions (deep learning)
+    // Group 22: Convolutions (deep learning)
     lisp->extension("deflib mlx_conv1d(input weight (stride) (padding) (dilation) (groups))",
                     new Lispe_mlx_methods(mlx_method_conv1d));
 
@@ -9187,7 +9187,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_conv_general(input weight (stride) (padding_lo) (padding_hi) (kernel_dilation) (input_dilation) (groups) (theflip))",
                     new Lispe_mlx_methods(mlx_method_conv_general));
 
-    // Groupe 23: Opérations spécialisées ML
+    // Group 23: ML specialized operations
     lisp->extension("deflib mlx_rms_norm(x (weight) (eps) (gemma_style))",
                     new Lispe_mlx_methods(mlx_method_rms_norm));
 
@@ -9203,7 +9203,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_einsum(subscripts operands)",
                     new Lispe_mlx_methods(mlx_method_einsum));
 
-    // Groupe 24: Manipulation et création avancée
+    // Group 24: Advanced manipulation and creation
     lisp->extension("deflib mlx_dtype(array)",
                     new Lispe_mlx_methods(mlx_method_dtype));
 
@@ -9237,7 +9237,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_allclose(a b (rtol) (atol) (equal_nan))",
                     new Lispe_mlx_methods(mlx_method_allclose));
 
-    // Groupe 25: Random avancé
+    // Group 25: Advanced random
     lisp->extension("deflib mlx_random_bernoulli(p (shape))",
                     new Lispe_mlx_methods(mlx_method_random_bernoulli));
 
@@ -9259,7 +9259,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_random_permutation(x (axis))",
                     new Lispe_mlx_methods(mlx_method_random_permutation));
 
-    // Groupe 26: Algèbre linéaire avancée
+    // Group 26: Advanced linear algebra
     lisp->extension("deflib mlx_tri_inv(array (upper))",
                     new Lispe_mlx_methods(mlx_method_tri_inv));
 
@@ -9278,7 +9278,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_eigh(array (UPLO))",
                     new Lispe_mlx_methods(mlx_method_eigh));
 
-    // Groupe 27: Gather/Scatter avancé
+    // Group 27: Advanced gather/scatter
     lisp->extension("deflib mlx_take_along_axis(array indices axis)",
                     new Lispe_mlx_methods(mlx_method_take_along_axis));
 
@@ -9297,7 +9297,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_slice_update(src update start stop (strides))",
                     new Lispe_mlx_methods(mlx_method_slice_update));
 
-    // Groupe 28: Nombres complexes
+    // Group 28: Complex numbers
     lisp->extension("deflib mlx_conjugate(array)",
                     new Lispe_mlx_methods(mlx_method_conjugate));
 
@@ -9307,7 +9307,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_imag(array)",
                     new Lispe_mlx_methods(mlx_method_imag));
 
-    // Groupe 29: Opérations fusionnées pour LLM
+    // Group 29: Fused operations for LLM
     lisp->extension("deflib mlx_fused_mlp(x gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b (group_size) (bits))",
                     new Lispe_mlx_methods(mlx_method_fused_mlp));
 
@@ -9317,11 +9317,11 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_fused_moe_batch(x expert_indices expert_weights gate_w gate_s gate_qb gate_lb up_w up_s up_qb up_lb down_w down_s down_qb down_lb num_experts experts_per_tok (group_size) (bits) (activation))",
                     new Lispe_mlx_methods(mlx_method_fused_moe_batch));
 
-    // Groupe 30: Évaluation explicite
+    // Group 30: Explicit evaluation
     lisp->extension("deflib mlx_eval(array)",
                     new Lispe_mlx_methods(mlx_method_eval));
 
-    // Groupe 31: Conversion vers LispE
+    // Group 31: Conversion to LispE
     lisp->extension("deflib mlx_tolist(array)",
                     new Lispe_mlx_methods(mlx_method_tolist));
 
