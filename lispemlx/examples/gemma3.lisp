@@ -1,26 +1,26 @@
 ; =============================================================================
-; Chargement d'un modèle MLX Safetensors shardé (Gemma 3 27B)
+; Loading a sharded MLX Safetensors model (Gemma 3 27B)
 ; =============================================================================
-; Ce script charge un modèle au format safetensors avec plusieurs fichiers
-; (shards) et combine tous les poids dans un dictionnaire unifié.
+; This script loads a safetensors model with multiple files
+; (shards) and combines all weights into a unified dictionary.
 ;
-; Compatible avec les modèles MLX de mlx-community sur HuggingFace
+; Compatible with MLX models from mlx-community on HuggingFace
 ; =============================================================================
 
 (use 'lispe_mlx)
-(use 'lispe_torch)  ; Pour le tokenizer SentencePiece
+(use 'lispe_torch)  ; For SentencePiece tokenizer
 
 ; =============================================================================
-; Configuration du modèle
+; Model configuration
 ; =============================================================================
 
 (setq MODEL_PATH "/Users/user/.lmstudio/models/mlx-community/gemma-3-27b-it-qat-4bit")
 
 ; =============================================================================
-; Fonction pour générer les chemins des fichiers safetensors shardés
+; Function to generate sharded safetensors file paths
 ; =============================================================================
 
-; Génère les chemins des fichiers safetensors pour num_shards fichiers
+; Generates safetensors file paths for num_shards files
 (defun get_safetensors_files(dir_path num_shards)
     (setq files (list))
     (setq num_str (string num_shards))
@@ -29,7 +29,7 @@
     (loopcount num_shards i
         (setq idx (+ i 1))
         (setq idx_str (string idx))
-        ; Padding avec des zéros
+        ; Padding with zeros
         (while (< (size idx_str) 5)
             (setq idx_str (+ "0" idx_str)))
         (setq num_pad num_str)
@@ -41,101 +41,101 @@
 )
 
 ; =============================================================================
-; Fonction pour charger et fusionner plusieurs fichiers safetensors
+; Function to load and merge multiple safetensors files
 ; =============================================================================
 
-; Charge tous les fichiers safetensors et fusionne les tenseurs
+; Loads all safetensors files and merges tensors
 (defun load_sharded_safetensors(dir_path num_shards)
     
-    (println "Génération des chemins pour " num_shards " fichiers safetensors...")
+    (println "Generation of p aths for " num_shards " safetensors files...")
     (setq files (get_safetensors_files dir_path num_shards))
     (setq num_files (size files))
     
     (check (zerop num_files)
-        (println "ERREUR: Aucun fichier safetensors trouvé!")
+        (println "Error: No safetensors files found!")
         (return nil))
     
-    (println "Trouvé " num_files " fichier(s) safetensors")
+    (println "Found " num_files " safetensors files")
     
-    ; Liste pour stocker tous les tenseurs (accès par index = O(1))
+    ; List to store all tensors (index access = O(1))
     (setq all_tensors (list))
-    ; Dictionnaire pour mapper nom -> index (utilisé une seule fois au chargement)
+    ; Dictionary to map name -> index (used only once at load)
     (setq tensor_index (dictionary))
     (setq all_metadata (dictionary))
     (setq total_tensors 0)
     
-    ; Charger chaque fichier
+    ; Load each file
     (setq file_idx 0)
     (loop filepath files
         (+= file_idx 1)
         (println "")
-        (println "[" file_idx "/" num_files "] Chargement: " filepath)
+        (println "[" file_idx "/" num_files "] Loading: " filepath)
         
-        ; Charger le fichier safetensors
+        ; Load the safetensors file
         (setq result (mlx_load_safetensors filepath))
         (setq tensors (@ result 0))
         (setq metadata (@ result 1))
         
-        ; Compter et fusionner les tenseurs
+        ; Count and merge tensors
         (setq tensor_names (keys@ tensors))
         (setq num_tensors (size tensor_names))
-        (println "  → " num_tensors " tenseurs chargés")
+        (println "  → " num_tensors " loaded tensors")
         
-        ; Ajouter les tenseurs à la liste et créer l'index
+        ; Add tensors to the list and create the index
         (loop name tensor_names
             (set@ tensor_index name total_tensors)
             (push all_tensors (@ tensors name))
             (+= total_tensors 1))
         
-        ; Fusionner les métadonnées
+        ; Merge metadata
         (loop key (keys@ metadata)
             (set@ all_metadata key (@ metadata key)))
         
-        ; Libérer la mémoire (optionnel, garbage collector s'en charge)
+        ; Free memory (optional, garbage collector handles it)
         (mlx_synchronize)
     )
     
     (println "")
     (println (fill "=" 60))
-    (println "Chargement terminé!")
-    (println "  Total tenseurs: " total_tensors)
+    (println "Loading finished!")
+    (println "  Total tensors: " total_tensors)
     (println (fill "=" 60))
     
-    ; Retourner une liste (tenseurs_liste, index_dict, métadonnées)
+    ; Return a list (tensor_list, index_dict, metadata)
     (list all_tensors tensor_index all_metadata)
 )
 
 ; =============================================================================
-; Fonction pour charger la configuration du modèle
+; Function to load model configuration
 ; =============================================================================
 
-; Charge le fichier config.json du modèle
+; Loads the model's config.json file
 (defun load_model_config(dir_path)
     (setq config_path (+ dir_path "/config.json"))
     (maybe
         (json_read config_path)
         (block
-            (println "AVERTISSEMENT: config.json non trouvé")
+            (println "Warning: config.json not found")
             (dictionary))))
 
 ; =============================================================================
-; Fonction pour afficher les informations sur les tenseurs
+; Function to display tensor information
 ; =============================================================================
 
-; Affiche des informations sur les tenseurs chargés
-; tensor_index: dictionnaire nom -> index
+; Displays information about loaded tensors
+; tensor_index: dictionary name -> index
 (defun print_tensor_info(tensor_index (max_display 20))
     (setq names (keys@ tensor_index))
     (setq total (size names))
     
     (println "")
-    (println "Informations sur les tenseurs:")
+    (println "Information about tensors:")
     (println (fill "-" 60))
     
-    ; Trier les noms
+    ; Sort names
     (setq sorted_names (sort '< names))
     
-    ; Afficher les premiers tenseurs
+    ; Display first tensors
     (setq displayed 0)
     (loop name sorted_names
         (check (< displayed max_display)
@@ -143,39 +143,39 @@
             (+= displayed 1)))
     
     (check (> total max_display)
-        (println "  ... et " (- total max_display) " autres tenseurs"))
+        (println "  ... et " (- total max_display) " other tensors"))
     
     (println (fill "-" 60))
-    (println "Total: " total " tenseurs")
+    (println "Total: " total " tensors")
 )
 
 ; =============================================================================
-; Fonction pour obtenir les statistiques mémoire
+; Function to get memory statistics
 ; =============================================================================
 
-; Affiche les statistiques d'utilisation mémoire MLX
+; Displays MLX memory usage statistics
 (defun print_memory_stats()
     (println "")
-    (println "Statistiques mémoire MLX:")
+    (println "MLX memory statistics:")
     (println (fill "-" 40))
-    (println "  Mémoire active: " (/ (mlx_get_active_memory) 1048576) " MB")
-    (println "  Mémoire pic:    " (/ (mlx_get_peak_memory) 1048576) " MB")
-    (println "  Mémoire cache:  " (/ (mlx_get_cache_memory) 1048576) " MB")
+    (println "  Active memory: " (/ (mlx_get_active_memory) 1048576) " MB")
+    (println "  Peak memory:    " (/ (mlx_get_peak_memory) 1048576) " MB")
+    (println "  Cache memory:  " (/ (mlx_get_cache_memory) 1048576) " MB")
     (println (fill "-" 40))
 )
 
 ; =============================================================================
-; Fonction pour créer les indices des tenseurs par couche
+; Function to create tensor indices by layer
 ; =============================================================================
 
-; Fonction helper pour obtenir un tenseur par son nom (utilise l'index)
+; Helper function to get a tensor by name (uses index)
 (defun get_tensor(weights_list tensor_index name)
     (setq idx (@ tensor_index name))
     (if idx (@ weights_list idx) nil))
 
-; Pré-extrait les tenseurs d'une couche dans une liste ordonnée
-; Retourne: (input_norm q_w q_s q_b k_w k_s k_b v_w v_s v_b o_w o_s o_b q_norm k_norm 
-;            post_attn_norm pre_ff_norm gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b post_ff_norm)
+; Pre-extracts a layer's tensors into an ordered list
+; Returns: (input_norm q_w q_s q_b k_w k_s k_b v_w v_s v_b o_w o_s o_b q_norm k_norm 
+;           post_attn_norm pre_ff_norm gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b post_ff_norm)
 (defun extract_layer_tensors(weights_list tensor_index layer_idx)
     (setq prefix (+ "language_model.model.layers." (string layer_idx) "."))
     (setq attn (+ prefix "self_attn."))
@@ -221,14 +221,14 @@
         (get_tensor weights_list tensor_index (+ mlp "down_proj.biases"))
     ))
 
-; Crée la liste des tenseurs pour toutes les couches
+; Creates the tensor list for all layers
 (defun build_layer_tensors(weights_list tensor_index num_layers)
     (setq layers (list))
     (loopcount num_layers i
         (push layers (extract_layer_tensors weights_list tensor_index i)))
     layers)
 
-; Extrait les tenseurs globaux (embed, lm_head, final_norm)
+; Extracts global tensors (embed, lm_head, final_norm)
 (defun extract_global_tensors(weights_list tensor_index)
     (list
         ; 0-2: embed_tokens
@@ -244,10 +244,10 @@
     ))
 
 ; =============================================================================
-; Structure du modèle
+; Model structure
 ; =============================================================================
 
-; Constantes d'indices pour les tenseurs de couche (définies avant la classe)
+; Index constants for layer tensors (defined before the class)
 (setq L_INPUT_NORM 0)      ; input_layernorm.weight
 (setq L_Q_WEIGHT 1)        ; q_proj.weight
 (setq L_Q_SCALES 2)        ; q_proj.scales
@@ -276,7 +276,7 @@
 (setq L_DOWN_SCALES 25)    ; down_proj.scales
 (setq L_DOWN_BIASES 26)    ; down_proj.biases
 
-; Constantes pour les tenseurs globaux
+; Constants for global tensors
 (setq G_EMBED_WEIGHT 0)
 (setq G_EMBED_SCALES 1)
 (setq G_EMBED_BIASES 2)
@@ -285,11 +285,11 @@
 (setq G_LM_HEAD_SCALES 5)
 (setq G_LM_HEAD_BIASES 6)
 
-; Indices de transposition
+; Transpose indices
 (setq TRANSPOSE_0213 (integers 0 2 1 3))
 (setq TRANSPOSE_0132 (integers 0 1 3 2))
 
-; Constantes KV cache
+; KV cache constants
 (setq KV_TYPE 0)
 (setq KV_KEYS 1)
 (setq KV_VALUES 2)
@@ -298,38 +298,38 @@
 (setq CACHE_STANDARD 0)
 (setq CACHE_ROTATING 1)
 
-; Représente un modèle MLX chargé avec ses poids, sa configuration et son tokenizer
-; Attributs:
-;   weights: liste des tenseurs (accès par index O(1))
-;   tensor_index: dictionnaire nom -> index
-;   config: configuration du modèle
-;   metadata: métadonnées safetensors
-;   tokenizer: tokenizer SentencePiece
-;   cached_embeddings: embeddings pré-déquantifiés
-;   rope_freqs_global/local: fréquences RoPE pré-calculées
-;   layer_tensors: tenseurs pré-extraits par couche
-;   global_tensors: tenseurs globaux (embed, lm_head, norm)
-;   attn_params: paramètres d'attention pré-calculés
-;   kv_caches: caches KV pour la génération (créé à la demande)
+; Represents a loaded MLX model with its weights, config, and tokenizer
+; Attributes:
+;   weights: list of tensors (O(1) index access)
+;   tensor_index: dictionary name -> index
+;   config: model configuration
+;   metadata: safetensors metadata
+;   tokenizer: SentencePiece tokenizer
+;   cached_embeddings: pre-dequantized embeddings
+;   rope_freqs_global/local: precomputed RoPE frequencies
+;   layer_tensors: pre-extracted tensors by layer
+;   global_tensors: global tensors (embed, lm_head, norm)
+;   attn_params: precomputed attention parameters
+;   kv_caches: KV caches for generation (created on demand)
 (class@ MLXModel (weights tensor_index config metadata tokenizer cached_embeddings rope_freqs_global rope_freqs_local layer_tensors global_tensors attn_params kv_caches)
     
     ; =========================================================================
-    ; Accesseurs de base
+    ; Basic accessors
     ; =========================================================================
     
-    ; Récupère un tenseur par son nom
+    ; Retrieve a tensor by name
     (defun get_weight(name)
         (setq idx (@ tensor_index name))
         (check (nullp idx)
-            (println "AVERTISSEMENT: Tenseur non trouvé: " name)
+            (println "Warning: tensor not found: " name)
             (return nil))
         (@ weights idx))
     
-    ; Vérifie si un tenseur existe
+    ; Check if a tensor exists
     (defun has_weight(name)
         (neq (@ tensor_index name) nil))
     
-    ; Liste les noms des tenseurs (optionnellement filtrés par pattern)
+    ; List tensor names (optionally filtered by pattern)
     (defun list_weights((pattern ""))
         (setq all_names (keys@ tensor_index))
         (ncheck (eq pattern "")
@@ -337,39 +337,39 @@
             (filter (λ(n) (rgx_match rx n)) all_names)
             all_names))
     
-    ; Retourne le nombre de tenseurs
+    ; Return the number of tensors
     (defun num_weights()
         (size weights))
     
-    ; Récupère une valeur de configuration
+    ; Retrieve a config value
     (defun get_config(key (default nil))
         (select (@ config key) default))
     
-    ; Récupère text_config
+    ; Retrieve text_config
     (defun text_config()
         (@ config "text_config"))
     
-    ; Affiche les informations du modèle
+    ; Display model information
     (defun info()
-        (println "Modèle MLX:")
-        (println "  Tenseurs: " (num_weights))
+        (println "Model MLX:")
+        (println "  tensors: " (num_weights))
         (println "  Type: " (get_config "model_type" "inconnu"))
         (println "  Architecture: " (get_config "architectures" "inconnue"))
         (check tokenizer
-            (println "  Vocabulaire: " (torch_vocab_size tokenizer) " tokens")))
+            (println "  Vocabulary: " (torch_vocab_size tokenizer) " tokens")))
     
     ; =========================================================================
     ; Tokenizer
     ; =========================================================================
     
-    ; Encode du texte en tokens
+    ; Encode text into tokens
     (defun encode(text)
         (check (not tokenizer)
             (println "ERREUR: Tokenizer non chargé")
             (return nil))
         (torch_encode tokenizer text))
     
-    ; Décode des tokens en texte
+    ; Decode tokens into text
     (defun decode(tokens)
         (check (not tokenizer)
             (println "ERREUR: Tokenizer non chargé")
@@ -379,17 +379,17 @@
             (torch_decode tokenizer (torch_tensor tokens "long"))
             (torch_decode tokenizer tokens)))
     
-    ; Retourne la taille du vocabulaire
+    ; Return vocabulary size
     (defun vocab_size()
         (check (not tokenizer)
             (return 0))
         (torch_vocab_size tokenizer))
     
     ; =========================================================================
-    ; Fonctions utilitaires internes
+    ; Internal utility functions
     ; =========================================================================
     
-    ; Projection linéaire avec poids quantifiés ou non
+    ; Linear projection with quantized or non-quantized weights
     (defun _linear(x weight scales biases (transpose_weight true))
         (ife scales
             (if biases
@@ -399,11 +399,11 @@
                 (mlx_matmul x . mlx_transpose weight)
                 (mlx_matmul x weight))))
     
-    ; RMSNorm avec style Gemma (1 + weight)
+    ; RMSNorm with Gemma style (1 + weight)
     (defun _rms_norm(x weight eps)
         (mlx_rms_norm x weight eps true))
     
-    ; Applique RoPE aux queries/keys
+    ; Apply RoPE to queries/keys
     (defun _apply_rope(x freqs offset)
         (setq shape (mlx_shape x))
         (setq B (@ shape 0))
@@ -432,15 +432,15 @@
     ; KV Cache
     ; =========================================================================
     
-    ; Crée un cache KV standard
+    ; Create a standard KV cache
     (defun _make_kv_cache_standard()
         (dictionaryi KV_TYPE CACHE_STANDARD KV_KEYS nil KV_VALUES nil KV_OFFSET 0))
     
-    ; Crée un cache KV rotatif
+    ; Create a rotary KV cache
     (defun _make_kv_cache_rotating(max_size)
         (dictionaryi KV_TYPE CACHE_ROTATING KV_KEYS nil KV_VALUES nil KV_MAX_SIZE max_size KV_OFFSET 0))
     
-    ; Crée tous les caches KV
+    ; Create all KV caches
     (defun _make_all_kv_caches()
         (setq tc (text_config))
         (setq num_layers (@ tc "num_hidden_layers"))
@@ -453,7 +453,7 @@
                 (push caches (_make_kv_cache_rotating window_size))))
         caches)
     
-    ; Met à jour un cache standard
+    ; Update a standard cache
     (defun _update_kv_cache_standard(cache keys values)
         (setq cached_keys (@ cache KV_KEYS))
         (setq cached_values (@ cache KV_VALUES))
@@ -468,7 +468,7 @@
         (set@ cache KV_OFFSET (@ (mlx_shape new_keys) 2))
         (list new_keys new_values))
     
-    ; Met à jour un cache rotatif
+    ; Update a rotary cache
     (defun _update_kv_cache_rotating(cache keys values)
         (setq cached_keys (@ cache KV_KEYS))
         (setq cached_values (@ cache KV_VALUES))
@@ -494,18 +494,18 @@
         (set@ cache KV_OFFSET (+ current_offset num_new))
         (list new_keys new_values))
     
-    ; Met à jour un cache (dispatch selon type)
+    ; Update a cache (dispatch by type)
     (defun _update_kv_cache(cache keys values)
         (if (eq (@ cache KV_TYPE) CACHE_ROTATING)
             (_update_kv_cache_rotating cache keys values)
             (_update_kv_cache_standard cache keys values)))
     
-    ; Réinitialise les caches KV
+    ; Reset KV caches
     (defun reset_cache()
         (setqi kv_caches nil))
     
     ; =========================================================================
-    ; Forward pass - Composants
+    ; Forward pass - Components
     ; =========================================================================
     
     ; MLP forward
@@ -567,7 +567,7 @@
         (setq scale_arr (mlx_array scale))
         (setq attention_scores (mlx_multiply (mlx_matmul queries . mlx_transpose keys_expanded TRANSPOSE_0132) scale_arr))
         
-        ; Masque
+        ; Mask
         (setq L_kv (@ (mlx_shape keys) 2))
         (setq window_size (@ tc "sliding_window"))
         
@@ -610,10 +610,10 @@
         (mlx_add h mlp_normed))
     
     ; =========================================================================
-    ; Forward pass complet
+    ; Full forward pass
     ; =========================================================================
     
-    ; Forward pass - retourne (logits, kv_caches)
+    ; Forward pass - returns (logits, kv_caches)
     (defun forward(input_ids offset)
         (setq tc (text_config))
         (setq num_layers (@ tc "num_hidden_layers"))
@@ -624,11 +624,11 @@
         (setq embeddings (mlx_take cached_embeddings input_ids 0))
         (setq hidden_states (mlx_multiply embeddings (mlx_array (sqrt hidden_size))))
         
-        ; Créer les caches KV si nécessaire
+        ; Create KV caches if needed
         (check (nullp kv_caches)
             (setqi kv_caches (_make_all_kv_caches)))
         
-        ; Passer à travers toutes les couches
+        ; Pass through all layers
         (loopcount num_layers i
             (setq hidden_states (_transformer_block 
                 hidden_states 
@@ -647,10 +647,10 @@
             (@ global_tensors G_LM_HEAD_BIASES)))
     
     ; =========================================================================
-    ; Génération de texte
+    ; Text generation
     ; =========================================================================
     
-    ; Formate un prompt de chat
+    ; Format a chat prompt
     (defun format_prompt(user_message (system_prompt ""))
         (setq prompt "")
         (check (not (eq system_prompt ""))
@@ -660,7 +660,7 @@
         (+= prompt "<end_of_turn>\n<start_of_turn>model\n")
         prompt)
     
-    ; Échantillonnage
+    ; Sampling
     (defun _sample(logits temperature)
         (ife (< temperature 0.01)
             (mlx_argmax logits -1)
@@ -671,35 +671,35 @@
                 (setq logits_flat (mlx_reshape logits_flat (integers 1 (@ shape 0)))))
             (mlx_random_categorical logits_flat -1)))
     
-    ; Génère du texte à partir d'un prompt
+    ; Generate text from a prompt
     (defun generate(prompt_text max_new_tokens (temperature 0.7))
         (println "")
-        (println "Génération en cours...")
+        (println "Generation on...")
         (println "Prompt: \"" prompt_text "\"")
         (println "")
         
-        ; Réinitialiser le cache
+        ; Reset cache
         (reset_cache)
         
-        ; Encoder le prompt
+        ; Encode prompt
         (setq input_ids_tensor (encode prompt_text))
         (setq input_ids (tensor_to_list input_ids_tensor))
         
-        ; Ajouter BOS si absent
+        ; Add BOS if missing
         (setq BOS_TOKEN 2)
         (check (not (eq (@ input_ids 0) BOS_TOKEN))
             (setq input_ids (cons BOS_TOKEN input_ids)))
         
-        ; Convertir en array MLX
+        ; Convert to MLX array
         (setq num_tokens (size input_ids))
         (setq input_tensor (mlx_array input_ids nil "int32"))
         (setq input_tensor (mlx_reshape input_tensor (integers 1 num_tokens)))
         
-        ; Liste pour stocker les tokens générés
+        ; List to store generated tokens
         (setq generated_tokens input_ids)
         (setq num_generated 0)
         
-        ; Mesurer le temps
+        ; Measure time
         (setq gen_time (elapse
             (loopcount max_new_tokens i
                 (setq offset (- (size generated_tokens) (@ (mlx_shape input_tensor) 1)))
@@ -707,27 +707,27 @@
                 ; Forward
                 (setq logits (forward input_tensor offset))
                 
-                ; Dernier token
+                ; Last token
                 (setq last_idx (- (@ (mlx_shape logits) 1) 1))
                 (setq last_logits (mlx_take logits (mlx_array (integers last_idx) nil "int32") 1))
                 
-                ; Échantillonner
+                ; Sample
                 (setq next_token (_sample last_logits temperature))
                 (setq next_token (mlx_eval next_token))
                 
-                ; Convertir en entier
+                ; Convert to int
                 (setq next_token_flat (mlx_flatten next_token))
                 (setq next_token_id (integer (@ next_token_flat 0)))
                 
-                ; Afficher en streaming
+                ; Stream output
                 (printerr (decode (integers next_token_id)))
                 (+= num_generated 1)
                 
-                ; Vérifier fin
+                ; Check end
                 (check (or (eq next_token_id 1) (eq next_token_id 107))
                     (break))
                 
-                ; Ajouter et préparer prochain
+                ; Add and prepare next
                 (push generated_tokens next_token_id)
                 (setq input_tensor (mlx_reshape (mlx_array (integers next_token_id) nil "int32") (integers 1 1)))
             )))
@@ -736,76 +736,76 @@
         (setq tokens_per_sec (/ (* num_generated 1000.0) gen_time))
         (println "")
         (println (fill "=" 60))
-        (println "Tokens générés: " num_generated " en " (/ gen_time 1000.0) " sec")
-        (println "Vitesse: " tokens_per_sec " tokens/sec")
+        (println "Tokens: " num_generated " en " (/ gen_time 1000.0) " sec")
+        (println "Speed: " tokens_per_sec " tokens/sec")
         (println (fill "=" 60))
         
-        ; Décoder
+        ; Decode
         (setq output_text (decode generated_tokens))
         (println "")
-        (println "Texte généré:")
+        (println "Generated Text:")
         (println output_text)
         (println (fill "=" 60))
         
         output_text)
     
-    ; Interface chat simplifiée
+    ; Simple chat interface
     (defun chat(user_message (max_tokens 256) (temperature 0.7) (system_prompt ""))
         (setq formatted_prompt (format_prompt user_message system_prompt))
         (generate formatted_prompt max_tokens temperature))
 )
 
 ; =============================================================================
-; Fonction principale de chargement
+; Main loading function
 ; =============================================================================
 
-; Charge un modèle MLX complet (safetensors shardé + config)
+; Loads a full MLX model (sharded safetensors + config)
 (defun load_mlx_model(model_path)
     
     (println (fill "=" 60))
-    (println "Chargement du modèle MLX")
-    (println "Chemin: " model_path)
+    (println "Loading MLX model")
+    (println "Path: " model_path)
     (println (fill "=" 60))
     
-    ; Charger la configuration
+    ; Load configuration
     (println "")
-    (println "1. Chargement de la configuration...")
+    (println "1. Loading Configuration...")
     (setq config (load_model_config model_path))
-    (println "   ✓ Configuration chargée")
+    (println "   ✓ Configuration loaded")
     
-    ; Afficher quelques infos de config
+    ; Display some config info
     (check (in config "model_type")
         (println "   Type: " (@ config "model_type")))
     (check (in config "architectures")
         (println "   Architecture: " (@ config "architectures")))
     
-    ; Charger les poids (4 shards pour Gemma 3 27B)
+    ; Load weights (4 shards for Gemma 3 27B)
     (println "")
-    (println "2. Chargement des poids...")
+    (println "2. Loading Weights...")
     (setq result (load_sharded_safetensors model_path 4))
     
     (check (nullp result)
-        (println "ERREUR: Échec du chargement des poids")
+        (println "Error: Failed to load weights")
         (return nil))
     
     (setq weights_list (@ result 0))
     (setq tensor_index (@ result 1))
     (setq metadata (@ result 2))
     
-    ; Charger le tokenizer SentencePiece
+    ; Load SentencePiece tokenizer
     (println "")
-    (println "3. Chargement du tokenizer...")
+    (println "3. Loading tokenizer...")
     (setq tokenizer_path (+ model_path "/tokenizer.model"))
     (setq tokenizer (maybe
         (torch_sentencepiece_tokenizer tokenizer_path)
         nil))
     (if tokenizer
-        (println "   ✓ Tokenizer chargé (" (torch_vocab_size tokenizer) " tokens)")
-        (println "   ⚠ Tokenizer non trouvé: " tokenizer_path))
+        (println "   ✓ Tokenizer loaded (" (torch_vocab_size tokenizer) " tokens)")
+        (println "   ⚠ Tokenizer not found: " tokenizer_path))
     
-    ; Pré-déquantifier les embeddings (optimisation majeure)
+    ; Pre-dequantize embeddings (major optimization)
     (println "")
-    (println "4. Pré-déquantification des embeddings...")
+    (println "4. Pre-dequantification of embeddings...")
     (setq embed_name "language_model.model.embed_tokens")
     (setq scales_name (+ embed_name ".scales"))
     (setq cached_embeddings nil)
@@ -818,45 +818,45 @@
             (setq cached_embeddings (if embed_biases
                 (mlx_dequantize embed_weight embed_scales embed_biases 64 4)
                 (mlx_dequantize embed_weight embed_scales nil 64 4)))
-            (println "   ✓ Embeddings déquantifiés et mis en cache")
+            (println "   ✓ Embeddings dequantified and in cache")
             (println "     Shape: " (mlx_shape cached_embeddings)))
         (setq cached_embeddings (get_tensor weights_list tensor_index (+ embed_name ".weight")))
-        (println "   ✓ Embeddings non quantifiés (pas de cache nécessaire)"))
+        (println "   ✓ Embeddings not quantified (no cache needed)"))
     
-    ; Pré-calculer les fréquences RoPE (optimisation)
+    ; Precompute RoPE frequencies (optimization)
     (println "")
-    (println "5. Pré-calcul des fréquences RoPE...")
+    (println "5. Pre-computing of RoPE frequencies...")
     (setq text_config (@ config "text_config"))
     (setq head_dim (@ text_config "head_dim"))
     (setq rope_theta (@ text_config "rope_theta"))
     (setq rope_local_base (@ text_config "rope_local_base_freq"))
 
-    ; Calculer inv_freq pour les deux bases
+    ; Compute inv_freq for both bases
     ; inv_freq = 1.0 / (base ** (arange(0, head_dim, 2) / head_dim))
-    ; Note: rope_scaling avec factor=8.0 est déjà intégré dans rope_theta=1000000
-    ; (base plus grand = fréquences plus basses = positions qui varient plus lentement)
+    ; Note: rope_scaling with factor=8.0 is already integrated in rope_theta=1000000
+    ; (larger base = lower frequencies = positions that vary more slowly)
     (setq indices (mlx_arange 0 head_dim 2 "float32"))
     (setq scaled (mlx_divide indices (mlx_array head_dim)))
 
     (setq rope_freqs_global (mlx_reciprocal (mlx_power (mlx_array rope_theta) scaled)))
     (setq rope_freqs_local (mlx_reciprocal (mlx_power (mlx_array rope_local_base) scaled)))
 
-    (println "   ✓ Fréquences RoPE pré-calculées")
+    (println "   ✓ RoPE Frequencies pre-computed")
     (println "     Global (theta=" rope_theta "): " (mlx_shape rope_freqs_global))
     (println "     Local (base=" rope_local_base "): " (mlx_shape rope_freqs_local))
     
-    ; Pré-extraire les tenseurs par couche (optimisation accès O(1))
+    ; Pre-extract tensors by layer (O(1) access optimization)
     (println "")
-    (println "6. Pré-extraction des tenseurs par couche...")
+    (println "6. Pre-extraction of tensors by layer...")
     (setq num_layers (@ text_config "num_hidden_layers"))
     (setq layer_tensors (build_layer_tensors weights_list tensor_index num_layers))
     (setq global_tensors (extract_global_tensors weights_list tensor_index))
-    (println "   ✓ " num_layers " couches pré-indexées")
-    (println "   ✓ Tenseurs globaux extraits")
+    (println "   ✓ " num_layers " pre-indexed layers")
+    (println "   ✓ Global tensors extracted")
     
-    ; Pré-calculer les paramètres d'attention (optimisation majeure - évite 62 accès config par token)
+    ; Precompute attention parameters (major optimization - avoids 62 config accesses per token)
     (println "")
-    (println "7. Pré-calcul des paramètres d'attention...")
+    (println "7. Precompute attention parameters...")
     (setq n_heads (@ text_config "num_attention_heads"))
     (setq n_kv_heads (@ text_config "num_key_value_heads"))
     (setq hidden_size (@ text_config "hidden_size"))
@@ -867,57 +867,57 @@
     (setq hidden_out (* n_heads head_dim))
     
     ; attn_params = (n_heads, n_kv_heads, head_dim, scale_float, eps, repeats, hidden_out)
-    ; Les shapes (B, L, ...) sont calculées dynamiquement car L change entre prompt et génération
+    ; Shapes (B, L, ...) are computed dynamically as L changes between prompt and generation
     (setq attn_params (list n_heads n_kv_heads head_dim scale_float eps repeats hidden_out))
-    (println "   ✓ Paramètres d'attention pré-calculés")
+    (println "   ✓ Precomputed attention parameters")
     (println "     n_heads=" n_heads ", n_kv_heads=" n_kv_heads ", head_dim=" head_dim)
     (println "     scale=" scale_float ", eps=" eps ", repeats=" repeats)
     
-    ; Créer l'objet modèle (kv_caches initialisé à nil, créé à la demande)
+    ; Create the model object (kv_caches initialized to nil, created on demand)
     (setq model (MLXModel weights_list tensor_index config metadata tokenizer cached_embeddings rope_freqs_global rope_freqs_local layer_tensors global_tensors attn_params nil))
     
-    ; Afficher les stats
+    ; Display stats
     (print_memory_stats)
     
     (println "")
-    (println "✓ Modèle chargé avec succès!")
+    (println "✓ Model sucessfully loaded!")
     
     model
 )
 
 ; =============================================================================
-; Programme principal
+; Main program
 ; =============================================================================
 
 (println "")
 (println "╔════════════════════════════════════════════════════════════╗")
-(println "║  Chargeur de modèle MLX pour LispE                         ║")
+(println "║  Loader of MLX model for LispE                         ║")
 (println "║  Gemma 3 27B IT QAT 4-bit                                  ║")
 (println "╚════════════════════════════════════════════════════════════╝")
 (println "")
 
-; Charger le modèle
-(setq chargement (elapse (setq model (load_mlx_model MODEL_PATH))))
-(println "Temps de chargement:" chargement)
+; Load the model
+(setq loading (elapse (setq model (load_mlx_model MODEL_PATH))))
+(println "Loading time:" loading)
 
 (check (nullp model)
     (println "")
-    (println "ERREUR: Le modèle n'a pas pu être chargé")
+    (println "Erreur: Model couldn't be loaded")
     (exit 1))
 
-; Afficher les informations du modèle
+; Display model information
 (println "")
 (model MLXModel (info))
 
-; Afficher quelques tenseurs
+; Display some tensors
 (print_tensor_info (@ model 'tensor_index) 30)
 
-; Exemple d'accès aux poids
+; Example of accessing weights
 (println "")
-(println "Exemple d'accès aux poids:")
+(println "Example of weight access:")
 (println (fill "-" 40))
 
-; Vérifier si certains tenseurs existent
+; Check if certain tensors exist
 (setq test_names (strings
     "language_model.model.embed_tokens.weight"
     "language_model.model.layers.0.self_attn.q_proj.weight"
@@ -927,9 +927,9 @@
 (loop name test_names
     (if (model MLXModel (has_weight name))
         (println "  ✓ " name)
-        (println "  ✗ " name " (non trouvé)")))
+        (println "  ✗ " name " (not found)")))
 
-; Test du tokenizer
+; Tokenizer test
 (println "")
 (println "Test du tokenizer:")
 (println (fill "-" 40))
@@ -943,17 +943,17 @@
 
 
 ; =============================================================================
-; Test simple du forward pass
+; Simple forward pass test
 ; =============================================================================
 
-; Vérifie la présence des poids nécessaires
+; Checks for required weights
 (defun test_weights(model)
     (println "")
-    (println "Vérification des poids du modèle...")
+    (println "Verification of model weights...")
     (println (fill "-" 50))
     
-    ; Utiliser la méthode get_weight de la classe
-    ; Vérifier les poids clés
+    ; Use the class's get_weight method
+    ; Check key weights
     (setq key_weights (strings
         "language_model.model.embed_tokens.weight"
         "language_model.model.layers.0.self_attn.q_proj.weight"
@@ -970,16 +970,16 @@
             (block
                 (setq w (model MLXModel (get_weight name)))
                 (println "  ✓ " name " - shape: " (mlx_shape w)))
-            (println "  ✗ " name " - NON TROUVÉ")))
+            (println "  ✗ " name " - not found")))
     
     (println (fill "-" 50))
 )
 
 ; =============================================================================
-; Test de génération réel
+; Real generation test
 ; =============================================================================
 
-; Test de génération avec une question simple
+; Generation test with a simple question
 (defun test_generation(model (question "What is the capital of France?") (max_tokens 50))
     (println "")
     (println (fill "=" 60))
@@ -989,28 +989,28 @@
     (println "Max tokens: " max_tokens)
     (println "")
     
-    ; Vérifier que le modèle est valide
+    ; Check that the model is valid
     (check (nullp model)
         (println "ERREUR: Modèle non chargé")
         (return nil))
     
-    ; Vérifier le tokenizer
+    ; Check the tokenizer
     (check (not (model MLXModel (vocab_size)))
         (println "ERREUR: Tokenizer non disponible")
         (return nil))
     
-    ; Formater le prompt pour le chat
+    ; Format the prompt for chat
     (setq prompt (model  MLXModel (format_prompt question)))
     (println "Prompt formaté:")
     (println prompt)
     (println (fill "-" 60))
     
-    ; Générer la réponse avec la nouvelle API orientée objet
+    ; Generate the response with the new object-oriented API
     (println "")
     (println "Réponse du modèle:")
     (println "")
     
-    ; Mesurer le temps avec elapse
+    ; Measure time with elapse
     (setq elapsed (elapse (setq response (model  MLXModel (chat question max_tokens 0.7)))))
     
     (println "")
@@ -1019,37 +1019,37 @@
     (print_memory_stats))
 
 ; =============================================================================
-; Programme principal - Test
+; Main program - Test
 ; =============================================================================
 
 (println "")
-(println "Le modèle est prêt à être utilisé!")
-(println "Variable 'model' contient l'objet MLXModel")
+(println "Model ready for use!")
+(println "Variable 'model' contains MLXModel object")
 (println "")
-(println "Méthodes disponibles:")
+(println "Available Methods:")
 (println "  - (model (encode \"texte\"))     ; Tokenizer")
-(println "  - (model (decode tokens))      ; Détokenizer")
-(println "  - (model (get_weight \"nom\"))  ; Accès aux poids")
-(println "  - (model (info))               ; Informations modèle")
-(println "  - (model (reset_cache))        ; Réinitialise KV cache")
+(println "  - (model (decode tokens))      ; Detokenizer")
+(println "  - (model (get_weight \"nom\"))  ; Access to weights")
+(println "  - (model (info))               ; Information about model")
+(println "  - (model (reset_cache))        ; Reinitialise KV cache")
 (println "")
-(println "Génération de texte:")
-(println "  - (model (chat \"message\"))                    ; Chat simple")
-(println "  - (model (chat \"message\" 256 0.7 \"system\"))  ; Chat avec options")
-(println "  - (model (generate \"prompt\" max_tokens temp)) ; Génération brute")
+(println "Generation of text:")
+(println "  - (model (chat \"message\"))                    ; Simple Chat")
+(println "  - (model (chat \"message\" 256 0.7 \"system\"))  ; Chat with options")
+(println "  - (model (generate \"prompt\" max_tokens temp)) ; Raw generation")
 (println "")
-(println "Fonctions de test:")
-(println "  - (test_weights model)         ; Vérifie les poids")
-(println "  - (test_generation model)      ; Test génération réelle")
+(println "Test Functions:")
+(println "  - (test_weights model)         ; check weights")
+(println "  - (test_generation model)      ; True generation test")
 (println "")
 (println "Exemple:")
 (println "  (model (chat \"Bonjour, qui es-tu?\"))")
 (println "")
 
 ; =============================================================================
-; Test de génération
+; Generation test
 ; =============================================================================
 
 (println "")
-(println "Lancement du test...")
+(println "Launching test...")
 (test_generation model "Write a short story about a robot who learns to paint." 100)
