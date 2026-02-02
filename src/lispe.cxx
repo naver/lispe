@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2026.1.29.16.9";
+static std::string version = "1.2026.2.2.14.21";
 string LispVersion() {
     return version;
 }
@@ -1604,12 +1604,22 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
     vector<int16_t> icodes;
     delegation->r_parse.stacktype.to_vector(icodes);
 #endif
-            
-    culprit = -1;
+   
+    delegation->i_parenthesis_stack.clear();
+    vector<long> stack_parentheses;
+    culprit = 0;
     long i;
     long ipos = 0;
+    bool one_to_many = false;
+    long root_code = 0;
+    if (delegation->r_parse.size() > 2 && delegation->r_parse.stack[1] == U"__root__") {
+        buffer = U"(";
+        infos.append(buffer, c_opening, 1, 0, 1);
+        root_code = 1;
+        sz--;
+    }
     
-    for (i = 0; i < sz; i++) {
+    for (i = root_code; i < sz && !one_to_many; i++) {
         line_number = delegation->r_parse.stackln[i] + 1;
         left = delegation->r_parse.positions[ipos++];
         right = delegation->r_parse.positions[ipos++];
@@ -1766,14 +1776,17 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                 break;
             case '(': // (
                 nb_parentheses++;
+                stack_parentheses.push_back(line_number);
                 infos.append(buffer, c_opening, line_number, left, right);
                 if (in_quote) in_quote++;
                 break;
             case ')': // )
                 nb_parentheses--;
-                if (nb_parentheses <= 0) {
-                    if (culprit == -1)
-                        culprit = line_number;
+                if (stack_parentheses.size())
+                    stack_parentheses.pop_back();
+                else {
+                    culprit = line_number;
+                    one_to_many = true;
                 }
                 infos.append(buffer, c_closing, line_number, left, right);
                 if (in_quote < 3)
@@ -1782,6 +1795,7 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                     in_quote--;
                 break;
             case '[': // [
+                stack_parentheses.push_back(line_number);
                 nb_brackets++;
                 buffer = U'(';
                 infos.append(buffer, c_opening, line_number, left, right);
@@ -1791,18 +1805,13 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                 buffer = U')';
                 if (nb_brackets) {
                     nb_brackets--;
-                    infos.append(buffer, c_closing, line_number, left, right);
-                }
-                else {
-                    nb_parentheses--;
-                    if (nb_parentheses <= 0) {
-                        if (culprit == -1)
-                            culprit = line_number;
+                    if (stack_parentheses.size())
+                        stack_parentheses.pop_back();
+                    else {
+                        culprit = line_number;
+                        one_to_many = true;
                     }
-                    //We add any number of parentheses to close the gap
-                    for (long e = 0; e < nb_parentheses; e++)
-                        infos.append(buffer, c_closing, line_number, left, right);
-                    nb_parentheses = 1;
+                    infos.append(buffer, c_closing, line_number, left, right);
                 }
                 if (in_quote < 3)
                     in_quote = 0;
@@ -1816,6 +1825,7 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                 }
                 else {
                     nb_braces++;
+                    stack_parentheses.push_back(line_number);
                     infos.append(buffer, c_opening_brace, line_number, left, right);
                 }
                 break;
@@ -1826,9 +1836,11 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                 }
                 else {
                     nb_braces--;
-                    if (nb_braces < 0) {
-                        if (culprit == -1)
-                            culprit = line_number;
+                    if (stack_parentheses.size())
+                        stack_parentheses.pop_back();
+                    else {
+                        culprit = line_number;
+                        one_to_many = true;
                     }
                     infos.append(buffer, c_closing_brace, line_number, left, right);
                 }
@@ -1841,20 +1853,34 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
     
     delegation->r_parse.cleaning();
     if (nb_brackets) {
-        delegation->i_current_line = line_number;
+        if (stack_parentheses.size())
+            delegation->i_parenthesis_stack = stack_parentheses;
+        else
+            delegation->i_parenthesis_stack.push_back(culprit*-1);
         return e_error_bracket;
     }
 
     if (nb_parentheses) {
-        delegation->i_current_line = culprit;
+        if (stack_parentheses.size())
+            delegation->i_parenthesis_stack = stack_parentheses;
+        else
+            delegation->i_parenthesis_stack.push_back(culprit*-1);
         return e_error_parenthesis;
     }
 
     if (nb_braces) {
-        delegation->i_current_line = culprit;
+        if (stack_parentheses.size())
+            delegation->i_parenthesis_stack = stack_parentheses;
+        else
+            delegation->i_parenthesis_stack.push_back(culprit*-1);
         return e_error_brace;
     }
 
+    if (root_code) {
+        buffer = U")";
+        infos.append(buffer, c_closing, line_number, left, right);
+    }
+    
     return e_no_error;
 }
 
@@ -3708,6 +3734,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

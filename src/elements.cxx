@@ -2484,7 +2484,24 @@ wstring Error::asString(LispE* lisp) {
         wstring w;
         s_utf8_to_unicode(w, s, s.size());
         std::wstringstream msg;
-        msg << message << L", line: " << lisp->delegation->i_current_line << L" in: " << w;
+        if (lisp->delegation->i_parenthesis_stack.size() > 1) {
+            msg << message << L" in: " << w << ":\n";
+            for (auto& i : lisp->delegation->i_parenthesis_stack) {
+                msg << L" opening not closed, line: " << i << "\n";
+            }
+        }
+        else {
+            if (lisp->delegation->i_parenthesis_stack.size() == 1) {
+                long i = lisp->delegation->i_parenthesis_stack.back();
+                msg << message << L" in: " << w << ":\n";
+                if (i < 0)
+                    msg << L" One closing parenthesis too many, line: " << i*-1 << "\n";
+                else
+                    msg << L" opening not closed, line: " << i << "\n";
+            }
+            else
+                msg << message << L", line: " << lisp->delegation->i_current_line << L" in: " << w;
+        }
         return msg.str();
     }
     else

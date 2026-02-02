@@ -235,6 +235,7 @@ public:
     lispe_debug_function debugfunction;
     void* debugobject;
 
+    vector<long> i_parenthesis_stack;
     long i_current_line;
     long i_current_file;
     int16_t stop_execution;

@@ -25,7 +25,7 @@
     (setq files (list))
     (setq num_str (string num_shards))
     (setq pad_len (size num_str))
-    
+
     (loopcount num_shards i
         (setq idx (+ i 1))
         (setq idx_str (string idx))
@@ -46,61 +46,61 @@
 
 ; Loads all safetensors files and merges tensors
 (defun load_sharded_safetensors(dir_path num_shards)
-    
+
     (println "Generation of p aths for " num_shards " safetensors files...")
     (setq files (get_safetensors_files dir_path num_shards))
     (setq num_files (size files))
-    
+
     (check (zerop num_files)
         (println "Error: No safetensors files found!")
         (return nil))
-    
+
     (println "Found " num_files " safetensors files")
-    
+
     ; List to store all tensors (index access = O(1))
     (setq all_tensors (list))
     ; Dictionary to map name -> index (used only once at load)
     (setq tensor_index (dictionary))
     (setq all_metadata (dictionary))
     (setq total_tensors 0)
-    
+
     ; Load each file
     (setq file_idx 0)
     (loop filepath files
         (+= file_idx 1)
         (println "")
         (println "[" file_idx "/" num_files "] Loading: " filepath)
-        
+
         ; Load the safetensors file
         (setq result (mlx_load_safetensors filepath))
         (setq tensors (@ result 0))
         (setq metadata (@ result 1))
-        
+
         ; Count and merge tensors
         (setq tensor_names (keys@ tensors))
         (setq num_tensors (size tensor_names))
         (println "  → " num_tensors " loaded tensors")
-        
+
         ; Add tensors to the list and create the index
         (loop name tensor_names
             (set@ tensor_index name total_tensors)
             (push all_tensors (@ tensors name))
             (+= total_tensors 1))
-        
+
         ; Merge metadata
         (loop key (keys@ metadata)
             (set@ all_metadata key (@ metadata key)))
-        
+
         ; Free memory (optional, garbage collector handles it)
         (mlx_synchronize)
     )
-    
+
     (println "")
     (println (fill "=" 60))
     (println "Loading finished!")
     (println "  Total tensors: " total_tensors)
     (println (fill "=" 60))
-    
+
     ; Return a list (tensor_list, index_dict, metadata)
     (list all_tensors tensor_index all_metadata)
 )
@@ -127,24 +127,24 @@
 (defun print_tensor_info(tensor_index (max_display 20))
     (setq names (keys@ tensor_index))
     (setq total (size names))
-    
+
     (println "")
     (println "Information about tensors:")
     (println (fill "-" 60))
-    
+
     ; Sort names
     (setq sorted_names (sort '< names))
-    
+
     ; Display first tensors
     (setq displayed 0)
     (loop name sorted_names
         (check (< displayed max_display)
             (println "  " name)
             (+= displayed 1)))
-    
+
     (check (> total max_display)
         (println "  ... et " (- total max_display) " other tensors"))
-    
+
     (println (fill "-" 60))
     (println "Total: " total " tensors")
 )
@@ -174,13 +174,13 @@
     (if idx (@ weights_list idx) nil))
 
 ; Pre-extracts a layer's tensors into an ordered list
-; Returns: (input_norm q_w q_s q_b k_w k_s k_b v_w v_s v_b o_w o_s o_b q_norm k_norm 
+; Returns: (input_norm q_w q_s q_b k_w k_s k_b v_w v_s v_b o_w o_s o_b q_norm k_norm
 ;           post_attn_norm pre_ff_norm gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b post_ff_norm)
 (defun extract_layer_tensors(weights_list tensor_index layer_idx)
     (setq prefix (+ "language_model.model.layers." (string layer_idx) "."))
     (setq attn (+ prefix "self_attn."))
     (setq mlp (+ prefix "mlp."))
-    
+
     (list
         ; 0: input_layernorm
         (get_tensor weights_list tensor_index (+ prefix "input_layernorm.weight"))
@@ -312,11 +312,11 @@
 ;   attn_params: precomputed attention parameters
 ;   kv_caches: KV caches for generation (created on demand)
 (class@ MLXModel (weights tensor_index config metadata tokenizer cached_embeddings rope_freqs_global rope_freqs_local layer_tensors global_tensors attn_params kv_caches)
-    
+
     ; =========================================================================
     ; Basic accessors
     ; =========================================================================
-    
+
     ; Retrieve a tensor by name
     (defun get_weight(name)
         (setq idx (@ tensor_index name))
@@ -324,11 +324,11 @@
             (println "Warning: tensor not found: " name)
             (return nil))
         (@ weights idx))
-    
+
     ; Check if a tensor exists
     (defun has_weight(name)
         (neq (@ tensor_index name) nil))
-    
+
     ; List tensor names (optionally filtered by pattern)
     (defun list_weights((pattern ""))
         (setq all_names (keys@ tensor_index))
@@ -336,19 +336,19 @@
             (setq rx (rgx pattern))
             (filter (λ(n) (rgx_match rx n)) all_names)
             all_names))
-    
+
     ; Return the number of tensors
     (defun num_weights()
         (size weights))
-    
+
     ; Retrieve a config value
     (defun get_config(key (default nil))
         (select (@ config key) default))
-    
+
     ; Retrieve text_config
     (defun text_config()
         (@ config "text_config"))
-    
+
     ; Display model information
     (defun info()
         (println "Model MLX:")
@@ -357,18 +357,18 @@
         (println "  Architecture: " (get_config "architectures" "inconnue"))
         (check tokenizer
             (println "  Vocabulary: " (torch_vocab_size tokenizer) " tokens")))
-    
+
     ; =========================================================================
     ; Tokenizer
     ; =========================================================================
-    
+
     ; Encode text into tokens
     (defun encode(text)
         (check (not tokenizer)
             (println "ERREUR: Tokenizer non chargé")
             (return nil))
         (torch_encode tokenizer text))
-    
+
     ; Decode tokens into text
     (defun decode(tokens)
         (check (not tokenizer)
@@ -378,17 +378,17 @@
         (if (or (== ttype "list_") (== ttype "integers_"))
             (torch_decode tokenizer (torch_tensor tokens "long"))
             (torch_decode tokenizer tokens)))
-    
+
     ; Return vocabulary size
     (defun vocab_size()
         (check (not tokenizer)
             (return 0))
         (torch_vocab_size tokenizer))
-    
+
     ; =========================================================================
     ; Internal utility functions
     ; =========================================================================
-    
+
     ; Linear projection with quantized or non-quantized weights
     (defun _linear(x weight scales biases (transpose_weight true))
         (ife scales
@@ -398,11 +398,11 @@
             (if transpose_weight
                 (mlx_matmul x . mlx_transpose weight)
                 (mlx_matmul x weight))))
-    
+
     ; RMSNorm with Gemma style (1 + weight)
     (defun _rms_norm(x weight eps)
         (mlx_rms_norm x weight eps true))
-    
+
     ; Apply RoPE to queries/keys
     (defun _apply_rope(x freqs offset)
         (setq shape (mlx_shape x))
@@ -411,35 +411,35 @@
         (setq L (@ shape 2))
         (setq head_dim (@ shape 3))
         (setq half_dim (/ head_dim 2))
-        
+
         (setq x1 (mlx_slice x (integers 0 0 0 0) (integers B n_heads L half_dim)))
         (setq x2 (mlx_slice x (integers 0 0 0 half_dim) (integers B n_heads L head_dim)))
-        
+
         (setq positions (mlx_arange offset (+ offset L) 1 "float32"))
         (setq pos_reshaped (mlx_reshape positions (integers 1 1 L 1)))
         (setq freqs_reshaped (mlx_reshape freqs (integers 1 1 1 half_dim)))
         (setq angles (mlx_multiply pos_reshaped freqs_reshaped))
-        
+
         (setq cos_angles (mlx_cos angles))
         (setq sin_angles (mlx_sin angles))
-        
+
         (setq out1 (mlx_subtract (mlx_multiply x1 cos_angles) . mlx_multiply x2 sin_angles))
         (setq out2 (mlx_add (mlx_multiply x1 sin_angles) . mlx_multiply x2 cos_angles))
-        
+
         (mlx_concatenate (list out1 out2) -1))
-    
+
     ; =========================================================================
     ; KV Cache
     ; =========================================================================
-    
+
     ; Create a standard KV cache
     (defun _make_kv_cache_standard()
         (dictionaryi KV_TYPE CACHE_STANDARD KV_KEYS nil KV_VALUES nil KV_OFFSET 0))
-    
+
     ; Create a rotary KV cache
     (defun _make_kv_cache_rotating(max_size)
         (dictionaryi KV_TYPE CACHE_ROTATING KV_KEYS nil KV_VALUES nil KV_MAX_SIZE max_size KV_OFFSET 0))
-    
+
     ; Create all KV caches
     (defun _make_all_kv_caches()
         (setq tc (text_config))
@@ -452,7 +452,7 @@
                 (push caches (_make_kv_cache_standard))
                 (push caches (_make_kv_cache_rotating window_size))))
         caches)
-    
+
     ; Update a standard cache
     (defun _update_kv_cache_standard(cache keys values)
         (setq cached_keys (@ cache KV_KEYS))
@@ -467,7 +467,7 @@
         (set@ cache KV_VALUES new_values)
         (set@ cache KV_OFFSET (@ (mlx_shape new_keys) 2))
         (list new_keys new_values))
-    
+
     ; Update a rotary cache
     (defun _update_kv_cache_rotating(cache keys values)
         (setq cached_keys (@ cache KV_KEYS))
@@ -493,28 +493,28 @@
         (set@ cache KV_VALUES new_values)
         (set@ cache KV_OFFSET (+ current_offset num_new))
         (list new_keys new_values))
-    
+
     ; Update a cache (dispatch by type)
     (defun _update_kv_cache(cache keys values)
         (if (eq (@ cache KV_TYPE) CACHE_ROTATING)
             (_update_kv_cache_rotating cache keys values)
             (_update_kv_cache_standard cache keys values)))
-    
+
     ; Reset KV caches
     (defun reset_cache()
         (setqi kv_caches nil))
-    
+
     ; =========================================================================
     ; Forward pass - Components
     ; =========================================================================
-    
+
     ; MLP forward
     (defun _mlp(x lt)
         (setq gate (_linear x (@ lt L_GATE_WEIGHT) (@ lt L_GATE_SCALES) (@ lt L_GATE_BIASES)))
         (setq up (_linear x (@ lt L_UP_WEIGHT) (@ lt L_UP_SCALES) (@ lt L_UP_BIASES)))
         (setq hidden (mlx_multiply (mlx_gelu_tanh gate) up))
         (_linear hidden (@ lt L_DOWN_WEIGHT) (@ lt L_DOWN_SCALES) (@ lt L_DOWN_BIASES)))
-    
+
     ; Attention forward
     (defun _attention(x lt offset kv_cache layer_idx)
         (setq n_heads (@ attn_params 0))
@@ -524,53 +524,53 @@
         (setq eps (@ attn_params 4))
         (setq repeats (@ attn_params 5))
         (setq hidden_out (@ attn_params 6))
-        
+
         (setq tc (text_config))
         (setq shape (mlx_shape x))
         (setq B (@ shape 0))
         (setq L (@ shape 1))
-        
+
         ; QKV projections
         (setq queries (_linear x (@ lt L_Q_WEIGHT) (@ lt L_Q_SCALES) (@ lt L_Q_BIASES)))
         (setq keys (_linear x (@ lt L_K_WEIGHT) (@ lt L_K_SCALES) (@ lt L_K_BIASES)))
         (setq values (_linear x (@ lt L_V_WEIGHT) (@ lt L_V_SCALES) (@ lt L_V_BIASES)))
-        
+
         ; Reshape
         (setq queries (mlx_transpose (mlx_reshape queries (integers B L n_heads head_dim)) TRANSPOSE_0213))
         (setq keys (mlx_transpose (mlx_reshape keys (integers B L n_kv_heads head_dim)) TRANSPOSE_0213))
         (setq values (mlx_transpose (mlx_reshape values (integers B L n_kv_heads head_dim)) TRANSPOSE_0213))
-        
+
         ; QK Norm
         (setq queries (_rms_norm queries (@ lt L_Q_NORM) eps))
         (setq keys (_rms_norm keys (@ lt L_K_NORM) eps))
-        
+
         ; RoPE
         (setq is_sliding (not (zerop (% (+ layer_idx 1) (@ tc "sliding_window_pattern")))))
         (setq rope_freqs (if is_sliding rope_freqs_local rope_freqs_global))
         (setq queries (_apply_rope queries rope_freqs offset))
         (setq keys (_apply_rope keys rope_freqs offset))
-        
+
         ; KV Cache
         (check kv_cache
             (setq kv_result (_update_kv_cache kv_cache keys values))
             (setq keys (@ kv_result 0))
             (setq values (@ kv_result 1)))
-        
+
         ; GQA expansion
         (setq keys_expanded keys)
         (setq values_expanded values)
         (check (> repeats 1)
             (setq keys_expanded (mlx_repeat keys repeats 1))
             (setq values_expanded (mlx_repeat values repeats 1)))
-        
+
         ; Attention scores
         (setq scale_arr (mlx_array scale))
         (setq attention_scores (mlx_multiply (mlx_matmul queries . mlx_transpose keys_expanded TRANSPOSE_0132) scale_arr))
-        
+
         ; Mask
         (setq L_kv (@ (mlx_shape keys) 2))
         (setq window_size (@ tc "sliding_window"))
-        
+
         (ife (> L 1)
             (block
                 (setq linds (mlx_reshape (mlx_arange 0 L 1 "int32") (list L 1)))
@@ -587,69 +587,69 @@
                 (setq window_mask (mlx_greater_equal positions . mlx_array visible_start))
                 (setq mask (mlx_where window_mask (mlx_zeros (list L_kv) "float32") . mlx_array -10000.0))
                 (setq attention_scores (mlx_add attention_scores . mlx_reshape mask . integers 1 1 1 L_kv))))
-        
+
         ; Output
         (setq attention_output (mlx_matmul (mlx_softmax attention_scores -1) values_expanded))
         (setq attention_output (mlx_reshape (mlx_transpose attention_output TRANSPOSE_0213) (integers B L hidden_out)))
         (_linear attention_output (@ lt L_O_WEIGHT) (@ lt L_O_SCALES) (@ lt L_O_BIASES)))
-    
+
     ; Transformer block
     (defun _transformer_block(x lt offset kv_cache layer_idx)
         (setq eps (@ attn_params 4))
-        
+
         (setq normed_x (_rms_norm x (@ lt L_INPUT_NORM) eps))
         (setq attn_output (_attention normed_x lt offset kv_cache layer_idx))
-        
+
         (setq attn_normed (_rms_norm attn_output (@ lt L_POST_ATTN_NORM) eps))
         (setq h (mlx_add x attn_normed))
-        
+
         (setq normed_h (_rms_norm h (@ lt L_PRE_FF_NORM) eps))
         (setq mlp_output (_mlp normed_h lt))
-        
+
         (setq mlp_normed (_rms_norm mlp_output (@ lt L_POST_FF_NORM) eps))
         (mlx_add h mlp_normed))
-    
+
     ; =========================================================================
     ; Full forward pass
     ; =========================================================================
-    
+
     ; Forward pass - returns (logits, kv_caches)
     (defun forward(input_ids offset)
         (setq tc (text_config))
         (setq num_layers (@ tc "num_hidden_layers"))
         (setq eps (@ attn_params 4))
         (setq hidden_size (@ tc "hidden_size"))
-        
+
         ; Embedding
         (setq embeddings (mlx_take cached_embeddings input_ids 0))
         (setq hidden_states (mlx_multiply embeddings (mlx_array (sqrt hidden_size))))
-        
+
         ; Create KV caches if needed
         (check (nullp kv_caches)
             (setqi kv_caches (_make_all_kv_caches)))
-        
+
         ; Pass through all layers
         (loopcount num_layers i
-            (setq hidden_states (_transformer_block 
-                hidden_states 
+            (setq hidden_states (_transformer_block
+                hidden_states
                 (@ layer_tensors i)
-                offset 
+                offset
                 (@ kv_caches i)
                 i)))
-        
+
         ; Final LayerNorm
         (setq hidden_states (_rms_norm hidden_states (@ global_tensors G_FINAL_NORM) eps))
-        
+
         ; LM Head
-        (_linear hidden_states 
-            (@ global_tensors G_LM_HEAD_WEIGHT) 
-            (@ global_tensors G_LM_HEAD_SCALES) 
+        (_linear hidden_states
+            (@ global_tensors G_LM_HEAD_WEIGHT)
+            (@ global_tensors G_LM_HEAD_SCALES)
             (@ global_tensors G_LM_HEAD_BIASES)))
-    
+
     ; =========================================================================
     ; Text generation
     ; =========================================================================
-    
+
     ; Format a chat prompt
     (defun format_prompt(user_message (system_prompt ""))
         (setq prompt "")
@@ -659,7 +659,7 @@
         (+= prompt user_message)
         (+= prompt "<end_of_turn>\n<start_of_turn>model\n")
         prompt)
-    
+
     ; Sampling
     (defun _sample(logits temperature)
         (ife (< temperature 0.01)
@@ -670,68 +670,68 @@
             (check (eq (size shape) 1)
                 (setq logits_flat (mlx_reshape logits_flat (integers 1 (@ shape 0)))))
             (mlx_random_categorical logits_flat -1)))
-    
+
     ; Generate text from a prompt
     (defun generate(prompt_text max_new_tokens (temperature 0.7))
         (println "")
         (println "Generation on...")
         (println "Prompt: \"" prompt_text "\"")
         (println "")
-        
+
         ; Reset cache
         (reset_cache)
-        
+
         ; Encode prompt
         (setq input_ids_tensor (encode prompt_text))
         (setq input_ids (tensor_to_list input_ids_tensor))
-        
+
         ; Add BOS if missing
         (setq BOS_TOKEN 2)
         (check (not (eq (@ input_ids 0) BOS_TOKEN))
             (setq input_ids (cons BOS_TOKEN input_ids)))
-        
+
         ; Convert to MLX array
         (setq num_tokens (size input_ids))
         (setq input_tensor (mlx_array input_ids nil "int32"))
         (setq input_tensor (mlx_reshape input_tensor (integers 1 num_tokens)))
-        
+
         ; List to store generated tokens
         (setq generated_tokens input_ids)
         (setq num_generated 0)
-        
+
         ; Measure time
         (setq gen_time (elapse
             (loopcount max_new_tokens i
                 (setq offset (- (size generated_tokens) (@ (mlx_shape input_tensor) 1)))
-                
+
                 ; Forward
                 (setq logits (forward input_tensor offset))
-                
+
                 ; Last token
                 (setq last_idx (- (@ (mlx_shape logits) 1) 1))
                 (setq last_logits (mlx_take logits (mlx_array (integers last_idx) nil "int32") 1))
-                
+
                 ; Sample
                 (setq next_token (_sample last_logits temperature))
                 (setq next_token (mlx_eval next_token))
-                
+
                 ; Convert to int
                 (setq next_token_flat (mlx_flatten next_token))
                 (setq next_token_id (integer (@ next_token_flat 0)))
-                
+
                 ; Stream output
                 (printerr (decode (integers next_token_id)))
                 (+= num_generated 1)
-                
+
                 ; Check end
                 (check (or (eq next_token_id 1) (eq next_token_id 107))
                     (break))
-                
+
                 ; Add and prepare next
                 (push generated_tokens next_token_id)
                 (setq input_tensor (mlx_reshape (mlx_array (integers next_token_id) nil "int32") (integers 1 1)))
             )))
-        
+
         ; Stats
         (setq tokens_per_sec (/ (* num_generated 1000.0) gen_time))
         (println "")
@@ -739,16 +739,16 @@
         (println "Tokens: " num_generated " en " (/ gen_time 1000.0) " sec")
         (println "Speed: " tokens_per_sec " tokens/sec")
         (println (fill "=" 60))
-        
+
         ; Decode
         (setq output_text (decode generated_tokens))
         (println "")
         (println "Generated Text:")
         (println output_text)
         (println (fill "=" 60))
-        
+
         output_text)
-    
+
     ; Simple chat interface
     (defun chat(user_message (max_tokens 256) (temperature 0.7) (system_prompt ""))
         (setq formatted_prompt (format_prompt user_message system_prompt))
@@ -761,37 +761,37 @@
 
 ; Loads a full MLX model (sharded safetensors + config)
 (defun load_mlx_model(model_path)
-    
+
     (println (fill "=" 60))
     (println "Loading MLX model")
     (println "Path: " model_path)
     (println (fill "=" 60))
-    
+
     ; Load configuration
     (println "")
     (println "1. Loading Configuration...")
     (setq config (load_model_config model_path))
     (println "   ✓ Configuration loaded")
-    
+
     ; Display some config info
     (check (in config "model_type")
         (println "   Type: " (@ config "model_type")))
     (check (in config "architectures")
         (println "   Architecture: " (@ config "architectures")))
-    
+
     ; Load weights (4 shards for Gemma 3 27B)
     (println "")
     (println "2. Loading Weights...")
     (setq result (load_sharded_safetensors model_path 4))
-    
+
     (check (nullp result)
         (println "Error: Failed to load weights")
         (return nil))
-    
+
     (setq weights_list (@ result 0))
     (setq tensor_index (@ result 1))
     (setq metadata (@ result 2))
-    
+
     ; Load SentencePiece tokenizer
     (println "")
     (println "3. Loading tokenizer...")
@@ -802,14 +802,14 @@
     (if tokenizer
         (println "   ✓ Tokenizer loaded (" (torch_vocab_size tokenizer) " tokens)")
         (println "   ⚠ Tokenizer not found: " tokenizer_path))
-    
+
     ; Pre-dequantize embeddings (major optimization)
     (println "")
     (println "4. Pre-dequantification of embeddings...")
     (setq embed_name "language_model.model.embed_tokens")
     (setq scales_name (+ embed_name ".scales"))
     (setq cached_embeddings nil)
-    
+
     (ife (get_tensor weights_list tensor_index scales_name)
         (block
             (setq embed_weight (get_tensor weights_list tensor_index (+ embed_name ".weight")))
@@ -822,7 +822,7 @@
             (println "     Shape: " (mlx_shape cached_embeddings)))
         (setq cached_embeddings (get_tensor weights_list tensor_index (+ embed_name ".weight")))
         (println "   ✓ Embeddings not quantified (no cache needed)"))
-    
+
     ; Precompute RoPE frequencies (optimization)
     (println "")
     (println "5. Pre-computing of RoPE frequencies...")
@@ -844,7 +844,7 @@
     (println "   ✓ RoPE Frequencies pre-computed")
     (println "     Global (theta=" rope_theta "): " (mlx_shape rope_freqs_global))
     (println "     Local (base=" rope_local_base "): " (mlx_shape rope_freqs_local))
-    
+
     ; Pre-extract tensors by layer (O(1) access optimization)
     (println "")
     (println "6. Pre-extraction of tensors by layer...")
@@ -853,7 +853,7 @@
     (setq global_tensors (extract_global_tensors weights_list tensor_index))
     (println "   ✓ " num_layers " pre-indexed layers")
     (println "   ✓ Global tensors extracted")
-    
+
     ; Precompute attention parameters (major optimization - avoids 62 config accesses per token)
     (println "")
     (println "7. Precompute attention parameters...")
@@ -865,23 +865,23 @@
     (setq eps (@ text_config "rms_norm_eps"))
     (setq repeats (/ n_heads n_kv_heads))
     (setq hidden_out (* n_heads head_dim))
-    
+
     ; attn_params = (n_heads, n_kv_heads, head_dim, scale_float, eps, repeats, hidden_out)
     ; Shapes (B, L, ...) are computed dynamically as L changes between prompt and generation
     (setq attn_params (list n_heads n_kv_heads head_dim scale_float eps repeats hidden_out))
     (println "   ✓ Precomputed attention parameters")
     (println "     n_heads=" n_heads ", n_kv_heads=" n_kv_heads ", head_dim=" head_dim)
     (println "     scale=" scale_float ", eps=" eps ", repeats=" repeats)
-    
+
     ; Create the model object (kv_caches initialized to nil, created on demand)
     (setq model (MLXModel weights_list tensor_index config metadata tokenizer cached_embeddings rope_freqs_global rope_freqs_local layer_tensors global_tensors attn_params nil))
-    
+
     ; Display stats
     (print_memory_stats)
-    
+
     (println "")
     (println "✓ Model sucessfully loaded!")
-    
+
     model
 )
 
@@ -951,7 +951,7 @@
     (println "")
     (println "Verification of model weights...")
     (println (fill "-" 50))
-    
+
     ; Use the class's get_weight method
     ; Check key weights
     (setq key_weights (strings
@@ -964,14 +964,14 @@
         "language_model.model.norm.weight"
         "language_model.lm_head.weight"
     ))
-    
+
     (loop name key_weights
         (if (model MLXModel (has_weight name))
             (block
                 (setq w (model MLXModel (get_weight name)))
                 (println "  ✓ " name " - shape: " (mlx_shape w)))
             (println "  ✗ " name " - not found")))
-    
+
     (println (fill "-" 50))
 )
 
@@ -988,31 +988,31 @@
     (println "Question: " question)
     (println "Max tokens: " max_tokens)
     (println "")
-    
+
     ; Check that the model is valid
     (check (nullp model)
         (println "ERREUR: Modèle non chargé")
         (return nil))
-    
+
     ; Check the tokenizer
     (check (not (model MLXModel (vocab_size)))
         (println "ERREUR: Tokenizer non disponible")
         (return nil))
-    
+
     ; Format the prompt for chat
     (setq prompt (model  MLXModel (format_prompt question)))
     (println "Prompt formaté:")
     (println prompt)
     (println (fill "-" 60))
-    
+
     ; Generate the response with the new object-oriented API
     (println "")
     (println "Réponse du modèle:")
     (println "")
-    
+
     ; Measure time with elapse
     (setq elapsed (elapse (setq response (model  MLXModel (chat question max_tokens 0.7)))))
-    
+
     (println "")
     (println (fill "-" 60))
     (println "Temps de génération: " elapsed " ms")
@@ -1053,3 +1053,4 @@
 (println "")
 (println "Launching test...")
 (test_generation model "Write a short story about a robot who learns to paint." 100)
+
