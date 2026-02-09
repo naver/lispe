@@ -965,7 +965,7 @@ public:
         os << "[";
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
-                os << L",";
+                os << ",";
             liste[i]->jsonStream(lisp, os);
         }
         os << "]";
