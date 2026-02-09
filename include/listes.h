@@ -2153,6 +2153,35 @@ public:
     
 };
 
+class List_extractpattern_eval : public Listincode {
+public:
+    
+    List_extractpattern_eval(Listincode* l) : Listincode(l) {}
+    List_extractpattern_eval(List* l) : Listincode(l) {}
+    List_extractpattern_eval() {}
+    List_extractpattern_eval(bool m)  {multiple = m;}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_extractpattern_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_extractpattern_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_extractpattern_eval(multiple);
+    }
+    
+};
+
+
 class List_zip_eval : public Listincode {
 public:
     

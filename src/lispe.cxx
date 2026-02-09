@@ -584,6 +584,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_numbers, "numbers", P_ATLEASTONE,  new List_numbers_eval());
     set_instruction(l_or, "or", P_ATLEASTTHREE,  new List_or_eval());
     set_instruction(l_over, "over", P_THREE,  new List_over_eval());
+    set_instruction(l_pattern, "pattern@", P_THREE,  new List_extractpattern_eval());
     set_instruction(l_pipe, "pipe", P_ONE,  new List_pipe_eval());
     set_instruction(l_plus, "+", P_ATLEASTTWO,  &List::evall_plus, new List_plusn());
     set_instruction(l_plusequal, "+=", P_ATLEASTTHREE, &List::evall_plusequal);
@@ -2167,6 +2168,13 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 element->eval(this);
                 cont = true;
                 return element;
+            }
+            case l_pattern: {
+                Element* arguments = element->index(1);
+                Element* a = arguments->transformargument(this);
+                if (a != arguments)
+                    ((List*)element)->liste.put(1, a);
+                break;
             }
             case l_compose: {
                 //In this case, we build in advance all our calling lists...

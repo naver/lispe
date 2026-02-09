@@ -7211,3 +7211,22 @@ Element* List_unique_eval::eval(LispE* lisp) {
     lisp->resetStack();
     return res;
 }
+
+Element* List_extractpattern_eval::eval(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    bool r = false;
+    
+    try {
+        lisp->checkState(this);
+        r = liste[1]->unify(lisp, element, true);
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        element->release();
+        throw err;
+    }
+    lisp->resetStack();
+    element->release();
+    return booleans_[r];
+}
+

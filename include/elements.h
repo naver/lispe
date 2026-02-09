@@ -95,7 +95,7 @@ typedef enum {
     l_setfast, l_getfast,
     l_block, l_root, l_elapse, l_code,
     l_if, l_iftest, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
-    l_catch, l_throw, l_maybe,
+    l_catch, l_throw, l_maybe, l_pattern,
     
     //Check values
     l_atomp, l_numberp, l_consp, l_emptyp, l_zerop, l_nullp, l_stringp,
