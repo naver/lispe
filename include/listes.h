@@ -11775,7 +11775,7 @@ public:
                 os << ",";
             s = "";
             s_unicode_to_utf8(s, liste[i]);
-            os << s;
+            os << jsonstring(s);
         }
         os << "]";
     }
@@ -12278,7 +12278,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 os << ",";
-            os << liste[i];
+            os << jsonstring(liste[i]);
         }
         os << "]";
     }
