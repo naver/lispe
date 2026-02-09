@@ -430,18 +430,34 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
     }
     
     if (mxkeyvalue) {
-        for (i = 0; i < mxkeyvalue; i++) {
-            e = value->checkkey(lisp, keyvalues[i]);
-            if (e == null_ || !valuevalues[i]->unify(lisp, e, record))
-                return false;
+        if (value->type == t_dictionaryjson) {
+            Dictionary_json* jsondico = (Dictionary_json*)value;
+            u_ustring k;
+            for (i = 0; i < mxkeyvalue; i++) {
+                k = jsondico->the_keys[i];
+                if (!keyvalues[i]->equalvalue(k)) {
+                    return false;
+                }
+                e = jsondico->dictionary[k];
+                if (!valuevalues[i]->unify(lisp, e, record))
+                    return false;
+            }
+        }
+        else {
+            for (i = 0; i < mxkeyvalue; i++) {
+                e = value->checkkey(lisp, keyvalues[i]);
+                if (e == null_ || !valuevalues[i]->unify(lisp, e, record))
+                    return false;
+            }
         }
     }
     
     bool found;
     long j;
-    Integers* consummed = lisp->provideIntegers();
+    
     switch (value->type) {
         case t_dictionary:{
+            Integers* consummed = lisp->provideIntegers();
             Strings* keys = lisp->provideStrings();
             u_ustring k;
             for (const auto& a : ((Dictionary*)value)->dictionary) {
@@ -465,7 +481,95 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
             consummed->release();
             return found;
         }
+        case t_dictionaryi: {
+            Integers* consummed = lisp->provideIntegers();
+            Integers* keys = lisp->provideIntegers();
+            for (const auto& a : ((Dictionary_i*)value)->dictionary) {
+                if (mxkeyvalue) {
+                    found = false;
+                    for (j = 0; j < mxkeyvalue; j++) {
+                        if (keyvalues[j]->equalvalue(a.first)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                        continue;
+                }
+                keys->liste.push_back(a.first);
+            }
+            found = traverse(lisp, (Dictionary_i*)value, keys, consummed, 0, mxkeyvalue, record);
+            keys->release();
+            consummed->release();
+            return found;
+        }
+        case t_dictionaryn:{
+            Integers* consummed = lisp->provideIntegers();
+            Numbers* keys = lisp->provideNumbers();
+            for (const auto& a : ((Dictionary_n*)value)->dictionary) {
+                if (mxkeyvalue) {
+                    found = false;
+                    for (j = 0; j < mxkeyvalue; j++) {
+                        if (keyvalues[j]->equalvalue(a.first)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                        continue;
+                }
+                keys->liste.push_back(a.first);
+            }
+            found = traverse(lisp, (Dictionary_n*)value, keys, consummed, 0, mxkeyvalue, record);
+            keys->release();
+            consummed->release();
+            return found;
+        }
+        case t_dictionaryjson:{
+            Dictionary_json* jsondico = (Dictionary_json*)value;
+            u_ustring k;
+            found = true;
+            long szkeys = jsondico->the_keys.size();
+            for (long i = mxkeyvalue; i < keyvalues.size(); i++) {
+                if (keyvalues[i] == separator_) {
+                    Dictionary_json* jsondicobis = new Dictionary_json();
+                    for (long j = i; j < szkeys; j++) {
+                        k = jsondico->the_keys[j];
+                        e = jsondico->dictionary[k];
+                        jsondicobis->dictionary[k] = e;
+                        jsondicobis->the_keys.push_back(k);
+                        e->increment();
+                    }
+                    if (!valuevalues[i]->unify(lisp, jsondicobis, record)) {
+                        found = false;
+                        jsondicobis->release();
+                    }
+                    break;
+                }
+                
+                if (i < szkeys) {
+                    k = jsondico->the_keys[i];
+                    e = lisp->provideString(k);
+                    if (!keyvalues[i]->unify(lisp, e, record)) {
+                        e->release();
+                        found = false;
+                        break;
+                    }
+                    e->release();
+                    if (!valuevalues[i]->unify(lisp, jsondico->dictionary[k], record)) {
+                        found = false;
+                        break;
+                    }
+                }
+                else {
+                    found = false;
+                    break;
+                }
+            }
+            return found;
+        }
         case t_tree: {
+            Integers* consummed = lisp->provideIntegers();
             Strings* keys = lisp->provideStrings();
             u_ustring k;
             for (const auto& a : ((Tree*)value)->tree) {
@@ -489,9 +593,10 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
             consummed->release();
             return found;
         }
-        case t_dictionaryn:{
-            Numbers* keys = lisp->provideNumbers();
-            for (const auto& a : ((Dictionary_n*)value)->dictionary) {
+        case t_treei: {
+            Integers* consummed = lisp->provideIntegers();
+            Integers* keys = lisp->provideIntegers();
+            for (const auto& a : ((Tree_i*)value)->tree) {
                 if (mxkeyvalue) {
                     found = false;
                     for (j = 0; j < mxkeyvalue; j++) {
@@ -505,12 +610,13 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
                 }
                 keys->liste.push_back(a.first);
             }
-            found = traverse(lisp, (Dictionary_n*)value, keys, consummed, 0, mxkeyvalue, record);
+            found = traverse(lisp, (Tree_i*)value, keys, consummed, 0, mxkeyvalue, record);
             keys->release();
             consummed->release();
             return found;
         }
         case t_treen: {
+            Integers* consummed = lisp->provideIntegers();
             Numbers* keys = lisp->provideNumbers();
             for (const auto& a : ((Tree_n*)value)->tree) {
                 if (mxkeyvalue) {
@@ -531,28 +637,8 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
             consummed->release();
             return found;
         }
-        case t_dictionaryi: {
-            Integers* keys = lisp->provideIntegers();
-            for (const auto& a : ((Dictionary_i*)value)->dictionary) {
-                if (mxkeyvalue) {
-                    found = false;
-                    for (j = 0; j < mxkeyvalue; j++) {
-                        if (keyvalues[j]->equalvalue(a.first)) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found)
-                        continue;
-                }
-                keys->liste.push_back(a.first);
-            }
-            found = traverse(lisp, (Dictionary_i*)value, keys, consummed, 0, mxkeyvalue, record);
-            keys->release();
-            consummed->release();
-            return found;
-        }
         default: {
+            Integers* consummed = lisp->provideIntegers();
             Integers* keys = lisp->provideIntegers();
             for (const auto& a : ((Tree_i*)value)->tree) {
                 if (mxkeyvalue) {

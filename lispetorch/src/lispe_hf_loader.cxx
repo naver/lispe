@@ -748,7 +748,7 @@ bool HuggingFaceLoader::loadConfig(const std::string& config_file) {
     LispEJsonCompiler json_parser;
     Element* json_data = nullptr;
 
-    json_data = json_parser.compileraw(json_content);
+    json_data = json_parser.compile_to_json(json_content);
 
     if (json_data == NULL)
         throw new Error("Error: JSON parsing failed");
@@ -956,14 +956,14 @@ bool HuggingFaceLoader::loadSafetensorsFile(const std::string& file_path) {
 
     // Parser le JSON avec le parser LispE
     LispEJsonCompiler json_parser;
-    Element* json_data = json_parser.compileraw(header_json);
+    Element* json_data = json_parser.compile_to_json(header_json);
 
-    if (json_data == NULL || json_data->type != t_dictionary) {
+    if (json_data == NULL || json_data->type != t_dictionaryjson) {
         if (json_data) json_data->release();
         throw new Error("✗ Failed to parse JSON header");
     }
 
-    Dictionary* json_dict = (Dictionary*)json_data;
+    Dictionary_json* json_dict = (Dictionary_json*)json_data;
 
     // Parcourir tous les tenseurs dans le dictionnaire
     for (const auto& pair : json_dict->dictionary) {
@@ -977,11 +977,11 @@ bool HuggingFaceLoader::loadSafetensorsFile(const std::string& file_path) {
         }
 
         Element* tensor_info = pair.second;
-        if (tensor_info->type != t_dictionary) {
+        if (tensor_info->type != t_dictionaryjson) {
             continue;
         }
 
-        Dictionary* info_dict = (Dictionary*)tensor_info;
+        Dictionary_json* info_dict = (Dictionary_json*)tensor_info;
 
         // Extraire dtype
         torch::ScalarType dtype = torch::kFloat32;

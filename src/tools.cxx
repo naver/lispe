@@ -5574,8 +5574,8 @@ void replacemetas(u_ustring& sub) {
 }
 
 bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s, bool raw) {
-    if (raw)
-        return compileraw(s);
+    if (!raw)
+        return compile_to_json(s);
     
     s = u_trim(s);
     if (s[0] == '{')
@@ -5598,13 +5598,13 @@ bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s, bool raw) {
     return true;
 }
 
-Element* LispEJsonCompiler::compileraw(string& s) {
+Element* LispEJsonCompiler::compile_to_json(string& s) {
     u_ustring u;
     s_utf8_to_unicode(u, s, s.size());
-    return compileraw(u);
+    return compile_to_json(u);
 }
 
-Element* LispEJsonCompiler::compileraw(u_ustring& s) {
+Element* LispEJsonCompiler::compile_to_json(u_ustring& s) {
     s = u_trim(s);
     if (s[0] == '{')
         compiled_result = new Dictionary_json;
@@ -5619,7 +5619,7 @@ Element* LispEJsonCompiler::compileraw(u_ustring& s) {
     line = 0;
     sz = pos.size();
     
-    if (!buildexpressionraw(compiled_result) || r != pos.size()) {
+    if (!build_to_json(compiled_result) || r != pos.size()) {
         compiled_result->release();
         return NULL;
     }
@@ -5800,7 +5800,7 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
 }
 
 
-char LispEJsonCompiler::buildexpressionraw(Element* container) {
+char LispEJsonCompiler::build_to_json(Element* container) {
     bool checknext = false;
     to = 0;
     while (r < pos.size()) {
@@ -5919,7 +5919,7 @@ char LispEJsonCompiler::buildexpressionraw(Element* container) {
                     i++;
                 }
                 else {
-                    if (!buildexpressionraw(local)) {
+                    if (!build_to_json(local)) {
                         local->release();
                         return false;
                     }
@@ -5937,7 +5937,7 @@ char LispEJsonCompiler::buildexpressionraw(Element* container) {
                     i++;
                 }
                 else {
-                    if (!buildexpressionraw(local)) {
+                    if (!build_to_json(local)) {
                         local->release();
                         return false;
                     }

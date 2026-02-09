@@ -436,9 +436,9 @@ public:
     long l;
     u_uchar c;
 
-    Element* compileraw(string& s);
-    Element* compileraw(u_ustring& s);
-    char buildexpressionraw(Element* kf);
+    Element* compile_to_json(string& s);
+    Element* compile_to_json(u_ustring& s);
+    char build_to_json(Element* kf);
 
     bool compile(LispE* lisp, u_ustring& s, bool raw);
     char buildexpression(LispE*, Element* kf);

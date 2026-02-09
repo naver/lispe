@@ -94,7 +94,7 @@ typedef enum {
     l_set_const, l_setq, l_setqv, l_setqi, l_setg, l_setqequal, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
     l_setfast, l_getfast,
     l_block, l_root, l_elapse, l_code,
-    l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
+    l_if, l_iftest, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
     l_catch, l_throw, l_maybe,
     
     //Check values
@@ -3664,7 +3664,7 @@ public:
             marking = false;
     }
     
-    bool unify(LispE* lisp, Element* e, bool record) {
+    virtual bool unify(LispE* lisp, Element* e, bool record) {
         if (marking)
             return (e == object);
         
@@ -4017,6 +4017,33 @@ public:
             e->increment();
             reversechoice();
         }
+    }
+
+    bool unify(LispE* lisp, Element* e, bool record) {
+        if (marking)
+            return (e == object);
+        
+        if (e == this)
+            return true;
+        
+        if (e->type != t_dictionaryjson || e->size() != the_keys.size())
+            return false;
+
+        marking = true;
+        object = e;
+
+        Dictionary_json* d = (Dictionary_json*)e;
+        u_ustring k;
+        for (long i = 0; i < the_keys.size(); i++) {
+            k = the_keys[i];
+            if ( (d->the_keys[i] == k) ||
+                !d->dictionary[k]->unify(lisp, d->dictionary[k], record)) {
+                marking = false;
+                return false;
+            }
+        }
+        marking = false;
+        return true;
     }
 
     void jsonStream(LispE* lisp, std::ostream& os) {

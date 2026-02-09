@@ -1082,7 +1082,7 @@ Element* LispE::compose(Element* fin) {
             case t_conditiondrop:
                 last = last->next_element();
                 initialisations->append(C_INS(l_setq, counter, n_null));
-                e = C_INS(l_ncheck, counter, C_INS(l_if, (C_INS(l_not, last)), C_INS(l_setq, counter, n_true)));
+                e = C_INS(l_ncheck, counter, C_INS(l_iftest, (C_INS(l_not, last)), C_INS(l_setq, counter, n_true)));
                 current->append(e);
                 current = e;
                 s_counter += U"_";

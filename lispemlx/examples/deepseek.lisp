@@ -333,7 +333,7 @@
       (setq all_names (keys@ tensor_index))
       (ncheck (eq pattern "")
          (setq rx (rgx pattern))
-         (filter (λ(n) (rgx_match rx n)) all_names)
+         (filterlist (λ(n) (rgx_match rx n)) all_names)
          all_names))
 
    ; Returns the number of tensors

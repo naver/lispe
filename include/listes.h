@@ -5652,6 +5652,32 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_iftest_eval : public Listincode {
+public:
+    
+    List_iftest_eval(Listincode* l) : Listincode(l) {}
+    List_iftest_eval() {}
+    List_iftest_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_iftest_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_iftest_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_iftest_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
 class List_ife_eval : public Listincode {
 public:
     

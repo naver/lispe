@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2026.2.2.14.21";
+static std::string version = "1.2026.2.6.14.18";
 string LispVersion() {
     return version;
 }
@@ -509,6 +509,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_greater, ">", P_ATLEASTTHREE, &List::evall_greater, new List_greater_eval());
     set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE, &List::evall_greaterorequal, new List_greaterorequal_eval());
     set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if, new List_if_eval());
+    set_instruction(l_iftest, "iftest", P_THREE | P_FOUR, new List_iftest_eval());
     set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife, new List_ife_eval());
     set_instruction(l_in, "in", P_THREE,  new List_in_eval());
     set_instruction(l_infix, "infix", P_TWO, &List::evall_infix, new List_infix_eval());
@@ -1029,46 +1030,54 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_thread);
     
     recordingData(lisp->create_instruction(t_atom, _NULL), t_atom, v_null);
-    recordingData(lisp->create_instruction(t_complex, _NULL), t_complex, v_null);
-    recordingData(lisp->create_instruction(t_data, _NULL), t_data, v_null);
-    recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
-    recordingData(lisp->create_instruction(t_dictionaryjson, _NULL), t_dictionaryjson, v_null);
-    recordingData(lisp->create_instruction(t_dictionaryi, _NULL), t_dictionaryi, v_null);
-    recordingData(lisp->create_instruction(t_dictionaryn, _NULL), t_dictionaryn, v_null);
-    recordingData(lisp->create_instruction(t_float, _NULL), t_float, v_null);
-    recordingData(lisp->create_instruction(t_floats, _NULL), t_floats, v_null);
-    recordingData(lisp->create_instruction(t_heap, _NULL), t_heap, v_null);
+    
     recordingData(lisp->create_instruction(t_integer, _NULL), t_integer, v_null);
-    recordingData(lisp->create_instruction(t_integers, _NULL), t_integers, v_null);
-    recordingData(lisp->create_instruction(t_list, _NULL), t_list, v_null);
-    recordingData(lisp->create_instruction(t_llist, _NULL), t_llist, v_null);
-    recordingData(lisp->create_instruction(t_matrix_float, _NULL), t_matrix_float, v_null);
-    recordingData(lisp->create_instruction(t_matrix_integer, _NULL), t_matrix_integer, v_null);
-    recordingData(lisp->create_instruction(t_matrix_number, _NULL), t_matrix_number, v_null);
-    recordingData(lisp->create_instruction(t_matrix_short, _NULL), t_matrix_short, v_null);
-    recordingData(lisp->create_instruction(t_matrix_string, _NULL), t_matrix_string, v_null);
-    recordingData(lisp->create_instruction(t_matrix_stringbyte, _NULL), t_matrix_stringbyte, v_null);
+    recordingData(lisp->create_instruction(t_float, _NULL), t_float, v_null);
     recordingData(lisp->create_instruction(t_number, _NULL), t_number, v_null);
-    recordingData(lisp->create_instruction(t_numbers, _NULL), t_numbers, v_null);
-    recordingData(lisp->create_instruction(t_set, _NULL), t_set, v_null);
-    recordingData(lisp->create_instruction(t_seti, _NULL), t_seti, v_null);
-    recordingData(lisp->create_instruction(t_setn, _NULL), t_setn, v_null);
-    recordingData(lisp->create_instruction(t_sets, _NULL), t_sets, v_null);
     recordingData(lisp->create_instruction(t_short, _NULL), t_short, v_null);
-    recordingData(lisp->create_instruction(t_shorts, _NULL), t_shorts, v_null);
     recordingData(lisp->create_instruction(t_string, _NULL), t_string, v_null);
     recordingData(lisp->create_instruction(t_stringbyte, _NULL), t_stringbyte, v_null);
-    recordingData(lisp->create_instruction(t_stringbytes, _NULL), t_stringbytes, v_null);
-    recordingData(lisp->create_instruction(t_strings, _NULL), t_strings, v_null);
-    recordingData(lisp->create_instruction(t_tensor_float, _NULL), t_tensor_float, v_null);
-    recordingData(lisp->create_instruction(t_tensor_integer, _NULL), t_tensor_integer, v_null);
-    recordingData(lisp->create_instruction(t_tensor_number, _NULL), t_tensor_number, v_null);
-    recordingData(lisp->create_instruction(t_tensor_short, _NULL), t_tensor_short, v_null);
-    recordingData(lisp->create_instruction(t_tensor_string, _NULL), t_tensor_string, v_null);
-    recordingData(lisp->create_instruction(t_tensor_stringbyte, _NULL), t_tensor_stringbyte, v_null);
-    recordingData(lisp->create_instruction(t_tree, _NULL), t_tree, v_null);
-    recordingData(lisp->create_instruction(t_treei, _NULL), t_treei, v_null);
-    recordingData(lisp->create_instruction(t_treen, _NULL), t_treen, v_null);
+    recordingData(lisp->create_instruction(t_complex, _NULL), t_complex, v_null);
+
+    recordingData(lisp->create_instruction(t_data, _NULL), t_data, v_null);
+
+    recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
+    recordingData(lisp->create_instruction(t_dictionaryjson, _NULL), t_dictionaryjson, t_dictionary);
+    recordingData(lisp->create_instruction(t_dictionaryi, _NULL), t_dictionaryi, t_dictionary);
+    recordingData(lisp->create_instruction(t_dictionaryn, _NULL), t_dictionaryn, t_dictionary);
+    recordingData(lisp->create_instruction(t_tree, _NULL), t_tree, t_dictionary);
+    recordingData(lisp->create_instruction(t_treei, _NULL), t_treei, t_dictionary);
+    recordingData(lisp->create_instruction(t_treen, _NULL), t_treen, t_dictionary);
+
+    recordingData(lisp->create_instruction(t_list, _NULL), t_list, v_null);
+
+    recordingData(lisp->create_instruction(t_heap, _NULL), t_heap, t_list);
+
+    recordingData(lisp->create_instruction(t_integers, _NULL), t_integers, t_list);
+    recordingData(lisp->create_instruction(t_floats, _NULL), t_floats, t_list);
+    recordingData(lisp->create_instruction(t_numbers, _NULL), t_numbers, t_list);
+    recordingData(lisp->create_instruction(t_shorts, _NULL), t_shorts, t_list);
+    recordingData(lisp->create_instruction(t_stringbytes, _NULL), t_stringbytes, t_list);
+    recordingData(lisp->create_instruction(t_strings, _NULL), t_strings, t_list);
+    
+    recordingData(lisp->create_instruction(t_llist, _NULL), t_llist, t_list);
+    recordingData(lisp->create_instruction(t_matrix_float, _NULL), t_matrix_float, t_list);
+    recordingData(lisp->create_instruction(t_matrix_integer, _NULL), t_matrix_integer, t_list);
+    recordingData(lisp->create_instruction(t_matrix_number, _NULL), t_matrix_number, t_list);
+    recordingData(lisp->create_instruction(t_matrix_short, _NULL), t_matrix_short, t_list);
+    recordingData(lisp->create_instruction(t_matrix_string, _NULL), t_matrix_string, t_list);
+    recordingData(lisp->create_instruction(t_matrix_stringbyte, _NULL), t_matrix_stringbyte, t_list);
+    recordingData(lisp->create_instruction(t_tensor_float, _NULL), t_tensor_float, t_list);
+    recordingData(lisp->create_instruction(t_tensor_integer, _NULL), t_tensor_integer, t_list);
+    recordingData(lisp->create_instruction(t_tensor_number, _NULL), t_tensor_number, t_list);
+    recordingData(lisp->create_instruction(t_tensor_short, _NULL), t_tensor_short, t_list);
+    recordingData(lisp->create_instruction(t_tensor_string, _NULL), t_tensor_string, t_list);
+    recordingData(lisp->create_instruction(t_tensor_stringbyte, _NULL), t_tensor_stringbyte, t_list);
+
+    recordingData(lisp->create_instruction(t_set, _NULL), t_set, v_null);
+    recordingData(lisp->create_instruction(t_seti, _NULL), t_seti, t_set);
+    recordingData(lisp->create_instruction(t_setn, _NULL), t_setn, t_set);
+    recordingData(lisp->create_instruction(t_sets, _NULL), t_sets, t_set);
 
     //We introduce _ as a substitute to nil
     w = U"_";
@@ -2341,6 +2350,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 removefromgarbage(element);
                 cont = true;
                 return element;
+            case l_iftest:
             case l_if:
                 if (element->size() == 3)
                     element->append(delegation->_NULL);
@@ -3051,6 +3061,9 @@ List* LispE::create_instruction(int16_t label,Element* e1,Element* e2,Element* e
         case l_if:
             l = new List_if_eval();
             break;
+        case l_iftest:
+            l = new List_iftest_eval();
+            break;
         case l_ife:
             l = new List_ife_eval();
             break;
@@ -3111,6 +3124,9 @@ List* LispE::create_local_instruction(int16_t label,Element* e1,Element* e2,Elem
             break;
         case l_if:
             l = new List_if_eval();
+            break;
+        case l_iftest:
+            l = new List_iftest_eval();
             break;
         case l_ife:
             l = new List_ife_eval();
@@ -3734,6 +3750,8 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
 
 
 

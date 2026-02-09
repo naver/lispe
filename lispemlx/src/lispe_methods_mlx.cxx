@@ -7916,14 +7916,8 @@ Element* Lispe_mlx_methods::method_fused_mlp(LispE* lisp) {
         }
         
         // Quantization parameters
-        int group_size = 64;
-        int bits = 4;
-        if (group_size_elem != null_) {
-            group_size = group_size_elem->asInteger();
-        }
-        if (bits_elem != null_) {
-            bits = bits_elem->asInteger();
-        }
+        int group_size = group_size_elem->asInteger();
+        int bits = bits_elem->asInteger();
         
         // Fused MLP: down_proj(gelu(gate_proj(x)) * up_proj(x))
         // Step 1: gate = gate_proj(x) - quantized matmul
@@ -8003,6 +7997,8 @@ Element* Lispe_mlx_methods::method_fused_moe(LispE* lisp) {
     Element* group_size_elem = lisp->get_variable("group_size");
     Element* bits_elem = lisp->get_variable("bits");
     Element* activation_elem = lisp->get_variable("activation");
+    Element* alpha_elem = lisp->get_variable("alpha");
+    Element* limit_elem = lisp->get_variable("limit");
 
     try {
         mx::array x = element_to_array(lisp, x_elem);
@@ -8048,20 +8044,14 @@ Element* Lispe_mlx_methods::method_fused_moe(LispE* lisp) {
         int num_experts = num_experts_elem->asInteger();
         int experts_per_tok = experts_per_tok_elem->asInteger();
         
-        int group_size = 64;
-        int bits = 8;
-        if (group_size_elem != null_) {
-            group_size = group_size_elem->asInteger();
-        }
-        if (bits_elem != null_) {
-            bits = bits_elem->asInteger();
-        }
+        int group_size = group_size_elem->asInteger();
+        int bits = bits_elem->asInteger();
         
-        std::string activation = "swiglu";
-        if (activation_elem != null_) {
-            wstring ws = activation_elem->asString(lisp);
-            activation = std::string(ws.begin(), ws.end());
-        }
+        wstring ws = activation_elem->asString(lisp);
+        std::string activation = std::string(ws.begin(), ws.end());
+        
+        float alpha = alpha_elem->asFloat();
+        float limit = limit_elem->asFloat();
         
         // Get dimensions
         auto x_shape = x.shape();
@@ -8142,9 +8132,6 @@ Element* Lispe_mlx_methods::method_fused_moe(LispE* lisp) {
             // Activation
             mx::array hidden = [&]() -> mx::array {
                 if (activation == "swiglu") {
-                    const float alpha = 1.702f;
-                    const float limit = 7.0f;
-                    
                     mx::array gate_clamped = mx::clip(gate_out, mx::array(-limit), mx::array(limit));
                     mx::array up_clamped = mx::clip(up_out, mx::array(-limit), mx::array(limit));
                     
@@ -8216,6 +8203,8 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
     Element* group_size_elem = lisp->get_variable("group_size");
     Element* bits_elem = lisp->get_variable("bits");
     Element* activation_elem = lisp->get_variable("activation");
+    Element* alpha_elem = lisp->get_variable("alpha");
+    Element* limit_elem = lisp->get_variable("limit");
 
     try {
         mx::array x = element_to_array(lisp, x_elem);
@@ -8261,20 +8250,14 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
         int num_experts = num_experts_elem->asInteger();
         int experts_per_tok = experts_per_tok_elem->asInteger();
         
-        int group_size = 64;
-        int bits = 8;
-        if (group_size_elem != null_) {
-            group_size = group_size_elem->asInteger();
-        }
-        if (bits_elem != null_) {
-            bits = bits_elem->asInteger();
-        }
+        int group_size = group_size_elem->asInteger();
+        int bits = bits_elem->asInteger();
         
-        std::string activation = "swiglu";
-        if (activation_elem != null_) {
-            wstring ws = activation_elem->asString(lisp);
-            activation = std::string(ws.begin(), ws.end());
-        }
+        wstring ws = activation_elem->asString(lisp);
+        std::string activation = std::string(ws.begin(), ws.end());
+        
+        float alpha = alpha_elem->asFloat();
+        float limit = limit_elem->asFloat();
         
         // Get dimensions
         auto x_shape = x.shape();
@@ -8363,9 +8346,6 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
         // === Activation (swiglu or gelu) ===
         mx::array hidden = [&]() -> mx::array {
             if (activation == "swiglu") {
-                const float alpha = 1.702f;
-                const float limit = 7.0f;
-                
                 mx::array gate_clamped = mx::clip(gate_out, mx::array(-limit), mx::array(limit));
                 mx::array up_clamped = mx::clip(up_out, mx::array(-limit), mx::array(limit));
                 
@@ -9308,13 +9288,13 @@ Exporting bool InitialisationModule(LispE* lisp) {
                     new Lispe_mlx_methods(mlx_method_imag));
 
     // Group 29: Fused operations for LLM
-    lisp->extension("deflib mlx_fused_mlp(x gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b (group_size) (bits))",
+    lisp->extension("deflib mlx_fused_mlp(x gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b (group_size 64) (bits 8))",
                     new Lispe_mlx_methods(mlx_method_fused_mlp));
 
-    lisp->extension("deflib mlx_fused_moe(x expert_indices expert_weights gate_w gate_s gate_qb gate_lb up_w up_s up_qb up_lb down_w down_s down_qb down_lb num_experts experts_per_tok (group_size) (bits) (activation))",
+    lisp->extension("deflib mlx_fused_moe(x expert_indices expert_weights gate_w gate_s gate_qb gate_lb up_w up_s up_qb up_lb down_w down_s down_qb down_lb num_experts experts_per_tok (group_size 64) (bits 8) (activation `swiglu`) (alpha 1.702) (limit 7.0))",
                     new Lispe_mlx_methods(mlx_method_fused_moe));
 
-    lisp->extension("deflib mlx_fused_moe_batch(x expert_indices expert_weights gate_w gate_s gate_qb gate_lb up_w up_s up_qb up_lb down_w down_s down_qb down_lb num_experts experts_per_tok (group_size) (bits) (activation))",
+    lisp->extension("deflib mlx_fused_moe_batch(x expert_indices expert_weights gate_w gate_s gate_qb gate_lb up_w up_s up_qb up_lb down_w down_s down_qb down_lb num_experts experts_per_tok (group_size 64) (bits 8) (activation `swiglu`) (alpha 1.702) (limit 7.0))",
                     new Lispe_mlx_methods(mlx_method_fused_moe_batch));
 
     // Group 30: Explicit evaluation

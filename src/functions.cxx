@@ -716,7 +716,8 @@ Element* List_library_pattern_eval::eval(LispE* lisp) {
     //use current values on the stack
     long nbarguments = liste.size()-1;
     int16_t ilabel = -1;
-    int16_t sublabel = -1;
+    int16_t sub_label = -1;
+    vecte<int16_t> labels;
     char match;
     char depth = lisp->depths[function_label] - 1;
     lisp->checkState(this);
@@ -742,8 +743,22 @@ Element* List_library_pattern_eval::eval(LispE* lisp) {
                 }
             }
             //We keep the track of the first element as it used as an index to gather pattern methods
-            if (i == 1)
-                sublabel = ilabel;
+            if (i == 1) {
+                //We order types from fallback to actual type of the element
+                //There can be an intermediate type in some cases.
+                //This intermediate element is the deepest element type in the left tree of a list
+                //THe order is:
+                // 1. The type of element (integers, list etc.)
+                // 2. The type of the deepest element in the left tree (integers -> integer)
+                // 3. v_null as fallback
+                labels.push_raw(v_null); //fallback
+                sub_label = lisp->checkDataStructure(element);
+                if (sub_label) {
+                    if (sub_label != ilabel)
+                        labels.push_raw(ilabel); // intermediary if it exists
+                    labels.push_raw(sub_label); // element type
+                }
+            }
             arguments->append(element->duplicate_constant(lisp));
         }
     }
@@ -756,26 +771,31 @@ Element* List_library_pattern_eval::eval(LispE* lisp) {
 
     current_body = NULL;
     auto& functions = lisp->delegation->method_pool[0]->at(function_label);
-    auto subfunction = functions.find(sublabel);
-    if (subfunction == functions.end()) {
-        sublabel = v_null;
-        //We check, if we have a rollback function
-        subfunction = functions.find(sublabel);
-        if (subfunction == functions.end()) {
-            arguments->release();
-            wstring message = L"Error: Could not find a match for function: '";
-            message += lisp->asString(function_label);
-            message += L"'";
-            lisp->check_end_trace(tr, localtrace);
-            return lisp->check_error(this, new Error(message), idxinfo);
+    unordered_map<int16_t, vector<Element*> >::iterator subfunction;
+    current_body = NULL;
+    long sz = -1;
+    while (labels.size()) {
+        sub_label = labels.backpop();
+        subfunction = functions.find(sub_label);
+        if (subfunction != functions.end()) {
+            current_body = subfunction->second[0];
+            sz = subfunction->second.size();
+            break;
         }
+    }
+    if (current_body == NULL) {
+        arguments->release();
+        wstring message = L"Error: Could not find a match for function: '";
+        message += lisp->asString(function_label);
+        message += L"'";
+        lisp->check_end_trace(tr, localtrace);
+        return lisp->check_error(this, new Error(message), idxinfo);
     }
 
     current_body = subfunction->second[0];
 
     ilabel = 1;
     match = 0;
-    long sz = subfunction->second.size();
     Stackelement* sta = lisp->topstack();
     lisp->push(current_body);
     
@@ -807,14 +827,15 @@ Element* List_library_pattern_eval::eval(LispE* lisp) {
         if (ilabel < sz)
             current_body = subfunction->second[ilabel++];
         else {
-            if (sublabel != v_null) {
-                sublabel = v_null;
-                ilabel = 1;
+            while (labels.size()) {
+                sub_label = labels.backpop();
                 //We check, if we have a rollback function
-                subfunction = functions.find(sublabel);
+                subfunction = functions.find(sub_label);
                 if (subfunction != functions.end()) {
+                    ilabel = 1;
                     current_body = subfunction->second[0];
                     sz = subfunction->second.size();
+                    break;
                 }
             }
         }
@@ -904,7 +925,8 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     //use current values on the stack
     long nbarguments = liste.size()-1;
     int16_t ilabel = -1;
-    int16_t sublabel = -1;
+    int16_t sub_label = -1;
+    vecte<int16_t> labels;
     char match;
     char depth = lisp->depths[function_label] - 1;
     lisp->checkState(this);
@@ -930,8 +952,24 @@ Element* List_pattern_eval::eval(LispE* lisp) {
                 }
             }
             //We keep the track of the first element as it used as an index to gather pattern methods
-            if (i == 1)
-                sublabel = ilabel;
+            if (i == 1) {
+                //We order types from fallback to actual type of the element
+                //There can be an intermediate type in some cases.
+                //This intermediate element is the deepest element type in the left tree of a list
+                //THe order is:
+                // 1. The type of element (integers, list etc.)
+                // 2. The type of the deepest element in the left tree (integers -> integer)
+                // 3. v_null as fallback
+                //Basically, we consider the type of the current element as taking precedence
+                //to anything else.
+                labels.push_raw(v_null); //fallback
+                sub_label = lisp->checkDataStructure(element);
+                if (sub_label) {
+                    if (sub_label != ilabel)
+                        labels.push_raw(ilabel); // intermediary if it exists
+                    labels.push_raw(sub_label); // element type
+                }
+            }
             arguments->append(element->duplicate_constant(lisp));
         }
     }
@@ -953,26 +991,30 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     }
     
     auto& functions = lisp->delegation->method_pool[space]->at(function_label);
-    auto subfunction = functions.find(sublabel);
-    if (subfunction == functions.end()) {
-        sublabel = v_null;
-        //We check, if we have a rollback function
-        subfunction = functions.find(sublabel);
-        if (subfunction == functions.end()) {
-            arguments->release();
-            wstring message = L"Error: Could not find a match for function: '";
-            message += lisp->asString(function_label);
-            message += L"'";
-            lisp->check_end_trace(tr, localtrace);
-            return lisp->check_error(this, new Error(message), idxinfo);
+    unordered_map<int16_t, vector<Element*> >::iterator subfunction;
+    current_body = NULL;
+    long sz = -1;
+    while (labels.size()) {
+        sub_label = labels.backpop();
+        subfunction = functions.find(sub_label);
+        if (subfunction != functions.end()) {
+            current_body = subfunction->second[0];
+            sz = subfunction->second.size();
+            break;
         }
     }
-
-    current_body = subfunction->second[0];
-
+    if (current_body == NULL) {
+        arguments->release();
+        wstring message = L"Error: Could not find a match for function: '";
+        message += lisp->asString(function_label);
+        message += L"'";
+        lisp->check_end_trace(tr, localtrace);
+        return lisp->check_error(this, new Error(message), idxinfo);
+    }
+    
     ilabel = 1;
     match = 0;
-    long sz = subfunction->second.size();
+    
     Stackelement* sta = lisp->topstack();
     lisp->push(current_body);
     
@@ -1004,14 +1046,15 @@ Element* List_pattern_eval::eval(LispE* lisp) {
         if (ilabel < sz)
             current_body = subfunction->second[ilabel++];
         else {
-            if (sublabel != v_null) {
-                sublabel = v_null;
-                ilabel = 1;
+            while (labels.size()) {
                 //We check, if we have a rollback function
-                subfunction = functions.find(sublabel);
+                sub_label = labels.backpop();
+                subfunction = functions.find(sub_label);
                 if (subfunction != functions.end()) {
+                    ilabel = 1;
                     current_body = subfunction->second[0];
                     sz = subfunction->second.size();
+                    break;
                 }
             }
         }
@@ -1080,7 +1123,8 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     //use current values on the stack
     long nbarguments = liste.size()-1;
     int16_t ilabel = -1;
-    int16_t sublabel = -1;
+    int16_t sub_label = -1;
+    vecte<int16_t> labels;
     char match;
     char depth = lisp->depths[function_label] - 1;
     
@@ -1100,8 +1144,22 @@ Element* List_predicate_eval::eval(LispE* lisp) {
                 }
             }
             //We keep the track of the first element as it used as an index to gather pattern methods
-            if (i == 1)
-                sublabel = ilabel;
+            if (i == 1) {
+                //We order types from fallback to actual type of the element
+                //There can be an intermediate type in some cases.
+                //This intermediate element is the deepest element type in the left tree of a list
+                //THe order is:
+                // 1. The type of element (integers, list etc.)
+                // 2. The type of the deepest element in the left tree (integers -> integer)
+                // 3. v_null as fallback
+                labels.push_raw(v_null); //fallback
+                sub_label = lisp->checkDataStructure(element);
+                if (sub_label) {
+                    if (sub_label != ilabel)
+                        labels.push_raw(ilabel); // intermediary if it exists
+                    labels.push_raw(sub_label); // element type
+                }
+            }
             arguments->append(element->duplicate_constant(lisp));
         }
     }
@@ -1126,24 +1184,27 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     }
 
     auto& functions = lisp->delegation->method_pool[space]->at(function_label);
-    auto subfunction = functions.find(sublabel);
-    if (subfunction == functions.end()) {
-        sublabel = v_null;
-        //We check, if we have a rollback function
-        subfunction = functions.find(sublabel);
-        if (subfunction == functions.end()) {
-            arguments->release();
-            lisp->resetStack();
-            lisp->check_end_trace(tr, localtrace);
-            return null_;
+    unordered_map<int16_t, vector<Element*> >::iterator subfunction;
+    current_body = NULL;
+    long sz = -1;
+    while (labels.size()) {
+        sub_label = labels.backpop();
+        subfunction = functions.find(sub_label);
+        if (subfunction != functions.end()) {
+            current_body = subfunction->second[0];
+            sz = subfunction->second.size();
+            break;
         }
     }
-
-    current_body = subfunction->second[0];
+    if (current_body == NULL) {
+        arguments->release();
+        lisp->resetStack();
+        lisp->check_end_trace(tr, localtrace);
+        return null_;
+    }
 
     ilabel = 1;
     match = 0;
-    long sz = subfunction->second.size();
     lisp->push(current_body);
     Element* copying;
     Element* ele;
@@ -1181,14 +1242,15 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             if (ilabel < sz)
                 current_body = subfunction->second[ilabel++];
             else {
-                if (sublabel != v_null) {
-                    sublabel = v_null;
-                    ilabel = 1;
+                while (labels.size()) {
+                    sub_label = labels.backpop();
                     //We check, if we have a rollback function
-                    subfunction = functions.find(sublabel);
+                    subfunction = functions.find(sub_label);
                     if (subfunction != functions.end()) {
+                        ilabel = 1;
                         current_body = subfunction->second[0];
                         sz = subfunction->second.size();
+                        break;
                     }
                 }
             }
@@ -1248,15 +1310,16 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             current_body = subfunction->second[ilabel++];
         }
         else {
-            if (sublabel != v_null) {
-                sublabel = v_null;
-                ilabel = 1;
+            while (labels.size()) {
+                sub_label = labels.backpop();
                 //We check, if we have a rollback function
-                subfunction = functions.find(sublabel);
+                subfunction = functions.find(sub_label);
                 if (subfunction != functions.end()) {
                     lisp->clear_top_stack();
+                    ilabel = 1;
                     current_body = subfunction->second[0];
                     sz = subfunction->second.size();
+                    break;
                 }
             }
         }
@@ -1286,7 +1349,8 @@ Element* List_prolog_eval::eval(LispE* lisp) {
     //use current values on the stack
     long nbarguments = liste.size()-1;
     int16_t ilabel = -1;
-    int16_t sublabel = -1;
+    int16_t sub_label = -1;
+    vecte<int16_t> labels;
     char match;
     char depth = lisp->depths[function_label] - 1;
 
@@ -1306,8 +1370,23 @@ Element* List_prolog_eval::eval(LispE* lisp) {
                 }
             }
             //We keep the track of the first element as it used as an index to gather pattern methods
-            if (i == 1)
-                sublabel = ilabel;
+            //We keep the track of the first element as it used as an index to gather pattern methods
+            if (i == 1) {
+                //We order types from fallback to actual type of the element
+                //There can be an intermediate type in some cases.
+                //This intermediate element is the deepest element type in the left tree of a list
+                //THe order is:
+                // 1. The type of element (integers, list etc.)
+                // 2. The type of the deepest element in the left tree (integers -> integer)
+                // 3. v_null as fallback
+                labels.push_raw(v_null); //fallback
+                sub_label = lisp->checkDataStructure(element);
+                if (sub_label) {
+                    if (sub_label != ilabel)
+                        labels.push_raw(ilabel); // intermediary if it exists
+                    labels.push_raw(sub_label); // element type
+                }
+            }
             arguments->append(element->duplicate_constant(lisp));
         }
     }
@@ -1332,24 +1411,27 @@ Element* List_prolog_eval::eval(LispE* lisp) {
     }
 
     auto& functions = lisp->delegation->method_pool[space]->at(function_label);
-    auto subfunction = functions.find(sublabel);
-    if (subfunction == functions.end()) {
-        sublabel = v_null;
-        //We check, if we have a rollback function
-        subfunction = functions.find(sublabel);
-        if (subfunction == functions.end()) {
-            arguments->release();
-            lisp->resetStack();
-            lisp->check_end_trace(tr, localtrace);
-            return null_;
+    unordered_map<int16_t, vector<Element*> >::iterator subfunction;
+    current_body = NULL;
+    long sz = -1;
+    while (labels.size()) {
+        sub_label = labels.backpop();
+        subfunction = functions.find(sub_label);
+        if (subfunction != functions.end()) {
+            current_body = subfunction->second[0];
+            sz = subfunction->second.size();
+            break;
         }
     }
-
-    current_body = subfunction->second[0];
+    if (current_body == NULL) {
+        arguments->release();
+        lisp->resetStack();
+        lisp->check_end_trace(tr, localtrace);
+        return null_;
+    }
 
     ilabel = 1;
     match = 0;
-    long sz = subfunction->second.size();
     lisp->push(current_body);
     Element* copying;
     Element* ele;
@@ -1390,14 +1472,15 @@ Element* List_prolog_eval::eval(LispE* lisp) {
             if (ilabel < sz)
                 current_body = subfunction->second[ilabel++];
             else {
-                if (sublabel != v_null) {
-                    sublabel = v_null;
-                    ilabel = 1;
+                while (labels.size()) {
+                    sub_label = labels.backpop();
                     //We check, if we have a rollback function
-                    subfunction = functions.find(sublabel);
+                    subfunction = functions.find(sub_label);
                     if (subfunction != functions.end()) {
+                        ilabel = 1;
                         current_body = subfunction->second[0];
                         sz = subfunction->second.size();
+                        break;
                     }
                 }
             }
@@ -1455,15 +1538,16 @@ Element* List_prolog_eval::eval(LispE* lisp) {
             current_body = subfunction->second[ilabel++];
         }
         else {
-            if (sublabel != v_null) {
-                sublabel = v_null;
-                ilabel = 1;
+            while (labels.size()) {
+                sub_label = labels.backpop();
                 //We check, if we have a rollback function
-                subfunction = functions.find(sublabel);
+                subfunction = functions.find(sub_label);
                 if (subfunction != functions.end()) {
                     lisp->clear_top_stack();
+                    ilabel = 1;
                     current_body = subfunction->second[0];
                     sz = subfunction->second.size();
+                    break;
                 }
             }
         }

@@ -7151,6 +7151,24 @@ Element* List_if_eval::eval(LispE* lisp) {
     return res;
 }
 
+Element* List_iftest_eval::eval(LispE* lisp) {
+    Element* res;
+        
+    try {
+        lisp->checkState(this);
+        res = liste[1]->eval(lisp);
+        char test = 3 - res->Boolean();
+        res->release();
+        res = (test < liste.size())?liste[test]->eval_terminal(lisp, terminal):null_;
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
+    }
+    lisp->resetStack();
+    return res;
+}
+
 Element* List_ife_eval::eval(LispE* lisp) {
     Element* res;
     

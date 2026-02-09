@@ -630,7 +630,7 @@
                 gate_w gate_s gate_qb gate_b
                 up_w up_s up_qb up_b
                 down_w down_s down_qb down_b
-                num_experts experts_per_tok 64 8 "swiglu")
+                num_experts experts_per_tok)
 
             ; === PREFILL PATH: LispE loop over all experts ===
             ; Note: Keep the has_any check because avoiding 28 useless experts
