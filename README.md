@@ -13,7 +13,7 @@ I based a large part of this work on the following article: [The Root of Lisp](h
 * LispE provides a large set of functions, see the [index here](https://github.com/naver/lispe/wiki/Index-of-functions).
 * A help to the available functions is here: [LispE Language Description](https://github.com/naver/lispe/wiki/5.-Description-of-Functions,-Operators-and-Libraries)
 * The wiki index is here: [HOME](https://github.com/naver/lispe/wiki)
-* Articial Intelligence libraries:
+* Artificial Intelligence libraries:
   * [lispe_torch](https://github.com/naver/lispe/tree/master/lispetorch): encapsulates PyTorch internal libtorch library and SentencePiece
   * [lispe_gguf](https://github.com/naver/lispe/tree/master/lispegguf): based on `llama.cpp`, load and run gguf models
   * [lispe_mlx](https://github.com/naver/lispe/tree/master/lispemlx): based on the `MLX` library to access Mac GPUs
