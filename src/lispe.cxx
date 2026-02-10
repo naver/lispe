@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2026.2.9.12.51";
+static std::string version = "1.2026.2.10.11.58";
 string LispVersion() {
     return version;
 }
@@ -2285,19 +2285,11 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
             case l_set_shape:
             case l_set_at:
                 if (element->size() > 1) {
-                    if (element->index(1)->label() < l_final) {
-                        wstring msg = L"Error: Invalid variable name: '";
+                    if (delegation->const_values.check(element->index(1)->label())) {
+                        wstring msg = L"Error: '";
                         msg += element->index(1)->asString(this);
-                        msg += L"' (keyword)";
+                        msg += L"' is a constant value";
                         throw new Error(msg);
-                    }
-                    else {
-                        if (delegation->const_values.check(element->index(1)->label())) {
-                            wstring msg = L"Error: '";
-                            msg += element->index(1)->asString(this);
-                            msg += L"' is a constant value";
-                            throw new Error(msg);
-                        }
                     }
                 }
                 break;
@@ -3758,6 +3750,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
