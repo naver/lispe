@@ -157,7 +157,7 @@ __LispE__ provides also some OOP such as: [Classes](https://github.com/naver/lis
 
 ```Lisp
 ; Defines a class named 'truc' with fields x, y, and z
-(class truc (x y z)
+(class@ truc (x y z)
 
    (defun appel(u)
       (setq x 100)
@@ -168,7 +168,7 @@ __LispE__ provides also some OOP such as: [Classes](https://github.com/naver/lis
 
 ; Defines a class named 'machin' with fields x, y, and z (with a default value of 1).
 
-(class machin (x y (z 1))
+(class@ machin (x y (z 1))
     ; Defines a method 'appel' that takes one argument 'u'.
     (defun appel(u)
        (println 'machin)(+ x y z u)) 
