@@ -54,15 +54,6 @@ This is the WASM library, which is loaded with tamgu_run.js.
 
 **IMPORTANT** _these functions are only available in LispE WASM library._
 
-### evaljs
-
-
-Applies the JavaScript interpreter on a string. Always returns a string.
-
-```Lisp
-(evals "10+30") ; returns 40
-```
-
 ### asyncjs
 
 Applies an asynchrone function associated with a LispE callback function with arguments:
@@ -88,3 +79,29 @@ The callback function is optional. `asyncjs` launches a Promise, which once it i
 (setq query (f_ `call_lm_studio("{url}", "{model}", "{system}", "{prompt}");`))
 (asyncjs query 'recall 1)
 ```
+### evaljs
+
+
+Applies the JavaScript interpreter on a string. Always returns a string.
+
+```Lisp
+(evals "10+30") ; returns 40
+```
+
+
+### Console
+
+LispE also provides the following methods to display strings in the console, which can be executed in LispE code:
+
+1. (console_log str) — Outputs a message to the web console.
+1. (console_warn str) — Outputs a warning message to the web console.
+1. (console_error str) — Outputs an error message to the web console.
+1. (console_group str) — Creates a new inline group in the web console.
+1. (console_debug str) — Outputs a message to the web console, only if the console's logging level is set to 'debug'.
+1. (console_groupEnd) — Ends the most recent inline group in the web console.
+1. (console_clear) — Clears the console.
+1. (console_table str) — Displays data as a table.
+1. (console_time str) — Starts a timer you can use to track how long an operation takes.
+1. (console_info str) — Outputs an informational message to the web console.
+1. (console_timeEnd str) — Stops a timer that was previously started by console_time.
+2. 
