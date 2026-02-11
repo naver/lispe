@@ -71,7 +71,7 @@ Applies an asynchrone function associated with a LispE callback function with ar
 (asyncjs "call_my_js_script(10,20)" lispecallback arg1 arg2)
 ```
 
-The callback function is optional.
+The callback function is optional. `asyncjs` launches a Promise, which once it is executed will call the lispecallback.
 
 ```Lisp
 
