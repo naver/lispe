@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>LispE</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .buttons {
+            flex-shrink: 0;
+            padding: 5px 0;
+        }
+
+        .textAreaCode {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding: 5px 0;
+        }
+
+        .textAreaCode span {
+            display: block;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .textAreaCode textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            resize: none;
+            box-sizing: border-box;
+        }
+
+        .textAreaColumn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding: 5px 0;
+        }
+
+        .textAreaColumn span {
+            display: block;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .textAreaColumn textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            resize: none;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="buttons">
+        <input type="button" value="RESET/RUN" OnClick="reset_run_code()" id="button_reset_run" />
+        <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
+        <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
+    </div>
+    <div class="textAreaCode">
+        <span>Code</span>
+        <textarea name="code" id="get_code"></textarea>
+    </div>
+    <div class="textAreaColumn">
+        <span>OUTPUT</span>
+        <textarea name="evaluated" id="display_evaluation"></textarea>
+    </div>    
+    <!-- We load our WASM library -->
+    <script type="text/javascript">
+        //The initialisation below makes it possible to catch the print and println in your LispE code
+        //It automatically stores in 'display_evaluation' textarea the values that printed
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: (function () {
+                var element = document.getElementById('display_evaluation');
+                if (element) element.value = '';
+                return function (text) {
+                    if (arguments.length > 1) 
+                        text = Array.prototype.slice.call(arguments).join(' ');
+                    if (element) {
+                        element.value += text + "\n";
+                        element.scrollTop = element.scrollHeight; // focus on bottom
+                    }
+                };
+            })(),
+            printErr: (function () {
+                var element = document.getElementById('display_evaluation');
+                if (element) element.value = '';
+                return function (text) {
+                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                    // These replacements are necessary if you render to raw HTML
+                    text = text.replace(/&/g, "&amp;");
+                    text = text.replace(/</g, "&lt;");
+                    text = text.replace(/>/g, "&gt;");
+                    text = text.replace('\n', '<br>', 'g');
+                    console.log(text);
+                    if (element) {
+                        element.value += text + "\n";
+                        element.scrollTop = element.scrollHeight; // focus on bottom
+                    }
+                };
+            })()
+        };</script>
+    <script async type="text/javascript" src="lispe.js"></script>
+    <script async type="text/javascript" src="lispe_functions.js"></script>
+
+    <script type="text/javascript">
+
+        textFontSize = 14 + "px"
+        buttonHeight = 50 + "px";
+        buttonWidth = 130 + "px";
+        buttonFont = 12 + "px";
+
+        document.getElementById('get_code').style.fontSize = textFontSize;
+        document.getElementById('display_evaluation').style.fontSize = textFontSize;
+
+        document.getElementById('button_run').style.height = buttonHeight;
+        document.getElementById('button_run').style.width = buttonWidth;
+        document.getElementById("button_run").style.fontWeight = "bolder";
+        document.getElementById('button_run').style.fontSize = buttonFont;
+
+        document.getElementById('button_reset_run').style.height = buttonHeight;
+        document.getElementById('button_reset_run').style.width = buttonWidth;
+        document.getElementById("button_reset_run").style.fontWeight = "bolder";
+        document.getElementById("button_reset_run").style.color = "red";
+        document.getElementById('button_reset_run').style.fontSize = buttonFont;
+
+        document.getElementById('button_indent').style.height = buttonHeight;
+        document.getElementById('button_indent').style.width = buttonWidth;
+        document.getElementById('button_indent').style.fontSize = buttonFont;
+
+        var lastposition = 0;
+        //The next two modules were found on: https://www.vishalon.net/blog/javascript-getting-and-setting-caret-position-in-textarea
+
+        function getCaretPosition(ctrl) {
+            // IE < 9 Support
+            if (document.selection) {
+                ctrl.focus();
+                var range = document.selection.createRange();
+                var rangelen = range.text.length;
+                range.moveStart('character', -ctrl.value.length);
+                var start = range.text.length - rangelen;
+                return {
+                    'start': start,
+                    'end': start + rangelen
+                };
+            } // IE >=9 and other browsers
+            else if (ctrl.selectionStart || ctrl.selectionStart == '0') {
+                return {
+                    'start': ctrl.selectionStart,
+                    'end': ctrl.selectionEnd
+                };
+            } else {
+                return {
+                    'start': 0,
+                    'end': 0
+                };
+            }
+        }
+
+        function setCaretPosition(ctrl, start, end) {
+            // IE >= 9 and other browsers
+            if (ctrl.setSelectionRange) {
+                ctrl.focus();
+                ctrl.setSelectionRange(start, end);
+            }
+            // IE < 9
+            else if (ctrl.createTextRange) {
+                var range = ctrl.createTextRange();
+                range.collapse(true);
+                range.moveEnd('character', end);
+                range.moveStart('character', start);
+                range.select();
+            }
+        }
+
+        //Execution of the code from the beginning of the window
+        function run_code() {
+            var code_text = document.getElementById('get_code');
+            var res;
+            (async () => {
+                try {
+                    res = await callEval(0, code_text.value);
+                }
+                catch (e) {
+                    res = e;
+                }
+                lastposition = code_text.value.length
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += res + "\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        function indentation_code() {
+            var code_text = document.getElementById('get_code');
+            (async () => {
+                var res = await callIndent(code_text.value);
+                code_text.value = res;
+            })();
+        }
+
+        //The code is executed from the cursor position
+        function run_code_from() {
+            //We execute our code
+
+            var txt = document.getElementById('get_code');
+
+            var carret = getCaretPosition(txt);
+            if (carret["start"] < lastposition)
+                lastposition = carret["start"];
+            setCaretPosition(txt, lastposition, txt.value.length);
+
+            var code = txt.value.substring(lastposition)
+            lastposition = txt.value.length;
+            var res;
+            (async () => {
+                try {
+                    res = await callEval(0, code);
+                }
+                catch (e) {
+                    res = e;
+                }
+
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += res + "\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        function reset_run_code() {
+            //We reset our code
+            (async () => {
+                await callResetLispE(0);
+                await run_code();
+            })();
+        };
+
+    </script>
+</body>
+
+</html>
