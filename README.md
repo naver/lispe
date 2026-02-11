@@ -1,6 +1,6 @@
 # LispE: Lisp Elémentaire
 
-#### _To test LispE in your browser click:_ [HERE](https://naver.github.io/lispe)
+#### (_To test LispE in your browser click:_ [HERE](https://naver.github.io/lispe))
   
 Welcome to __Lisp Elémentaire__, a version of Lisp that is both compact and offers a large variety of functional and array language features. The code also comes with a small internal editor from another NAVER's project: [TAMGU](https://github.com/naver/tamgu).
 
