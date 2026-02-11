@@ -74,6 +74,7 @@
         <input type="button" value="RESET/RUN" OnClick="reset_run_code()" id="button_reset_run" />
         <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
         <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
+        <input type="button" value="Clear Output" OnClick="clear_output()" id="button_clear_output" />
     </div>
     <div class="textAreaCode">
         <span>Code</span>
@@ -147,6 +148,10 @@
         document.getElementById('button_indent').style.height = buttonHeight;
         document.getElementById('button_indent').style.width = buttonWidth;
         document.getElementById('button_indent').style.fontSize = buttonFont;
+
+        document.getElementById('button_clear_output').style.height = buttonHeight;
+        document.getElementById('button_clear_output').style.width = buttonWidth;
+        document.getElementById('button_clear_output').style.fontSize = buttonFont;
 
         var lastposition = 0;
         //The next two modules were found on: https://www.vishalon.net/blog/javascript-getting-and-setting-caret-position-in-textarea
@@ -253,6 +258,10 @@
                 await callResetLispE(0);
                 await run_code();
             })();
+        };
+
+        function clear_output() {
+            document.getElementById('display_evaluation').value = "";
         };
 
     </script>
