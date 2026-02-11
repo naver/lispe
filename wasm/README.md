@@ -104,4 +104,4 @@ LispE also provides the following methods to display strings in the console, whi
 1. (console_time str) — Starts a timer you can use to track how long an operation takes.
 1. (console_info str) — Outputs an informational message to the web console.
 1. (console_timeEnd str) — Stops a timer that was previously started by console_time.
-2. 
+ 
