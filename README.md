@@ -128,7 +128,7 @@ __LispE__ provides also some interesting properties such as: [Data Structures](h
 ; First we define some data structures
 ; nil or _ this is the same value
 
-(data (Point integer_ integer_) (Pixel _ _) (Circle (Point _ _)  _) (Rectangle (Point _ _)  _ nil))
+(data@ (Point integer_ integer_) (Pixel _ _) (Circle (Point _ _)  _) (Rectangle (Point _ _)  _ nil))
 
 ; Then some pattern methods
 (defpat Surface ((Circle (Point x y) r)) (* _pi r r))
@@ -148,7 +148,7 @@ __LispE__ provides also some interesting properties such as: [Data Structures](h
 (println "Point:" (Surface (Point 10 20)))
 (println "Circle:" (Surface ((atom "Circle") (Point 20 30) 3)))
 
-(data Shape (Triangle _) (Square _))
+(data@ Shape (Triangle _) (Square _))
 
 (defpat dimension ( (Shape x))
    (println 'Dimension x)
