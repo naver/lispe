@@ -50,3 +50,41 @@ function callResetLispE(); which resets the current Tamgu interpreter
 ### lispe.wasm
 This is the WASM library, which is loaded with tamgu_run.js.
 
+## New Instructions:
+
+**IMPORTANT** _these functions are only available in LispE WASM library._
+
+### evaljs
+
+
+Applies the JavaScript interpreter on a string. Always returns a string.
+
+```Lisp
+(evals "10+30") ; returns 40
+```
+
+### asyncjs
+
+Applies an asynchrone function associated with a LispE callback function with arguments:
+
+```
+(asyncjs "call_my_js_script(10,20)" lispecallback arg1 arg2)
+```
+
+The callback function is optional.
+
+```Lisp
+
+(defun rappel(val id)
+   (setg test val)
+   (println id ":" val)
+)
+
+(setq url "http://localhost:1234")
+(setq system "You are a specialist in programming languages.")
+(setq prompt "Give me the code to multiply two complex numbers.")
+(setq model "qwen2-math-1.5b-instruct@q8_0")
+
+(setq query (f_ `call_lm_studio("{url}", "{model}", "{system}", "{prompt}");`))
+(asyncjs query 'rappel 1)
+```
