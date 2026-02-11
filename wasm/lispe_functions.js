@@ -1,3 +1,16 @@
+/** @type {function(*, string=)} */
+function assert(condition, text) {
+    if (!condition) {
+        abort('Assertion failed' + (text ? ': ' + text : ''));
+    }
+}
+
+var __ATPRERUN__ = []; // functions called before the runtime is initialized
+var __ATINIT__ = []; // functions called during startup
+var __ATMAIN__ = []; // functions called when main() is to be run
+var __ATEXIT__ = []; // functions called during shutdown
+var __ATPOSTRUN__ = []; // functions called after the main() is called
+
 //-----------------------------------------------------------------
 //In elements
 const encode = function stringToIntegerArray(str, array) {
@@ -91,24 +104,7 @@ function provideFloats(nb) {
     return Module._malloc((nb + 1) * 8);
 }
 
-function callResetLispE() {
-    assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
-    assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
-
-    entryFunction = Module['_reset_lispe'];
-
-    try {
-
-        entryFunction();
-        position_in_buffer = 0;
-        return "true";
-    }
-    catch (e) {
-        return handleException(e);
-    }
-}
-
-function callEvalToFloats(code) {
+function callEvalToFloats(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -120,7 +116,7 @@ function callEvalToFloats(code) {
 
     var float_result;
     try {
-        float_result = entryFunction(string_to_array, code.length, the_size);
+        float_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
     }
     catch (e) {
         Module._free(string_to_array);
@@ -138,7 +134,7 @@ function callEvalToFloats(code) {
     return decode_float(float_result, sz);
 }
 
-function callEvalToInts(code) {
+function callEvalToInts(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -152,7 +148,7 @@ function callEvalToInts(code) {
     var int_result;
 
     try {
-        int_result = entryFunction(string_to_array, code.length, the_size);
+        int_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
     }
     catch (e) {
         Module._free(string_to_array);
@@ -170,7 +166,7 @@ function callEvalToInts(code) {
     return decode_int(int_result, sz);
 }
 
-function callEvalToStrings(code) {
+function callEvalToStrings(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -183,7 +179,7 @@ function callEvalToStrings(code) {
 
     try {
 
-        string_result = entryFunction(string_to_array, code.length, the_size);
+        string_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
         sz = decode_size(the_size);
         if (sz < 0) {
             sz *= -1;
@@ -216,7 +212,7 @@ function callEvalToStrings(code) {
 }
 
 //Important, values should have been created with provideIntegers
-function callSetqInts(a_variable, vals, nb) {
+function callSetqInts(lispe_idx, a_variable, vals, nb) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -233,7 +229,7 @@ function callSetqInts(a_variable, vals, nb) {
     var ret;
 
     try {
-        ret = entryFunction(string_to_array, a_variable.length, values, nb);
+        ret = entryFunction(lispe_idx, string_to_array, a_variable.length, values, nb);
     }
     catch (e) {
         Module._free(value_to_array);
@@ -251,7 +247,7 @@ function callSetqInts(a_variable, vals, nb) {
     return true;
 }
 
-function callSetqFloats(a_variable, vals, nb) {
+function callSetqFloats(lispe_idx, a_variable, vals, nb) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -267,7 +263,7 @@ function callSetqFloats(a_variable, vals, nb) {
     values = provideFloats(nb, vals);
 
     try {
-        ret = entryFunction(string_to_array, a_variable.length, values, nb);
+        ret = entryFunction(lispe_idx, string_to_array, a_variable.length, values, nb);
     }
     catch (e) {
         Module._free(value_to_array);
@@ -286,7 +282,7 @@ function callSetqFloats(a_variable, vals, nb) {
 }
 
 //value is a int
-function callSetqInt(a_variable, value) {
+function callSetqInt(lispe_idx, a_variable, value) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -297,7 +293,7 @@ function callSetqInt(a_variable, value) {
     var ret;
 
     try {
-        ret = entryFunction(string_to_array, a_variable.length, value);
+        ret = entryFunction(lispe_idx, string_to_array, a_variable.length, value);
     }
     catch (e) {
         Module._free(value_to_array);
@@ -314,7 +310,7 @@ function callSetqInt(a_variable, value) {
 }
 
 //value is float
-function callSetqFloat(a_variable, value) {
+function callSetqFloat(lispe_idx, a_variable, value) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -326,7 +322,7 @@ function callSetqFloat(a_variable, value) {
 
     try {
 
-        ret = entryFunction(string_to_array, a_variable.length, value);
+        ret = entryFunction(lispe_idx, string_to_array, a_variable.length, value);
     }
     catch (e) {
         Module._free(value_to_array);
@@ -343,7 +339,7 @@ function callSetqFloat(a_variable, value) {
 }
 
 //value is a string
-function callSetqString(a_variable, value) {
+function callSetqString(lispe_idx, a_variable, value) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -361,7 +357,7 @@ function callSetqString(a_variable, value) {
 
     try {
 
-        ret = entryFunction(string_to_array, a_variable.length, value_to_array, value.length);
+        ret = entryFunction(lispe_idx, string_to_array, a_variable.length, value_to_array, value.length);
     }
     catch (e) {
         Module._free(value_to_array);
@@ -379,7 +375,7 @@ function callSetqString(a_variable, value) {
     return true;
 }
 
-function callEvalAsInt(code) {
+function callEvalAsInt(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -390,7 +386,7 @@ function callEvalAsInt(code) {
     var ret;
     try {
 
-        ret = entryFunction(string_to_array,  code.length, Math.max(20, code.length));
+        ret = entryFunction(lispe_idx, string_to_array,  code.length, Math.max(20, code.length));
     }
     catch (e) {
         Module._free(string_to_array);
@@ -405,7 +401,7 @@ function callEvalAsInt(code) {
     return ret;
 }
 
-function callEvalAsFloat(code) {
+function callEvalAsFloat(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -416,7 +412,7 @@ function callEvalAsFloat(code) {
     var ret;
     try {
 
-        ret = entryFunction(string_to_array, code.length, Math.max(20, code.length));
+        ret = entryFunction(lispe_idx, string_to_array, code.length, Math.max(20, code.length));
     }
     catch (e) {
         Module._free(string_to_array);
@@ -431,7 +427,7 @@ function callEvalAsFloat(code) {
     return ret;
 }
 
-function callEvalAsString(code) {
+function callEvalAsString(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
@@ -444,7 +440,7 @@ function callEvalAsString(code) {
 
     try {
 
-        var result = entryFunction(string_to_array, code.length, the_size);
+        var result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
         Module._free(string_to_array);
         sz = decode_size(the_size);
         if (sz < 0) {
@@ -460,6 +456,95 @@ function callEvalAsString(code) {
         return handleException(e);
     }
 }
+
+function callEval(lispe_idx, code) {
+    assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
+    assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
+
+
+    entryFunction = Module['_eval_lispe'];
+
+    string_to_array = provideCharactersAsInts(code);
+
+    the_size = provideIntegers(2);
+
+    try {
+
+        var result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
+        Module._free(string_to_array);
+        sz = decode_size(the_size);
+        if (sz < 0) {
+            sz *= -1;
+            str = decode(result, sz)
+            throw new Error(str);    
+        }
+        return decode(result, sz);
+    }
+    catch (e) {
+        Module._free(string_to_array);
+        Module._free(the_size);
+        return handleException(e);
+    }
+}
+//---------------------------------------------------------------
+//Note that the default LispE is idx=0
+// callEvalIdx(0, code) <=> callEval(code)
+
+//Creates a new LispE interpreter... 
+//Returns an index on that interpreter
+function callCreateLispE() {
+    assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
+    assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
+
+    entryFunction = Module['_create_lispe'];
+
+    try {
+
+        lispe_idx = entryFunction();
+        position_in_buffer = 0;
+        return lispe_idx;
+    }
+    catch (e) {
+        return handleException(e);
+    }
+}
+
+//To delete this interpreter
+function callCleanLispE(lispe_idx) {
+    assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
+    assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
+
+    entryFunction = Module['_clean_lispe'];
+
+    try {
+
+        entryFunction(lispe_idx);
+        position_in_buffer = 0;
+        return "true";
+    }
+    catch (e) {
+        return handleException(e);
+    }
+}
+
+//To reset this interpreter
+function callResetLispE(lispe_idx) {
+    assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
+    assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
+
+    entryFunction = Module['_reset_lispe'];
+
+    try {
+
+        entryFunction(lispe_idx);
+        position_in_buffer = 0;
+        return "true";
+    }
+    catch (e) {
+        return handleException(e);
+    }
+}
+
 
 function callIndent(code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
@@ -475,36 +560,6 @@ function callIndent(code) {
         Module._free(string_to_array);
         sz = decode_size(the_size);
         return decode(string_result, sz);
-    }
-    catch (e) {
-        Module._free(string_to_array);
-        Module._free(the_size);
-        return handleException(e);
-    }
-}
-
-function callEval(code) {
-    assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
-    assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
-
-
-    entryFunction = Module['_eval_lispe'];
-
-    string_to_array = provideCharactersAsInts(code);
-
-    the_size = provideIntegers(2);
-
-    try {
-
-        var result = entryFunction(string_to_array, code.length, the_size);
-        Module._free(string_to_array);
-        sz = decode_size(the_size);
-        if (sz < 0) {
-            sz *= -1;
-            str = decode(result, sz)
-            throw new Error(str);    
-        }
-        return decode(result, sz);
     }
     catch (e) {
         Module._free(string_to_array);

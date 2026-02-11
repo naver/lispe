@@ -11,18 +11,25 @@
 #include "lispe.h"
 #include <emscripten/emscripten.h>
 //-------------------------------------------------------------------------------------------
-LispE* global_lispe();
-void clean_global_lispe();
-void reset_global_lispe();
-void create_global_lispe();
-
+void display_console(std::string str);
+void display_console(u_ustring str);
+void moduleconsole(LispE *lisp);
+//------------------------------------------------------------------------------------------
 extern "C" {
-EMSCRIPTEN_KEEPALIVE void clean_lispe() {
-    clean_global_lispe();
+EMSCRIPTEN_KEEPALIVE bool clean_lispe(int32_t idx) {
+    return clean_global_lispe(idx);
 }
 
-EMSCRIPTEN_KEEPALIVE void reset_lispe() {
-    reset_global_lispe();
+EMSCRIPTEN_KEEPALIVE bool reset_lispe(int32_t idx) {
+    if (reset_global_lispe(idx)) {
+        moduleconsole(global_lispe(idx));
+        return true;
+    }
+    return false;
+}
+
+EMSCRIPTEN_KEEPALIVE int32_t create_lispe() {
+    return create_global_lispe();
 }
 
 /*
@@ -56,21 +63,13 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_indent_lispe(int32_t* str_as_int, int32_t sz,
         values[i] = result[i];
     return values;
 }
-/*
-Indenting a LispE code.
- This is the main function to evaluate a LispE code
 
- 1. str_as_int contains the code as an array of int32_t values. Note that each of these values is a UTF-16 character
- 2. sz is the number of values in str_as_int.
- 3. size is the number of values in the return value
- 4. The return value is an array of UTF-16 characters
-
- Note that when size[0] is negative, it means that the return value is an error message.
-*/
-EMSCRIPTEN_KEEPALIVE int32_t* eval_lispe(int32_t* str_as_int, int32_t sz, int32_t* size) {
+EMSCRIPTEN_KEEPALIVE int32_t* eval_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t* size) {
     u_ustring code;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         size[0] = sz * -1;
         int32_t* value_as_int = new int32_t[sz];
@@ -84,19 +83,24 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_lispe(int32_t* str_as_int, int32_t sz, int32_
     //JavaScript strings are in UTF-16
     s_utf16_to_utf8(cde, str_as_int, sz);
 
-
-    Element* executed_code= global_lispe()->execute(cde, ".");
-    code = executed_code->asUString(global_lispe());
-
-    if (executed_code->type == t_error) {
-        u_ustring code = executed_code->asUString(global_lispe());
-        //We clean our result
-        executed_code->release();
-        //code is encoded in UTF-32
-        //We need to convert it back to UTF-16
-        //emojis for instance belong to the double UTF-16 family
-        wstring result;
-        s_unicode_to_utf16(result, code);
+    Element* executed_code = lisp->n_null;
+    //We call _eval in that case
+    try {
+        executed_code = lisp->execute(cde, ".");
+    }
+    catch(void* e) {
+        wstring result = L"error";
+        if (((Element*)e)->type == t_error) {
+            code = ((Element*)e)->asUString(lisp);
+            display_console(code);
+            ((Element*)e)->release();
+            //We clean our result
+            //code is encoded in UTF-32
+            //We need to convert it back to UTF-16
+            //emojis for instance belong to the double UTF-16 family
+            
+            s_unicode_to_utf16(result, code);
+        }
         sz = result.size();        
         size[0] = sz * -1;
         int32_t* value_as_int = new int32_t[sz];
@@ -104,6 +108,8 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_lispe(int32_t* str_as_int, int32_t sz, int32_
             value_as_int[i] = result[i];
         return value_as_int;
     }
+
+    code = executed_code->asUString(lisp);
 
     //We clean our result
     executed_code->release();
@@ -134,13 +140,15 @@ Evaluating a LispE code and returning an array of double.
  3. size is the number of values in the return value
  4. The return value is an array of double
 
- Note that we use global_lispe()->_eval(code) instead of execute. The _eval function cleans the compiled code from memory
+ Note that we use lisp->eval(code) instead of execute. The _eval function cleans the compiled code from memory
  Note that when size[0] is negative, it means that the return value is an error message.
 */
-EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t* str_as_int, int32_t sz, int32_t* size) {
+EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t* size) {
     double* values;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         u_ustring code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         values = new double[sz];
         for (long i = 0; i < sz; i++)
@@ -152,18 +160,25 @@ EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t* str_as_int, int32_t s
     //The main difference with the code above is that the instructions will be cleaned after execution
     u_ustring code;
     s_utf16_to_unicode(code, str_as_int , sz);
+    Element* executed_code = lisp->n_null;
     //We call _eval in that case
-    Element* executed_code= global_lispe()->_eval(code);
-    if (executed_code->type == t_error) {
-        code = executed_code->asUString(global_lispe());
-        //We clean our result
-        executed_code->release();
-        //code is encoded in UTF-32
-        //We need to convert it back to UTF-16
-        //emojis for instance belong to the double UTF-16 family
-        wstring result;
-        s_unicode_to_utf16(result, code);
-        sz = result.size();        
+    try {
+        executed_code= lisp->eval(code);
+    }
+    catch(void* e) {
+        wstring result = L"error";
+        if (((Element*)e)->type == t_error) {
+            code = ((Element*)e)->asUString(lisp);
+            display_console(code);
+            ((Element*)e)->release();
+            //We clean our result
+            //code is encoded in UTF-32
+            //We need to convert it back to UTF-16
+            //emojis for instance belong to the double UTF-16 family
+            
+            s_unicode_to_utf16(result, code);
+        }
+        sz = result.size();     
         values = new double[sz];
         //We then replace the initial array (str) with our new values
         //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
@@ -220,14 +235,16 @@ Evaluating a LispE code and returning an array of int32_t values.
  3. size is the number of values in the return value
  4. The return value is an array of int32_t values
 
- Note that we use global_lispe()->_eval(code) instead of execute. The _eval function cleans the compiled code from memory
+ Note that we use lisp->eval(code) instead of execute. The _eval function cleans the compiled code from memory
  Note that when size[0] is negative, it means that the return value is an error message.
 */
 
-EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t* str_as_int, int32_t sz, int32_t* size) {
+EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t* size) {
     int32_t* values;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         u_ustring code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         values = new int32_t[sz];
         for (long i = 0; i < sz; i++)
@@ -239,17 +256,24 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t* str_as_int, int32_t sz
     //The main difference with the code above is that the instructions will be cleaned after execution
     u_ustring code;
     s_utf16_to_unicode(code, str_as_int , sz);
+    Element* executed_code = lisp->n_null;
     //We call _eval in that case
-    Element* executed_code= global_lispe()->_eval(code);
-    if (executed_code->type == t_error) {
-        code = executed_code->asUString(global_lispe());
-        //We clean our result
-        executed_code->release();
-        //code is encoded in UTF-32
-        //We need to convert it back to UTF-16
-        //emojis for instance belong to the double UTF-16 family
-        wstring result;
-        s_unicode_to_utf16(result, code);
+    try {
+        executed_code= lisp->eval(code);
+    }
+    catch(void* e) {
+        wstring result = L"error";
+        if (((Element*)e)->type == t_error) {
+            code = ((Element*)e)->asUString(lisp);
+            display_console(code);
+            ((Element*)e)->release();
+            //We clean our result
+            //code is encoded in UTF-32
+            //We need to convert it back to UTF-16
+            //emojis for instance belong to the double UTF-16 family
+            
+            s_unicode_to_utf16(result, code);
+        }
         sz = result.size();        
         //We then replace the initial array (str) with our new values
         //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
@@ -309,15 +333,17 @@ The array is actually composed of successive strings separated with a 0
  3. size is the number of values in the return value
  4. The return value is an array of int32_t values
 
- Note that we use global_lispe()->_eval(code) instead of execute. The _eval function cleans the compiled code from memory
+ Note that we use lisp->eval(code) instead of execute. The _eval function cleans the compiled code from memory
  Note that when size[0] is negative, it means that the return value is an error message.
 */
 
-EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t* str_as_int, int32_t sz, int32_t* size) {
+EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t* size) {
     int32_t* values;
     u_ustring code;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         values = new int32_t[sz];
         for (long i = 0; i < sz; i++)
@@ -329,16 +355,24 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t* str_as_int, int32_t
     //The main difference with the code above is that the instructions will be cleaned after execution
     s_utf16_to_unicode(code, str_as_int , sz);
     //We call _eval in that case
-    Element* executed_code= global_lispe()->_eval(code);
-    if (executed_code->type == t_error) {
-        code = executed_code->asUString(global_lispe());
-        //We clean our result
-        executed_code->release();
-        //code is encoded in UTF-32
-        //We need to convert it back to UTF-16
-        //emojis for instance belong to the double UTF-16 family
-        wstring result;
-        s_unicode_to_utf16(result, code);
+    Element* executed_code = lisp->n_null;
+    //We call _eval in that case
+    try {
+        executed_code= lisp->eval(code);
+    }
+    catch(void* e) {
+        wstring result = L"error";
+        if (((Element*)e)->type == t_error) {
+            code = ((Element*)e)->asUString(lisp);
+            display_console(code);
+            ((Element*)e)->release();
+            //We clean our result
+            //code is encoded in UTF-32
+            //We need to convert it back to UTF-16
+            //emojis for instance belong to the double UTF-16 family
+            
+            s_unicode_to_utf16(result, code);
+        }
         sz = result.size();        
         //We then replace the initial array (str) with our new values
         //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
@@ -362,7 +396,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t* str_as_int, int32_t
         case t_list: {
             long nb = executed_code->size();
             for (long i = 0; i < nb; i++) {
-                code = executed_code->index(i)->asUString(global_lispe());
+                code = executed_code->index(i)->asUString(lisp);
                 s_unicode_to_utf16(result, code);
                 //We then replace the initial array (str) with our new values
                 //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
@@ -376,7 +410,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t* str_as_int, int32_t
         case t_llist: {
             u_link* a = ((LList*)executed_code)->liste.begin();
             for (; a != NULL; a = a->next()) {
-                code = a->value->asUString(global_lispe());
+                code = a->value->asUString(lisp);
                 s_unicode_to_utf16(result, code);
                 //We then replace the initial array (str) with our new values
                 //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
@@ -388,7 +422,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t* str_as_int, int32_t
             break;
         }
         default: {
-            code = executed_code->asUString(global_lispe());
+            code = executed_code->asUString(lisp);
             s_unicode_to_utf16(result, code);
             //We then replace the initial array (str) with our new values
             //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
@@ -419,9 +453,11 @@ Evaluating a LispE code and returning a int32_t value
  Note that the error message always starts with 27
 */
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_to_int_lispe(int32_t* str_as_int, int32_t sz, int32_t mx) {
-    if (global_lispe() == NULL) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_to_int_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t mx) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         u_ustring code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         str_as_int[0] = 27;
         for (long i = 1; i < sz; i++)
@@ -433,16 +469,24 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_int_lispe(int32_t* str_as_int, int32_t sz, 
     u_ustring code;
     s_utf16_to_unicode(code, str_as_int , sz);
     //We call _eval in that case
-    Element* executed_code= global_lispe()->_eval(code);
-    if (executed_code->type == t_error) {
-        code = executed_code->asUString(global_lispe());
-        //We clean our result
-        executed_code->release();
-        //code is encoded in UTF-32
-        //We need to convert it back to UTF-16
-        //emojis for instance belong to the double UTF-16 family
-        wstring result;
-        s_unicode_to_utf16(result, code);
+    Element* executed_code = lisp->n_null;
+    //We call _eval in that case
+    try {
+        executed_code= lisp->eval(code);
+    }
+    catch(void* e) {
+        wstring result = L"error";
+        if (((Element*)e)->type == t_error) {
+            code = ((Element*)e)->asUString(lisp);
+            display_console(code);
+            ((Element*)e)->release();
+            //We clean our result
+            //code is encoded in UTF-32
+            //We need to convert it back to UTF-16
+            //emojis for instance belong to the double UTF-16 family
+            
+            s_unicode_to_utf16(result, code);
+        }
         sz = result.size();
         sz = sz < mx ? sz : mx - 1;
         
@@ -470,9 +514,11 @@ Evaluating a LispE code and returning a double value
 
  Note that the error message always starts with 27
 */
-EMSCRIPTEN_KEEPALIVE double eval_to_float_lispe(int32_t* str_as_int, int32_t sz, int32_t mx) {
-    if (global_lispe() == NULL) {
+EMSCRIPTEN_KEEPALIVE double eval_to_float_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t mx) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         u_ustring code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         str_as_int[0] = 27;
         for (long i = 1; i < sz; i++)
@@ -484,16 +530,24 @@ EMSCRIPTEN_KEEPALIVE double eval_to_float_lispe(int32_t* str_as_int, int32_t sz,
     u_ustring code;
     s_utf16_to_unicode(code, str_as_int , sz);
     //We call _eval in that case
-    Element* executed_code= global_lispe()->_eval(code);
-    if (executed_code->type == t_error) {
-        code = executed_code->asUString(global_lispe());
-        //We clean our result
-        executed_code->release();
-        //code is encoded in UTF-32
-        //We need to convert it back to UTF-16
-        //emojis for instance belong to the double UTF-16 family
-        wstring result;
-        s_unicode_to_utf16(result, code);
+    Element* executed_code = lisp->n_null;
+    //We call _eval in that case
+    try {
+        executed_code= lisp->eval(code);
+    }
+    catch(void* e) {
+        wstring result = L"error";
+        if (((Element*)e)->type == t_error) {
+            code = ((Element*)e)->asUString(lisp);
+            display_console(code);
+            ((Element*)e)->release();
+            //We clean our result
+            //code is encoded in UTF-32
+            //We need to convert it back to UTF-16
+            //emojis for instance belong to the double UTF-16 family
+            
+            s_unicode_to_utf16(result, code);
+        }
         sz = result.size();
         sz = sz < mx ? sz : mx - 1;
         
@@ -520,10 +574,12 @@ Evaluating a LispE code and returning a string
  4. The return value is an array of int32_t values
 
 */
-EMSCRIPTEN_KEEPALIVE int32_t* eval_to_string_lispe(int32_t* str_as_int, int32_t sz, int32_t* size) {
+EMSCRIPTEN_KEEPALIVE int32_t* eval_to_string_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t* size) {
     u_ustring code;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         size[0] = sz * -1;
         int32_t* value_as_int = new int32_t[sz];
@@ -534,19 +590,24 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_string_lispe(int32_t* str_as_int, int32_t 
     
     s_utf16_to_unicode(code, str_as_int , sz);
     //We call _eval in that case
-    Element* executed_code= global_lispe()->_eval(code);
-    
-    code = executed_code->asUString(global_lispe());
-
-    if (executed_code->type == t_error) {
-        u_ustring code = executed_code->asUString(global_lispe());
-        //We clean our result
-        executed_code->release();
-        //code is encoded in UTF-32
-        //We need to convert it back to UTF-16
-        //emojis for instance belong to the double UTF-16 family
-        wstring result;
-        s_unicode_to_utf16(result, code);
+    Element* executed_code = lisp->n_null;
+    //We call _eval in that case
+    try {
+        executed_code= lisp->eval(code);
+    }
+    catch(void* e) {
+        wstring result = L"error";
+        if (((Element*)e)->type == t_error) {
+            code = ((Element*)e)->asUString(lisp);
+            display_console(code);
+            ((Element*)e)->release();
+            //We clean our result
+            //code is encoded in UTF-32
+            //We need to convert it back to UTF-16
+            //emojis for instance belong to the double UTF-16 family
+            
+            s_unicode_to_utf16(result, code);
+        }
         sz = result.size();
         size[0] = sz * -1;
         int32_t* value_as_int = new int32_t[sz];
@@ -554,6 +615,8 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_string_lispe(int32_t* str_as_int, int32_t 
             value_as_int[i] = result[i];
         return value_as_int;
     }
+
+    code = executed_code->asUString(lisp);
 
     //We clean our result
     executed_code->release();
@@ -585,11 +648,13 @@ Storing an array of ints in a LispE variable
  4. mx the size of the values array
 
 */
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t* str_as_int, int32_t sz, int32_t* values, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t* values, int32_t mx) {
     wstring cde;
     u_ustring code;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -601,15 +666,15 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t* str_as_int, int32_t s
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
-    Element* variable = global_lispe()->provideAtom(code);
+    Element* variable = lisp->provideAtom(code);
     
     //Now our value
-    Integers* ints = global_lispe()->provideIntegers();
+    Integers* ints = lisp->provideIntegers();
     for (long i = 0; i < mx; i++) {
-        ints->append(global_lispe(), (long)values[i]);
+        ints->append(lisp, (long)values[i]);
     }
     
-    global_lispe()->storing_variable(ints, variable->label());
+    lisp->storing_variable(ints, variable->label());
     return true;
 }
 
@@ -622,11 +687,13 @@ Storing an array of floats in a LispE variable
  4. mx the size of the values array
 
 */
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_floats_lispe(int32_t* str_as_int, int32_t sz, double* values, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_floats_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, double* values, int32_t mx) {
     wstring cde;
     u_ustring code;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -638,14 +705,14 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_floats_lispe(int32_t* str_as_int, int32_t
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
-    Element* variable = global_lispe()->provideAtom(code);
+    Element* variable = lisp->provideAtom(code);
     
     //Now our value
-    Floats* floats = global_lispe()->provideFloats();
+    Floats* floats = lisp->provideFloats();
     for (sz = 0; sz < mx; sz++)
-        floats->append(global_lispe(), (double)values[sz]);
+        floats->append(lisp, (double)values[sz]);
     
-    global_lispe()->storing_variable(floats, variable->label());
+    lisp->storing_variable(floats, variable->label());
     return true;
 }
 
@@ -658,11 +725,13 @@ Storing an  int in a LispE variable
  
  In case of error, we return the size of the error message in str_as_int as a negative value
 */
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_int_lispe(int32_t* str_as_int, int32_t sz, int32_t value) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_int_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t value) {
     wstring cde;
     u_ustring code;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -674,11 +743,11 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_int_lispe(int32_t* str_as_int, int32_t sz
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
-    Element* variable = global_lispe()->provideAtom(code);
+    Element* variable = lisp->provideAtom(code);
     
     //Now our value
-    Integer* a_int = global_lispe()->provideInteger(value);
-    global_lispe()->storing_variable(a_int, variable->label());
+    Integer* a_int = lisp->provideInteger(value);
+    lisp->storing_variable(a_int, variable->label());
     return true;
 }
 
@@ -691,11 +760,13 @@ Storing a double in a LispE variable
  
  In case of error, we return the size of the error message in str_as_int as a negative value
 */
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_float_lispe(int32_t* str_as_int, int32_t sz, double value) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_float_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, double value) {
     wstring cde;
     u_ustring code;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -707,11 +778,11 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_float_lispe(int32_t* str_as_int, int32_t 
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
-    Element* variable = global_lispe()->provideAtom(code);
+    Element* variable = lisp->provideAtom(code);
     
     //Now our value
-    Float* a_float = global_lispe()->provideFloat(value);
-    global_lispe()->storing_variable(a_float, variable->label());
+    Float* a_float = lisp->provideFloat(value);
+    lisp->storing_variable(a_float, variable->label());
     return true;
 }
 
@@ -725,11 +796,13 @@ Storing a string in a LispE variable
  
  In case of error, we return the size of the error message in str_as_int as a negative value
 */
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t* str_as_int, int32_t sz, int32_t* value_as_int, int32_t nb) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t* value_as_int, int32_t nb) {
     wstring cde;
     u_ustring code;
-    if (global_lispe() == NULL) {
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
         code = U"LispE was not initialized";
+        display_console(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -741,7 +814,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t* str_as_int, int32_t
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
-    Element* variable = global_lispe()->provideAtom(code);
+    Element* variable = lisp->provideAtom(code);
     
     wstring c = L"";
     for (long i  = 0; i < nb; i++)
@@ -750,16 +823,18 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t* str_as_int, int32_t
     code = U"";
     s_utf16_to_unicode(code, c);
     
-    String* a_str = global_lispe()->provideString(code);
-    global_lispe()->storing_variable(a_str, variable->label());
+    String* a_str = lisp->provideString(code);
+    lisp->storing_variable(a_str, variable->label());
     return true;
 }
 
 } //extern "C"
 
+
 //Main initialisation of LispE
 int main() {
-    create_global_lispe();
+    long idx = create_global_lispe();
+    moduleconsole(global_lispe(idx));
     return 0;
 }
 
