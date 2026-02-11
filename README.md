@@ -2,8 +2,6 @@
   
 Welcome to __Lisp Elémentaire__, a version of Lisp that is both compact and offers a large variety of functional and array language features. The code also comes with a small internal editor from another NAVER's project: [TAMGU](https://github.com/naver/tamgu).
 
-### Since LispE is _also_ a WASM library: you can test [LispE HERE](https://naver.github.io/lispe).
-
 The main goal of __LispE__ is to provide a multi-platform language that can harness the power of functional languages with array languages.
 The real strength of the Lisp language, of which _LispE_ is a dialect, is its very simple but pretty versatile formalism that helps combining all these programming trends together in one single language.
 
@@ -18,6 +16,10 @@ I based a large part of this work on the following article: [The Root of Lisp](h
   * [lispe_gguf](https://github.com/naver/lispe/tree/master/lispegguf): based on `llama.cpp`, load and run gguf models
   * [lispe_mlx](https://github.com/naver/lispe/tree/master/lispemlx): based on the `MLX` library to access Mac GPUs
   * [lispe_tiktoken](https://github.com/naver/lispe/tree/master/lispetiktoken): based on the `tiktoken` library by Open AI for tokenization
+
+## Test LISPE in your browser
+
+Since LispE is _also_ a WASM library: you can test [LispE HERE](https://naver.github.io/lispe).
   
 ## CHECK binaries
 
