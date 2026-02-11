@@ -68,6 +68,7 @@ The callback function is optional. `asyncjs` launches a Promise, which once it i
 
 (defun recall(val id)
    (setg test val)
+   (console_log id)
    (println id ":" val)
 )
 
