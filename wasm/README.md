@@ -86,7 +86,7 @@ The callback function is optional. `asyncjs` launches a Promise, which once it i
 Applies the JavaScript interpreter on a string. Always returns a string.
 
 ```Lisp
-(evals "10+30") ; returns 40
+(evaljs "10+30") ; returns 40
 ```
 
 
