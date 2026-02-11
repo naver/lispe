@@ -22,15 +22,6 @@ The Makefile has been modified to be able to use: **emsdk**
 
 `make all`
 
-### Two possibilities
-
-You can either compile the code with exception or without exception handling.
-
-* sh no_exception.sh
-* sh exception.sh
-
-_Note_ that no_exception.sh applies a script to remove any exception handling in the code
-
 ### To launch the server
 
 Move to the directory where `lispe.wasm` is located:
