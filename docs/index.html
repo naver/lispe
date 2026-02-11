@@ -254,6 +254,7 @@
 
         function reset_run_code() {
             //We reset our code
+            document.getElementById('display_evaluation').value = "";
             (async () => {
                 await callResetLispE(0);
                 await run_code();
