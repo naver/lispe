@@ -75,7 +75,7 @@ The callback function is optional. `asyncjs` launches a Promise, which once it i
 
 ```Lisp
 
-(defun rappel(val id)
+(defun recall(val id)
    (setg test val)
    (println id ":" val)
 )
@@ -86,5 +86,5 @@ The callback function is optional. `asyncjs` launches a Promise, which once it i
 (setq model "qwen2-math-1.5b-instruct@q8_0")
 
 (setq query (f_ `call_lm_studio("{url}", "{model}", "{system}", "{prompt}");`))
-(asyncjs query 'rappel 1)
+(asyncjs query 'recall 1)
 ```
