@@ -17,7 +17,7 @@ I based a large part of this work on the following article: [The Root of Lisp](h
   * [lispe_mlx](https://github.com/naver/lispe/tree/master/lispemlx): based on the `MLX` library to access Mac GPUs
   * [lispe_tiktoken](https://github.com/naver/lispe/tree/master/lispetiktoken): based on the `tiktoken` library by Open AI for tokenization
 
-## Test LISPE in your browser
+## Test LispE in your browser
 
 Since LispE is _also_ a WASM library: you can test [LispE HERE](https://naver.github.io/lispe).
   
