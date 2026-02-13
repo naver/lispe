@@ -74,7 +74,7 @@
         <input type="button" value="RESET/RUN" OnClick="reset_run_code()" id="button_reset_run" />
         <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
         <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
-        <input type="button" value="Clear Output" OnClick="clear_output()" id="button_clear_output" />
+        <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
     </div>
     <div class="textAreaCode">
         <span>Code</span>
@@ -272,6 +272,7 @@
 
         function clear_output() {
             document.getElementById('display_evaluation').value = "";
+            document.getElementById('get_code').value = "";
         };
 
     </script>
