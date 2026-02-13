@@ -18,10 +18,12 @@ I based a large part of this work on the following article: [The Root of Lisp](h
   * [lispe_gguf](https://github.com/naver/lispe/tree/master/lispegguf): based on `llama.cpp`, load and run gguf models
   * [lispe_mlx](https://github.com/naver/lispe/tree/master/lispemlx): based on the `MLX` library to access Mac GPUs
   * [lispe_tiktoken](https://github.com/naver/lispe/tree/master/lispetiktoken): based on the `tiktoken` library by Open AI for tokenization
-
+  
 ## TEST LispE in your browser
 
 Since LispE is _also_ a WASM library: you can test [LispE HERE](https://naver.github.io/lispe).
+
+See also: [Predicate-Based Agent in the Browser (PREDIBAG)](https://github.com/naver/lispe/wiki/6.1.5-PREDIBAG-in-the-Browser)
   
 ## CHECK binaries
 
