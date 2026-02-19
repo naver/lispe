@@ -238,7 +238,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callEval(0, code_text.value);
+                    res = await callEvalLispE(0, code_text.value);
                 }
                 catch (e) {
                     res = e;
@@ -275,7 +275,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callEval(0, code);
+                    res = await callEvalLispE(0, code);
                 }
                 catch (e) {
                     res = e;
@@ -346,7 +346,7 @@
             lastposition = txt.value.length;
             (async () => {
                 await set_data();
-                var res = await callEvalToStrings(0, code);
+                var res = await callEvalLispEToStrings(0, code);
 
                 let eval_output = document.getElementById('display_evaluation')
                 eval_output.value += res + "\n";
@@ -369,7 +369,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callEvalToInts(0, code);
+                    res = await callEvalLispEToInts(0, code);
                 }
                 catch (e) {
                     res = e;
@@ -395,7 +395,7 @@
             (async () => {
                 await set_data();
                 try {
-                    res = await callEvalToFloats(0, code);
+                    res = await callEvalLispEToFloats(0, code);
                 }
                 catch (e) {
                     res = e;

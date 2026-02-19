@@ -213,7 +213,7 @@
             var res;
             (async () => {
                 try {
-                    res = await callEval(0, code_text.value);
+                    res = await callEvalLispE(0, code_text.value);
                 }
                 catch (e) {
                     res = e;
@@ -249,7 +249,7 @@
             var res;
             (async () => {
                 try {
-                    res = await callEval(0, code);
+                    res = await callEvalLispE(0, code);
                 }
                 catch (e) {
                     res = e;
