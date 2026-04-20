@@ -317,6 +317,12 @@
    (nconcn (list 'defun (atom nm) (parsing parameters)) code)
 )
 
+; a thread definition
+(defpat parsing ( ['athread nm parameters $ code] )
+   (setq code (maplist 'parsing code false))   
+   (nconcn (list 'dethread (atom nm) (parsing parameters)) code)
+)
+
 ; lambda
 (defpat parsing (['lambda parameters code] )
    (setq code (maplist 'parsing (cdr code) false))   

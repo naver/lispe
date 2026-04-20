@@ -904,7 +904,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         
         Element* params;
         
-        if (type == l_defun || type == l_defpat || type == l_deflib || type == l_defpred || type == l_defprol || type == l_class) {
+        if (type == l_defun || type == l_defpat || type == l_dethread || type == l_deflib || type == l_defpred || type == l_defprol || type == l_class) {
             code += "(";
             code += lisp->toString(type);
             code += " ";

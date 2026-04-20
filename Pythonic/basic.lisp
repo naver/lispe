@@ -1,4 +1,4 @@
-;Date: 2026/04/16 08:59:55
+;Date: 2026/04/20 11:46:04
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -136,7 +136,7 @@
    )
 )
 
-;°analyse := [classedef^jsfunc^jsrule^function^rule^patternrule^jspatternrule^expressions]+ (entry point)
+;°analyse := [classedef^jsfunc^jsrule^function^athread^rule^patternrule^jspatternrule^expressions]+ (entry point)
 (defun C_analyse (tokens i0 v)
    (check (and do_not_stop (< (car i0) (size tokens)))
       (setq v0 ())
@@ -160,6 +160,7 @@
          (C_jsfunc tokens i1 v1)
          (C_jsrule tokens i1 v1)
          (C_function tokens i1 v1)
+         (C_athread tokens i1 v1)
          (C_rule tokens i1 v1)
          (C_patternrule tokens i1 v1)
          (C_jspatternrule tokens i1 v1)
@@ -172,6 +173,7 @@
             (C_jsfunc tokens i1 v1)
             (C_jsrule tokens i1 v1)
             (C_function tokens i1 v1)
+            (C_athread tokens i1 v1)
             (C_rule tokens i1 v1)
             (C_patternrule tokens i1 v1)
             (C_jspatternrule tokens i1 v1)
@@ -2325,6 +2327,39 @@
    )
 )
 
+;!athread := $Thread Word parameters expressions+ $EndThread
+(defun C_athread (tokens i0 v)
+   (check (and do_not_stop (< (car i0) (size tokens)))
+      (setq v0 ())
+      (if (and
+            (setq i1 (clone i0))
+            (setq v1 ())
+            (compare tokens "Thread" i1 v1 nil)
+            (C_Word tokens i1 v1)
+            (C_parameters tokens i1 v1)
+            (P_athread_0 tokens i1 v1)
+            (compare tokens "EndThread" i1 v1 nil)
+            (set@ i0 0 (car i1))
+            (setq v0 v1)
+         )
+         (push v (cons 'athread v0))
+      )
+   )
+)
+
+(defun P_athread_0 (tokens i1 vp)
+   (setq v ())
+   (setq v1 ())
+   (check (C_expressions tokens i1 v1)
+      (push v v1)
+      (setq v1 ())
+      (while (C_expressions tokens i1 v1) (nconc v v1) (setq v1 ()))
+   )
+   (if v
+      (nconc vp v)
+   )
+)
+
 ;!lambda := %[ [$lambda^$λ] ;17 %( variables? %) body %]
 (defun C_λ (tokens i0 v)
    (check (and do_not_stop (< (car i0) (size tokens)))
@@ -2652,7 +2687,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("or" "and" "xor" "in" "eq" "neq" "not" "self" "except" "catch" "try" "endtry" "return" "break" "class" "endclass" "function" "def" "endfunction" "enddef" "then" "else" "rule" "endrule" "pattern" "endpattern" "functionjs" "defjs" "endfunctionjs" "enddefjs" "rulejs" "endrulejs" "patternjs" "endpatternjs" "lambda" "λ" "for" "if" "elif" "endif" "while" "endwhile" "endfor" "case" "switch" "endswitch") (lower w)))
+      (not (in  '("or" "and" "xor" "in" "eq" "neq" "not" "self" "except" "catch" "try" "endtry" "return" "break" "class" "endclass" "function" "def" "endfunction" "enddef" "then" "else" "rule" "endrule" "pattern" "endpattern" "functionjs" "defjs" "endfunctionjs" "enddefjs" "rulejs" "endrulejs" "patternjs" "endpatternjs" "thread" "endthread" "lambda" "λ" "for" "if" "elif" "endif" "while" "endwhile" "endfor" "case" "switch" "endswitch") (lower w)))
 )
    (setq error_messages {"16":"error when defining a class > > >" "15":"error when analysing a try / catch > > >" "14":"error when analysing a \"switch\" > > >" "13":"error when analysing a \"join\" ( Python style ) > > >" "12":"error when analysing a list comprehension > > >" "17":"error when analysing a lambda > > >" "10":"error when analysing an interval , you can ' t chain intervals > > >" "8":"expecting a closing tag for \"for\" > > >" "3":"expecting a closing \"]\" for \"list\" > > >" "7":"expecting a closing tag for \"forin\" > > >" "6":"expecting a closing tag for \"while\" > > >" "9":"error when analysing a method > > >" "1":"expecting a closing \"]\" > > >" "4":"expecting a closing tag for \"function\" > > >" "5":"expecting a closing tag for \"if\" > > >" "11":"error when analysing a dictionary > > >" "2":"expecting a closing \")\" for a \"method\" > > >"})
 (setq parser_tok (tokenizer_rules))

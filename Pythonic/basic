@@ -49,7 +49,7 @@
 ;17 error when analysing a lambda >>>
 
 # The ° indicates the entry point of the grammar (the top rule)
-°analyse := [classedef^jsfunc^jsrule^function^rule^patternrule^jspatternrule^expressions]+
+°analyse := [classedef^jsfunc^jsrule^function^athread^rule^patternrule^jspatternrule^expressions]+
 
 @append := push
 @len := size
@@ -169,6 +169,8 @@ pattern := patternlist^patterndictionary^astring^minus^anumber^variable
 !jsfunc := [$FunctionJS^$DefJs] Word %( ;4 variables %) expressions+ [$EndFunctionJS^$EndDefJs]
 !jsrule := $RuleJs Word %( ;4 patternsjs %) predicates+ $EndRuleJS
 !jspatternrule := $Patternjs Word %( ;4 patternsjs %) predicates+ $EndPatternJS
+
+!athread := $Thread Word parameters expressions+ $EndThread
 
 !lambda := %[ [$lambda^$λ] ;17 %( variables? %) body %]
 !comprehension := %[ computing $For ;12 Word $in computing [$If comparison]? %] 
