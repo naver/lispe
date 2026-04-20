@@ -904,7 +904,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         
         Element* params;
         
-        if (type == l_defun || type == l_defpat || type == l_deflib || type == l_defpred || type == l_defprol) {
+        if (type == l_defun || type == l_defpat || type == l_deflib || type == l_defpred || type == l_defprol || type == l_class) {
             code += "(";
             code += lisp->toString(type);
             code += " ";
@@ -917,7 +917,9 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                 for (long i = 0; i < params->size(); i++) {
                     if (i)
                         code += " ";
-                    local = index(i)->toString(lisp);
+                    local = params->index(i)->toString(lisp);
+                    if (params->index(i)->isString())
+                        local = doublequoted(local);
                     if (local[0] == '(') {
                         local[0] = '[';
                         local.back() = ']';
@@ -998,7 +1000,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         
         code += "(";
         
-        if (type == l_while || type == l_setq || type == l_setg || type == l_loopcount || type == l_key || type == l_keyn) {
+        if (type == l_while || type == l_setq || type == l_setg || type == l_loopcount || type == l_key || type == l_keyn || type == l_setqi || type == l_setqv || type == l_setqequal) {
             code += index(i++)->toString(lisp);
             code += " ";
             string condition = index(i++)->toString(lisp);
@@ -1029,7 +1031,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         return;
     }
     if (isString())
-        code += jsonstring(toString(lisp));
+        code += doublequoted(toString(lisp));
     else {
         if (isDictionary()) {
             string local = toString(lisp);
@@ -1273,7 +1275,7 @@ Element* String::loop(LispE* lisp, int16_t label, List* code) {
         e->release();
         e = lisp->get_variable(label);
         if (e != element) {
-            if (e->type != t_string) {
+            if (e->type != t_string && e->type != t_longstring) {
                 e = lisp->provideString(localvalue);
                 lisp->recording(e, label);
             }
@@ -2551,7 +2553,7 @@ Element* Maybe::equal(LispE* lisp, Element* e) {
 }
 
 Element* String::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->type == t_string && content == ((String*)e)->content)];
+    return booleans_[((e->type == t_string || e->type == t_longstring) && content == ((String*)e)->content)];
 }
 
 Element* Stringbyte::equal(LispE* lisp, Element* e) {
@@ -2591,7 +2593,7 @@ bool Maybe::egal(Element* e) {
 }
 
 bool String::egal(Element* e) {
-    return (e->type == t_string && content == ((String*)e)->content);
+    return ((e->type == t_string || e->type == t_longstring) && content == ((String*)e)->content);
 }
 
 bool Stringbyte::egal(Element* e) {
@@ -2913,7 +2915,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '-'");
@@ -2922,7 +2924,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '+'");
@@ -2931,7 +2933,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '-+'");
@@ -2943,6 +2945,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_stringbyte:
+        case t_longstring:
         case t_string: {
             u_ustring ch = e_from->asUString(lisp);
             from = content.find(ch);
@@ -3011,7 +3014,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             else {
                 e_upto = liste->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
-                if (ty == t_string)
+                if (ty == t_string || ty == t_longstring)
                     ty = t_minus_string;
                 else
                     throw new Error("Error: Wrong value after second operator: '-'");
@@ -3020,7 +3023,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
         case l_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
             ty = e_upto->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
                 throw new Error("Error: Wrong value after second operator: '+'");
@@ -3028,7 +3031,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
         case l_minus_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
                 throw new Error("Error: Wrong value after second operator: '-+'");
@@ -3042,6 +3045,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_stringbyte:
+        case t_longstring:
         case t_string: {
             if (firstisString == -1) firstisString = 0;
             u_ustring ch = e_upto->asUString(lisp);
@@ -3122,7 +3126,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '-'");
@@ -3131,7 +3135,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '+'");
@@ -3140,7 +3144,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '-+'");
@@ -3152,6 +3156,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_stringbyte:
+        case t_longstring:
         case t_string: {
             string ch = e_from->toString(lisp);
             from = content.find(ch);
@@ -3221,7 +3226,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             else {
                 e_upto = liste->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
-                if (ty == t_string)
+                if (ty == t_string || ty == t_longstring)
                     ty = t_minus_string;
                 else
                     throw new Error("Error: Wrong value after second operator: '-'");
@@ -3230,7 +3235,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
         case l_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
             ty = e_upto->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
                 throw new Error("Error: Wrong value after second operator: '+'");
@@ -3238,7 +3243,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
         case l_minus_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
                 throw new Error("Error: Wrong value after second operator: '-+'");
@@ -3252,6 +3257,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_stringbyte:
+        case t_longstring:
         case t_string: {
             if (firstisString == -1) firstisString = 0;
             string ch = e_upto->toString(lisp);
@@ -3340,7 +3346,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '-'");
@@ -3349,7 +3355,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '+'");
@@ -3358,7 +3364,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '-+'");
@@ -3370,6 +3376,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_stringbyte:
+        case t_longstring:
         case t_string: {
             u_ustring ch = e_from->asUString(lisp);
             from = content.find(ch);
@@ -3441,7 +3448,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             else {
                 e_upto = liste->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
-                if (ty == t_string)
+                if (ty == t_string || ty == t_longstring)
                     ty = t_minus_string;
                 else
                     throw new Error("Error: Wrong value after second operator: '-'");
@@ -3450,7 +3457,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
         case l_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
             ty = e_upto->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
                 throw new Error("Error: Wrong value after second operator: '+'");
@@ -3458,7 +3465,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
         case l_minus_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
                 throw new Error("Error: Wrong value after second operator: '-+'");
@@ -3472,6 +3479,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_stringbyte:
+        case t_longstring:
         case t_string: {
             if (firstisString == -1) firstisString = 0;
             u_ustring ch = e_upto->asUString(lisp);
@@ -3558,7 +3566,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '-'");
@@ -3567,7 +3575,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '+'");
@@ -3576,7 +3584,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             e_from = liste->liste[3]->eval(lisp);
             nxt = 4;
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
                 throw new Error("Error: Wrong value after first operator: '-+'");
@@ -3588,6 +3596,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_stringbyte:
+        case t_longstring:
         case t_string: {
             string ch = e_from->toString(lisp);
             from = content.find(ch);
@@ -3659,7 +3668,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             else {
                 e_upto = liste->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
-                if (ty == t_string)
+                if (ty == t_string || ty == t_longstring)
                     ty = t_minus_string;
                 else
                     throw new Error("Error: Wrong value after second operator: '-'");
@@ -3668,7 +3677,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
         case l_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
             ty = e_upto->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
                 throw new Error("Error: Wrong value after second operator: '+'");
@@ -3676,7 +3685,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
         case l_minus_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
             ty = e_from->type;
-            if (ty == t_string)
+            if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
                 throw new Error("Error: Wrong value after second operator: '-+'");
@@ -3690,6 +3699,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_stringbyte:
+        case t_longstring:
         case t_string: {
             if (firstisString == -1) firstisString = 0;
             string ch = e_upto->toString(lisp);

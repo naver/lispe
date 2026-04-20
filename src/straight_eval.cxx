@@ -148,7 +148,7 @@ Element* List_cond_eval::eval(LispE* lisp) {
             szv = second_element->size();
 
             if (!second_element->isList() || szv <= 1)
-                throw new Error(L"Error: in a 'cond' the first element must be a list");
+                return lisp->check_error(this, new Error(L"Error: in a 'cond' the first element must be a list"), idxinfo);
 
             List* code = (List*)second_element;
             third_element = code->liste[0]->eval(lisp);
@@ -375,7 +375,7 @@ Element* List_imaginary_eval::eval(LispE* lisp) {
         e->release();
         return lisp->provideNumber(d);
     }
-    throw new Error("Error: expecting a complex value");
+    return lisp->check_error(this, new Error("Error: expecting a complex value"), idxinfo);
 }
 
 
@@ -396,6 +396,33 @@ Element* List_in_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         search_value = liste[2]->eval(lisp);
         res = container->check_element(lisp, search_value);
+        container->release();
+        search_value->release();
+    }
+    catch (Error* err) {
+        container->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+
+    lisp->resetStack();
+    return booleans_[res];
+}
+
+Element* List_in_it_eval::eval(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    Element* search_value;
+    bool res = false;
+    
+    try {
+        lisp->checkState(this);
+        search_value = liste[2]->eval(lisp);
+        if (container->isDictionary()) {
+            Element* e = container->checkkey(lisp, search_value);
+            res = (e != null_);
+            e->release();
+        }
+        else
+            res = container->check_element(lisp, search_value);
         container->release();
         search_value->release();
     }
@@ -494,6 +521,7 @@ Element* List_key_eval::eval(LispE* lisp) {
             //The second element is an a_key
             switch (first_element->type) {
                 case t_tree:
+                case t_dictionaryjson:
                 case t_dictionary: {
                     u_ustring a_key;
                     evalAsUString(2, lisp, a_key);
@@ -526,13 +554,13 @@ Element* List_key_eval::eval(LispE* lisp) {
         long first = 2;
         if (first_element->isDictionary()) {
             if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'key'");
+                return lisp->check_error(this, new Error("Error: wrong number of arguments for 'key'"), idxinfo);
             // It is out of question to manipulate a dictionary declared in the code
             first_element = first_element->duplicate_constant(lisp);
         }
         else {
             if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'key'");
+                return lisp->check_error(this, new Error("Error: wrong number of arguments for 'key'"), idxinfo);
             first = 3;
             u_ustring a_key = first_element->asUString(lisp);
             first_element->release();
@@ -544,6 +572,7 @@ Element* List_key_eval::eval(LispE* lisp) {
         //We store values
         switch (first_element->type) {
             case t_tree:
+            case t_dictionaryjson:
             case t_dictionary: {
                 u_ustring a_key;
                 for (long i = first; i < listsize; i+=2) {
@@ -600,7 +629,7 @@ Element* List_keyi_eval::eval(LispE* lisp) {
         long a_key;
         if (listsize == 3 && first_element->isDictionary()) {
             if (first_element->type != t_dictionaryi && first_element->type != t_treei)
-                throw new Error("Error: wrong dictionary type for 'keyi'");
+                return lisp->check_error(this, new Error("Error: wrong dictionary type for 'keyi'"), idxinfo);
 
             evalAsInteger(2, lisp, a_key);
             second_element = first_element->protected_index(lisp, a_key);
@@ -612,17 +641,17 @@ Element* List_keyi_eval::eval(LispE* lisp) {
         long first;
         if (first_element->isDictionary()) {
             if (first_element->type != t_dictionaryi && first_element->type != t_treei)
-                throw new Error("Error: wrong dictionary type for 'keyi'");
+                return lisp->check_error(this, new Error("Error: wrong dictionary type for 'keyi'"), idxinfo);
 
             if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyi'");
+                return lisp->check_error(this, new Error("Error: wrong number of arguments for 'keyi'"), idxinfo);
             first = 2;
             // It is out of question to manipulate a dictionary declared in the code
             first_element = first_element->duplicate_constant(lisp);
         }
         else {
             if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyi'");
+                return lisp->check_error(this, new Error("Error: wrong number of arguments for 'keyi'"), idxinfo);
             first = 3;
             a_key = first_element->asInteger();
             first_element->release();
@@ -662,7 +691,7 @@ Element* List_keyn_eval::eval(LispE* lisp) {
         double a_key;
         if (listsize == 3 && first_element->isDictionary()) {
             if (first_element->type != t_dictionaryn && first_element->type != t_treen)
-                throw new Error("Error: wrong dictionary type for 'keyn'");
+                return lisp->check_error(this, new Error("Error: wrong dictionary type for 'keyn'"), idxinfo);
 
             evalAsNumber(2, lisp, a_key);
             second_element = first_element->protected_index(lisp, a_key);
@@ -674,17 +703,17 @@ Element* List_keyn_eval::eval(LispE* lisp) {
         long first;
         if (first_element->isDictionary()) {
             if (first_element->type != t_dictionaryn && first_element->type != t_treen)
-                throw new Error("Error: wrong dictionary type for 'keyn'");
+                return lisp->check_error(this, new Error("Error: wrong dictionary type for 'keyn'"), idxinfo);
 
             if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyn'");
+                return lisp->check_error(this, new Error("Error: wrong number of arguments for 'keyn'"), idxinfo);
             first = 2;
             // It is out of question to manipulate a dictionary declared in the code
             first_element = first_element->duplicate_constant(lisp);
         }
         else {
             if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyn'");
+                return lisp->check_error(this, new Error("Error: wrong number of arguments for 'keyn'"), idxinfo);
             first = 3;
             a_key = first_element->asNumber();
             first_element->release();
@@ -724,7 +753,7 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
                 d->release();
                 return dico;
             }
-            throw new Error("Error: wrong arguments for 'dictionary'");
+            return lisp->check_error(this, new Error("Error: wrong arguments for 'dictionary'"), idxinfo);
         }
         if (d->type == t_dictionary)
             return d->copying(true);
@@ -754,7 +783,7 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
         Element* v;
         if (l1->isList() && l2->isList()) {
             if (l1->size() != l2->size())
-                throw new Error("Error: the two lists should have the same size 'dictionary'");
+                return lisp->check_error(this, new Error("Error: the two lists should have the same size 'dictionary'"), idxinfo);
             long sz = l1->size();
             Element* idx;
             Element* val;
@@ -778,7 +807,7 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
     }
 
     if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'dictionary'");
+        return lisp->check_error(this, new Error("Error: wrong number of arguments for 'dictionary'"), idxinfo);
 
     Dictionary* dico = lisp->provideDictionary();
     Element* element;
@@ -816,7 +845,7 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
     if (listsize == 2) {
         Element* d = liste[1]->eval(lisp);
         if (!d->isDictionary())
-            throw new Error("Error: wrong arguments for 'dictionaryi'");
+            return lisp->check_error(this, new Error("Error: wrong arguments for 'dictionaryi'"), idxinfo);
         if (d->type == t_dictionaryi)
             return d->copying(true);
         void* iter = d->begin_iter();
@@ -845,7 +874,7 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
         Element* v;
         if (l1->isList() && l2->isList()) {
             if (l1->size() != l2->size())
-                throw new Error("Error: the two lists should have the same size 'dictionaryi'");
+                return lisp->check_error(this, new Error("Error: the two lists should have the same size 'dictionaryi'"), idxinfo);
             long sz = l1->size();
             Element* idx;
             Element* val;
@@ -870,7 +899,7 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
     }
 
     if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'dictionary'");
+        return lisp->check_error(this, new Error("Error: wrong number of arguments for 'dictionary'"), idxinfo);
 
     Dictionary_i* dico = lisp->provideDictionary_i();
     Element* element;
@@ -907,7 +936,7 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
     if (listsize == 2) {
         Element* d = liste[1]->eval(lisp);
         if (!d->isDictionary())
-            throw new Error("Error: wrong arguments for 'dictionaryn'");
+            return lisp->check_error(this, new Error("Error: wrong arguments for 'dictionaryn'"), idxinfo);
         if (d->type == t_dictionaryn)
             return d->copying(true);
         void* iter = d->begin_iter();
@@ -936,7 +965,7 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
         Element* v;
         if (l1->isList() && l2->isList()) {
             if (l1->size() != l2->size())
-                throw new Error("Error: the two lists should have the same size 'dictionaryn'");
+                return lisp->check_error(this, new Error("Error: the two lists should have the same size 'dictionaryn'"), idxinfo);
             long sz = l1->size();
             Element* idx;
             Element* val;
@@ -961,7 +990,7 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
     }
 
     if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'dictionary'");
+        return lisp->check_error(this, new Error("Error: wrong number of arguments for 'dictionary'"), idxinfo);
 
     Dictionary_n* dico = lisp->provideDictionary_n();
     Element* element;
@@ -998,7 +1027,7 @@ Element* List_tree_eval::eval(LispE* lisp) {
     if (listsize == 2) {
         Element* d = liste[1]->eval(lisp);
         if (!d->isDictionary())
-            throw new Error("Error: wrong arguments for 'tree'");
+            return lisp->check_error(this, new Error("Error: wrong arguments for 'tree'"), idxinfo);
         if (d->type == t_tree)
             return d->copying(true);
         void* iter = d->begin_iter();
@@ -1021,7 +1050,7 @@ Element* List_tree_eval::eval(LispE* lisp) {
     }
     
     if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'tree'");
+        return lisp->check_error(this, new Error("Error: wrong number of arguments for 'tree'"), idxinfo);
 
     Tree* dico = lisp->provideTree();
     Element* element;
@@ -1059,7 +1088,7 @@ Element* List_treei_eval::eval(LispE* lisp) {
     if (listsize == 2) {
         Element* d = liste[1]->eval(lisp);
         if (!d->isDictionary())
-            throw new Error("Error: wrong arguments for 'treei'");
+            return lisp->check_error(this, new Error("Error: wrong arguments for 'treei'"), idxinfo);
         if (d->type == t_treei)
             return d->copying(true);
         void* iter = d->begin_iter();
@@ -1082,7 +1111,7 @@ Element* List_treei_eval::eval(LispE* lisp) {
     }
 
     if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'tree'");
+        return lisp->check_error(this, new Error("Error: wrong number of arguments for 'tree'"), idxinfo);
 
     Tree_i* dico = lisp->provideTree_i();
     Element* element;
@@ -1119,7 +1148,7 @@ Element* List_treen_eval::eval(LispE* lisp) {
     if (listsize == 2) {
         Element* d = liste[1]->eval(lisp);
         if (!d->isDictionary())
-            throw new Error("Error: wrong arguments for 'treen'");
+            return lisp->check_error(this, new Error("Error: wrong arguments for 'treen'"), idxinfo);
         if (d->type == t_treen)
             return d->copying(true);
         void* iter = d->begin_iter();
@@ -1142,7 +1171,7 @@ Element* List_treen_eval::eval(LispE* lisp) {
     }
 
     if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'tree'");
+        return lisp->check_error(this, new Error("Error: wrong number of arguments for 'tree'"), idxinfo);
 
     Tree_n* dico = lisp->provideTree_n();
     Element* element;
@@ -1236,7 +1265,7 @@ Element* List_loopcount_eval::eval(LispE* lisp) {
         if (label == v_into) {
             label = liste[3]->label();
             if (label < l_final)
-                throw new Error("Error: missing variable in loopcount");
+                return lisp->check_error(this, new Error("Error: missing variable in loopcount"), idxinfo);
             first = 4;
         }
         else
@@ -1776,7 +1805,7 @@ Element* List_switch_eval::eval(LispE* lisp) {
             u_ustring msg = U"Error: Unknown 'switch' key: '";
             msg += key;
             msg += U"'";
-            throw new Error(msg);
+            return lisp->check_error(this, new Error(msg), idxinfo);
         }
                 
         long sz = code->liste.size();
@@ -1811,7 +1840,6 @@ Element* List_while_eval::eval(LispE* lisp) {
             //if a 'return' has been placed in the code
             if (result->type == l_return) {
                 lisp->resetStack();
-                lisp->stop_at_next_line(lisp->trace);
                 if (result->isBreak())
                     return null_;
                 //this is a return, it goes back to the function call
@@ -1875,6 +1903,7 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
             if (choice) {
                 switch (e->type) {
                     case t_string:
+                    case t_longstring:
                         container = lisp->provideStrings();
                         break;
                     case t_stringbyte:
@@ -1952,7 +1981,7 @@ Element* List_takenb_eval::eval(LispE* lisp) {
     
     Element* lst = liste[2]->eval(lisp);
     if (!lst->isList())
-        throw new Error("Error: Expecting a list as second element");
+        return lisp->check_error(this, new Error("Error: Expecting a list as second element"), idxinfo);
     
     bool direction = true;
     if (liste.size() == 4)
@@ -1965,7 +1994,7 @@ Element* List_takenb_eval::eval(LispE* lisp) {
         }
         else {
             lst->release();
-            throw new Error("Error: wrong value for first argument");
+            return lisp->check_error(this, new Error("Error: wrong value for first argument"), idxinfo);
         }
     }
     
@@ -2036,7 +2065,7 @@ Element* List_mask_eval::eval(LispE* lisp) {
     Element* current_list = NULL;
     
     if (!binaries->isList())
-        throw new Error("Error: first element should be a list of 1 and 0");
+        return lisp->check_error(this, new Error("Error: first element should be a list of 1 and 0"), idxinfo);
     
     long sz = binaries->size();
     Element* res = null_;
@@ -2045,7 +2074,7 @@ Element* List_mask_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         current_list = liste[2]->eval(lisp);
         if (!current_list->isList())
-            throw new Error("Error: first element should be a list of 1 and 0");
+            return lisp->check_error(this, new Error("Error: first element should be a list of 1 and 0"), idxinfo);
         
         long bi = -1;
         long basic_zero = -2;
@@ -2054,7 +2083,7 @@ Element* List_mask_eval::eval(LispE* lisp) {
             zero = liste[3]->eval(lisp);
             basic_zero = zero->size();
             if (!basic_zero)
-                throw new Error("Error: wrong third argument. Should be a non empty list");
+                return lisp->check_error(this, new Error("Error: wrong third argument. Should be a non empty list"), idxinfo);
         }
 
         long current_sz = current_list->size();
@@ -2081,7 +2110,7 @@ Element* List_mask_eval::eval(LispE* lisp) {
             }
         }
         if (i != sz)
-            throw new Error("Error: size mismatch");
+            return lisp->check_error(this, new Error("Error: size mismatch"), idxinfo);
     }
     catch (Error* err) {
         res->release();
@@ -2121,7 +2150,7 @@ Element* List_stringf_eval::eval(LispE* lisp) {
             break;
         default:
             e->release();
-            throw new Error("Error: the first argument should be a number");
+            return lisp->check_error(this, new Error("Error: the first argument should be a number"), idxinfo);
     }
     
     e->release();
@@ -2292,7 +2321,7 @@ Element* List_irank_eval::eval(LispE* lisp) {
         element->getShape(shape);
         
         if (shape.size() < r->positions.size())
-            throw new Error("Error: cannot loop with 'irank' with these indexes");
+            return lisp->check_error(this, new Error("Error: cannot loop with 'irank' with these indexes"), idxinfo);
         
         while (r->positions.size() > 1 && r->positions.back() < 0)
             r->positions.pop_back();
@@ -2357,7 +2386,7 @@ Element* List::scan(LispE* lisp, Element* current_list, long sz) {
 
 Element* List_lambda_eval::scan(LispE* lisp, Element* current_list, long sz) {
     if (labels.size() != 2)
-        throw new Error("Error: Wrong number of arguments");
+        return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
     
     List* res = lisp->provideList();
 
@@ -2410,10 +2439,10 @@ Element* List_member_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         element = element->eval(lisp);
         if (!element->isList())
-            throw new Error("Error: expecting a list as first element");
+            return lisp->check_error(this, new Error("Error: expecting a list as first element"), idxinfo);
         the_set = liste[2]->eval(lisp);
         if (!the_set->isList())
-            throw new Error("Error: expecting a list as first element");
+            return lisp->check_error(this, new Error("Error: expecting a list as first element"), idxinfo);
         result = element->check_member(lisp, the_set);
         the_set->release();
         element->release();
@@ -2650,7 +2679,7 @@ Element* List_flip_eval::eval(LispE* lisp) {
                 return l;
             }
             default:
-                throw new Error("Error: cannot flip this element");
+                return lisp->check_error(this, new Error("Error: cannot flip this element"), idxinfo);
         }
     }
     catch (Error* err) {
@@ -2681,7 +2710,7 @@ Element* List_swap_eval::eval(LispE* lisp) {
         else
             end = beg + 1;
         if (beg < 0 || end >= sz)
-            throw new Error("Error: cannot swap values in this list");
+            return lisp->check_error(this, new Error("Error: cannot swap values in this list"), idxinfo);
         
         switch (first_element->type) {
             case t_floats:
@@ -2699,7 +2728,7 @@ Element* List_swap_eval::eval(LispE* lisp) {
                 lisp->resetStack();
                 return first_element;
             default:
-                throw new Error("Error: cannot swap in this element");
+                return lisp->check_error(this, new Error("Error: cannot swap in this element"), idxinfo);
         }
     }
     catch (Error* err) {
@@ -2818,7 +2847,7 @@ Element* List_at_shape_eval::eval(LispE* lisp) {
         long shape_size = shape->size();
 
         if (!shape->isList() || !shape_size || shape_size < instruction_size - 3)
-            throw new Error("Error: Expecting a list with enough values to match the indexes as second argument");
+            return lisp->check_error(this, new Error("Error: Expecting a list with enough values to match the indexes as second argument"), idxinfo);
         
         long i, begin;
 
@@ -2845,7 +2874,7 @@ Element* List_at_shape_eval::eval(LispE* lisp) {
             else {
                 begin = shapes->liste[i - 3];
                 if (index >= begin)
-                    throw new Error("Error: index mismatch with shape");
+                    return lisp->check_error(this, new Error("Error: index mismatch with shape"), idxinfo);
             }
             idx += index*cumul;
             cumul *= begin;
@@ -2925,7 +2954,7 @@ Element* List_at_shape_eval::eval(LispE* lisp) {
         else {
             if (shape_size == instruction_size) {
                 if (idx >= container->size())
-                    throw new Error("Error: Index out of bound");
+                    return lisp->check_error(this, new Error("Error: Index out of bound"), idxinfo);
                 result = container->index(idx)->duplicate_constant(lisp);
             }
             else {
@@ -2971,7 +3000,7 @@ Element* List_set_shape_eval::eval(LispE* lisp) {
         shape = liste[2]->eval(lisp);
         long shape_size = shape->size();
         if (!shape->isList() || !shape_size || shape_size < instruction_size - 4)
-            throw new Error("Error: Expecting a list with enough values to match the indexes as second argument");
+            return lisp->check_error(this, new Error("Error: Expecting a list with enough values to match the indexes as second argument"), idxinfo);
 
         value = liste[instruction_size - 1]->eval(lisp);
 
@@ -2985,10 +3014,10 @@ Element* List_set_shape_eval::eval(LispE* lisp) {
         for (i = instruction_size - 2; i >= 3; i--) {
             evalAsInteger(i, lisp, index);
             if (index < 0)
-                throw new Error("Error: cannot modify this value");
+                return lisp->check_error(this, new Error("Error: cannot modify this value"), idxinfo);
             sh = shape->index(i - 3)->asInteger();
             if (index >= sh)
-                throw new Error("Error: index mismatch with shape");
+                return lisp->check_error(this, new Error("Error: index mismatch with shape"), idxinfo);
             
             idx += index*cumul;
             cumul *= sh;
@@ -2998,7 +3027,7 @@ Element* List_set_shape_eval::eval(LispE* lisp) {
 
         if (shape_size == instruction_size) {
             if (idx >= container->size())
-                throw new Error("Error: Index out of bound");
+                return lisp->check_error(this, new Error("Error: Index out of bound"), idxinfo);
             container->set_in(lisp, value, idx);
         }
         else {
@@ -3010,7 +3039,7 @@ Element* List_set_shape_eval::eval(LispE* lisp) {
             }
 
             if (cumul > value->size())
-                throw new Error("Error: cannot store this value in this container");
+                return lisp->check_error(this, new Error("Error: cannot store this value in this container"), idxinfo);
             cumul += idx;
             for (i = idx; i < cumul; i++) {
                 container->set_in(lisp, value->index(i - idx), i);
@@ -3213,12 +3242,12 @@ Element* List_zip_eval::eval(LispE* lisp) {
         for (i = 1; i < listsize; i++) {
             container = liste[i]->eval(lisp);
             if (!container->isList())
-                throw new Error(L"Error: 'zip' only accepts lists as arguments");
+                return lisp->check_error(this, new Error(L"Error: 'zip' only accepts lists as arguments"), idxinfo);
             if (i == 1)
                 szl = container->size();
             else {
                 if (szl != container->size())
-                    throw new Error(L"Error: Lists should all have the same size in 'zip'");
+                    return lisp->check_error(this, new Error(L"Error: Lists should all have the same size in 'zip'"), idxinfo);
             }
             if (container->type == t_llist)
                 lists->append(new Iter_llist((LList*)container, szl));
@@ -3322,7 +3351,7 @@ Element* List_zipwith_lambda_eval::eval(LispE* lisp) {
                 container = null_;
             }
             else
-                throw new Error(L"Error: 'zipwith' only accepts lists of same size as arguments");
+                return lisp->check_error(this, new Error(L"Error: 'zipwith' only accepts lists of same size as arguments"), idxinfo);
         }
         
         if (!szl) {
@@ -3336,7 +3365,7 @@ Element* List_zipwith_lambda_eval::eval(LispE* lisp) {
         ITEM& item = *lists->liste.items;
         
         if (params.size() < lsz)
-            throw new Error("Error: Wrong number of arguments");
+            return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
         
         //if there is already a variable with this name on the stack
         //we record it to restore it later...
@@ -3354,6 +3383,7 @@ Element* List_zipwith_lambda_eval::eval(LispE* lisp) {
             if (choose) {
                 switch (value->type) {
                     case t_string:
+                    case t_longstring:
                         container = lisp->provideStrings();
                         break;
                     case t_stringbyte:
@@ -4052,7 +4082,7 @@ Element* List_seth_eval::eval(LispE* lisp) {
         lisp->resetStack();
         return True_;
     }
-    throw new Error("Error: this instruction can only be used in a 'threadspace' block");
+    return lisp->check_error(this, new Error("Error: this instruction can only be used in a 'threadspace' block"), idxinfo);
 }
 
 
@@ -4639,7 +4669,7 @@ Element* List_nconc_eval::eval(LispE* lisp) {
         if (element->isList())
             result = element->duplicate_constant(lisp);
         else
-            throw new Error("Error: first element is not a list");
+            return lisp->check_error(this, new Error("Error: first element is not a list"), idxinfo);
 
         element = emptylist_;
         for (i = 2; i < listsize; i++) {
@@ -4684,7 +4714,7 @@ Element* List_nconcn_eval::eval(LispE* lisp) {
         if (element->isList())
             result = element->copyatom(lisp, 1);
         else
-            throw new Error("Error: first element is not a list");
+            return lisp->check_error(this, new Error("Error: first element is not a list"), idxinfo);
 
         element = emptylist_;
         for (i = 2; i < listsize; i++) {
@@ -4749,7 +4779,7 @@ Element* List_apply_eval::eval(LispE* lisp) {
             }
             else {
                 if (!arguments->insertion(function, 0))
-                    throw new Error("Error: cannot insert this element in this list");
+                    return lisp->check_error(this, new Error("Error: cannot insert this element in this list"), idxinfo);
             }
             
             lisp->check_arity(lab, arguments->size());
@@ -4760,7 +4790,7 @@ Element* List_apply_eval::eval(LispE* lisp) {
         }
 
         if (!arguments->isList())
-            throw new Error("Error: arguments to 'apply' should be given as a list");
+            return lisp->check_error(this, new Error("Error: arguments to 'apply' should be given as a list"), idxinfo);
 
         if (use_list)
             call = lisp->provideList();
@@ -4771,7 +4801,7 @@ Element* List_apply_eval::eval(LispE* lisp) {
         if (call == arguments) {
             call = NULL;
             arguments = NULL;
-            throw new Error("Error: wrong use of 'apply'");
+            return lisp->check_error(this, new Error("Error: wrong use of 'apply'"), idxinfo);
         }
 
         lisp->check_arity(lab, call->size());
@@ -4814,14 +4844,14 @@ Element* List_over_eval::eval(LispE* lisp) {
 
         arguments = liste[2]->eval(lisp);
         if (!arguments->isList())
-            throw new Error("Error: argument to 'over' should be a list");
+            return lisp->check_error(this, new Error("Error: argument to 'over' should be a list"), idxinfo);
         
         call->append(function);
         call->append(lisp->quoted(arguments));
         result = call->eval(lisp);
         //We then replace the values in arguments with the values in result
         if (result->label() != arguments->label())
-            throw new Error("Error: The result should be of the same type as the argument");
+            return lisp->check_error(this, new Error("Error: The result should be of the same type as the argument"), idxinfo);
         arguments->copyfrom(result);
         function->release();
         call->force_release();
@@ -4927,7 +4957,7 @@ Element* List_shift_eval::eval(LispE* lisp) {
         }
 
         if (!arguments->isList())
-            throw new Error("Error: arguments to 'shift' should be given as a list");
+            return lisp->check_error(this, new Error("Error: arguments to 'shift' should be given as a list"), idxinfo);
 
         if (use_list)
             call = lisp->provideList();
@@ -4974,7 +5004,7 @@ Element* List_shift_eval::eval(LispE* lisp) {
                 l2 = new Stringbytes((Stringbytes*)arguments, nb);
                 break;
             default:
-                throw new Error("Error: arguments to 'shift' should be given as a list");
+                return lisp->check_error(this, new Error("Error: arguments to 'shift' should be given as a list"), idxinfo);
         }
         
         call->append(null_);
@@ -5015,8 +5045,11 @@ Element* List_atomise_eval::eval(LispE* lisp) {
 
 
 Element* List_converttoatom_eval::eval(LispE* lisp) {
-    u_ustring tampon;
-    evalAsUString(1,lisp,tampon);
+    Element* e = liste[1]->eval(lisp);
+    if (e->type == t_atom)
+        return e;
+    u_ustring tampon = e->asUString(lisp);
+    e->release();
     long sz = tampon.size();
     if (tampon[0] == 'c' && tampon.back() == 'r' && sz > 3) {
         // we check if we don't have a variation on car/cdr/cadr/caar etc...
@@ -5187,8 +5220,8 @@ Element* List_eval_eval::eval(LispE* lisp) {
             result = lisp->eval(u_code);
             if (result->isError()) {
                 u_ustring msg = result->asUString(lisp);
-                delete result;
-                throw new Error(msg);
+                result->release();
+                return lisp->check_error(this, new Error(msg), idxinfo);
             }
             code->release();
             lisp->resetStack();
@@ -5236,7 +5269,7 @@ Element* List_factorial_eval::eval(LispE* lisp) {
                 res = 1;
                 value = e->index(j)->asInteger();
                 if (value < 0)
-                    throw new Error("Error: factorial of a negative number does not exists");
+                    return lisp->check_error(this, new Error("Error: factorial of a negative number does not exists"), idxinfo);
                 if (value <= 20)
                     ((Numbers*)r)->liste.push_back(factorials[value]);
                 else {
@@ -5254,7 +5287,7 @@ Element* List_factorial_eval::eval(LispE* lisp) {
 
         value = e->asInteger();
         if (value < 0)
-            throw new Error("Error: factorial of a negative number does not exists");
+            return lisp->check_error(this, new Error("Error: factorial of a negative number does not exists"), idxinfo);
         e->release();
         if (value <= 20) {
             lisp->resetStack();
@@ -5283,14 +5316,14 @@ Element* List_bappend_eval::eval(LispE* lisp) {
     if (o.fail()) {
         string erreur = "Error: Cannot write in file: ";
         erreur += chemin;
-        throw new Error(erreur);
+        return lisp->check_error(this, new Error(erreur), idxinfo);
     }
 
     element = liste[2]->eval(lisp);
     //In this case, element must be a list of numerical values;
     if (!element->isList()) {
         element->release();
-        throw new Error("Error: Expecting a list of numerical values");
+        return lisp->check_error(this, new Error("Error: Expecting a list of numerical values"), idxinfo);
     }
     uchar c;
     for (long i = 0; i < element->size(); i++) {
@@ -5330,14 +5363,14 @@ Element* List_bwrite_eval::eval(LispE* lisp) {
     if (o.fail()) {
         string erreur = "Error: Cannot write in file: ";
         erreur += filename;
-        throw new Error(erreur);
+        return lisp->check_error(this, new Error(erreur), idxinfo);
     }
 
     element = liste[2]->eval(lisp);
     //In this case, element must be a list of numerical values;
     if (!element->isList()) {
         element->release();
-        throw new Error("Error: Expecting a list of numerical values");
+        return lisp->check_error(this, new Error("Error: Expecting a list of numerical values"), idxinfo);
     }
     uchar c;
     for (long i = 0; i < element->size(); i++) {
@@ -5356,7 +5389,7 @@ Element* List_fappend_eval::eval(LispE* lisp) {
     if (o.fail()) {
         string erreur = "Error: Cannot write in file: ";
         erreur += chemin;
-        throw new Error(erreur);
+        return lisp->check_error(this, new Error(erreur), idxinfo);
     }
 
     element = liste[2]->eval(lisp);
@@ -5439,7 +5472,7 @@ Element* List_fopen_eval::eval(LispE* lisp) {
 Element* List_fclose_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     if (!element->isFile())
-        throw new Error("Error: Not a file element");
+        return lisp->check_error(this, new Error("Error: Not a file element"), idxinfo);
     
     ((File_element*)element)->close();
     element->release();
@@ -5449,7 +5482,7 @@ Element* List_fclose_eval::eval(LispE* lisp) {
 Element* List_fseek_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     if (!element->isFile())
-        throw new Error("Error: Not a file element");
+        return lisp->check_error(this, new Error("Error: Not a file element"), idxinfo);
     
     FILE* f = ((File_element*)element)->f;
     long nb;
@@ -5462,7 +5495,7 @@ Element* List_fseek_eval::eval(LispE* lisp) {
 Element* List_ftell_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     if (!element->isFile())
-        throw new Error("Error: Not a file element");
+        return lisp->check_error(this, new Error("Error: Not a file element"), idxinfo);
     
     FILE* f = ((File_element*)element)->f;
     long nb = ftell(f);
@@ -5473,7 +5506,7 @@ Element* List_ftell_eval::eval(LispE* lisp) {
 Element* List_fgetchars_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     if (!element->isFile())
-        throw new Error("Error: Not a file element");
+        return lisp->check_error(this, new Error("Error: Not a file element"), idxinfo);
     
     FILE* f = ((File_element*)element)->f;
     long nb;
@@ -5493,7 +5526,7 @@ Element* List_fputchars_eval::eval(LispE* lisp) {
     
     element = liste[1]->eval(lisp);
     if (!element->isFile())
-        throw new Error("Error: Not a file element");
+        return lisp->check_error(this, new Error("Error: Not a file element"), idxinfo);
     
     File_element* fe = (File_element*)element;
     if (fe->op[0] != 'r') {
@@ -5555,7 +5588,7 @@ Element* List_fwrite_eval::eval(LispE* lisp) {
     if (o.fail()) {
         string erreur = "Error: Cannot write in file: ";
         erreur += filename;
-        throw new Error(erreur);
+        return lisp->check_error(this, new Error(erreur), idxinfo);
     }
 
     element = liste[2]->eval(lisp);
@@ -5624,8 +5657,15 @@ Element* List_enumerate_eval::eval(LispE* lisp) {
 Element* List_irange_eval::eval(LispE* lisp) {
     long sz  = liste.size();
 
-    double init, inc;
+    double init;
     evalAsNumber(1, lisp, init);
+    if (sz == 2) {
+        if (init == (long)init)
+            return lisp->providerange_Integer(0, 1, init);
+        return lisp->providerange_Number(0, 1, init);
+    }
+
+    double inc;
     if (sz == 4) {
         double bound;
         evalAsNumber(2, lisp, bound);
@@ -5634,7 +5674,7 @@ Element* List_irange_eval::eval(LispE* lisp) {
             return lisp->providerange_Integer(init, inc, bound);
         return lisp->providerange_Number(init, inc, bound);
     }
-
+    
     evalAsNumber(2, lisp, inc);
     if (init == (long)init && inc == (long)inc)
         return lisp->providerange_Integer(init, inc);
@@ -5645,8 +5685,16 @@ Element* List_irange_eval::eval(LispE* lisp) {
 Element* List_irangein_eval::eval(LispE* lisp) {
     long sz  = liste.size();
 
-    double init, inc;
+    double init;
     evalAsNumber(1, lisp, init);
+
+    if (sz == 2) {
+        if (init == (long)init)
+            return lisp->providerange_Integer(0, 1, init + 1);
+        return lisp->providerange_Number(0, 1, init + 1);
+    }
+
+    double inc;
     if (sz == 4) {
         double bound;
         evalAsNumber(2, lisp, bound);
@@ -6006,17 +6054,27 @@ Element* List_prettify_eval::eval(LispE* lisp) {
 
 Element* List_range_eval::eval(LispE* lisp) {
     Element* e1 = liste[1]->eval(lisp);
-    Element* e2 = liste[2]->eval(lisp);
-    Element* e3 = liste[3]->eval(lisp);
+    Element* e2;
+    Element* e3;
+    if (size() == 4) {
+        e2 = liste[2]->eval(lisp);
+        e3 = liste[3]->eval(lisp);
+    }
+    else {
+        e2 = e1;
+        e1 = zero_value;
+        e3 = one_value;
+    }
+    
     Element* e;
     
     if (e1->isString() && e2->isString()) {
         if (!e3->isInteger())
-            throw new Error("Error: expecting an increment as integer");
+            return lisp->check_error(this, new Error("Error: expecting an increment as integer"), idxinfo);
         u_ustring s1 = e1->asUString(lisp);
         u_ustring s2 = e2->asUString(lisp);
         if (!s1.size() || !s2.size())
-            throw new Error("Error: cannot compute range with empty strings");
+            return lisp->check_error(this, new Error("Error: cannot compute range with empty strings"), idxinfo);
         
         e = range(lisp, s1, s2, e3->asInteger());
     }
@@ -6036,19 +6094,28 @@ Element* List_range_eval::eval(LispE* lisp) {
 
 Element* List_rangein_eval::eval(LispE* lisp) {
     Element* e1 = liste[1]->eval(lisp);
-    Element* e2 = liste[2]->eval(lisp);
-    Element* e3 = liste[3]->eval(lisp);
-    
+    Element* e2;
+    Element* e3;
+    if (size() == 4) {
+        e2 = liste[2]->eval(lisp);
+        e3 = liste[3]->eval(lisp);
+    }
+    else {
+        e2 = e1;
+        e1 = zero_value;
+        e3 = one_value;
+    }
+
     Element* e;
     
     if (e1->isString() && e2->isString()) {
         if (!e3->isInteger())
-            throw new Error("Error: expecting an increment as integer");
+            return lisp->check_error(this, new Error("Error: expecting an increment as integer"), idxinfo);
         long inc = e3->asInteger();
         u_ustring s1 = e1->asUString(lisp);
         u_ustring s2 = e2->asUString(lisp);
         if (!s1.size() || !s2.size())
-            throw new Error("Error: cannot compute range with empty strings");
+            return lisp->check_error(this, new Error("Error: cannot compute range with empty strings"), idxinfo);
         //By default the last value is always part of the final range
         e = range(lisp, s1, s2, inc);
     }
@@ -6138,7 +6205,7 @@ Element* List_space_eval::eval(LispE* lisp) {
         if (!lisp->delegation->namespaces.check(label)) {
             u_ustring w = U"Error: Unknown space: ";
             w += lisp->asUString(label);
-            throw new Error(w);
+            return lisp->check_error(this, new Error(w), idxinfo);
         }
     }
 
@@ -6224,7 +6291,7 @@ Element* List_sum_eval::eval(LispE* lisp) {
         }
         default:
             first_element->release();
-        throw new Error("Error: expecting a container as argument");
+        return lisp->check_error(this, new Error("Error: expecting a container as argument"), idxinfo);
     }
 }
 
@@ -6287,7 +6354,7 @@ Element* List_product_eval::eval(LispE* lisp) {
         }
         default:
             first_element->release();
-        throw new Error("Error: expecting a container as argument");
+        return lisp->check_error(this, new Error("Error: expecting a container as argument"), idxinfo);
     }
 }
 //(transpose (rho 2 4 '(1 3 9 10 12 34)))
@@ -6348,7 +6415,7 @@ Element* List_determinant_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     if (element->type != t_matrix_number) {
         element->release();
-        throw new Error("Error: We can only compute the determinant of a matrix");
+        return lisp->check_error(this, new Error("Error: We can only compute the determinant of a matrix"), idxinfo);
     }
     double det = 0;
 
@@ -6470,12 +6537,12 @@ Element* List_mod_eval::eval(LispE* lisp) {
         }
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '%' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '%' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '%' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '%' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6559,12 +6626,12 @@ Element* List_leftshift_eval::eval(LispE* lisp) {
         }
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '<<' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '<<' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '<<' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '<<' to a string"), idxinfo);
             case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6648,12 +6715,12 @@ Element* List_rightshift_eval::eval(LispE* lisp) {
         }
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '>>' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '>>' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '>>' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '>>' to a string"), idxinfo);
             case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6737,12 +6804,12 @@ Element* List_bitand::eval(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '&' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '&' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '&' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '&' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6823,12 +6890,12 @@ Element* List_bitor::eval(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '|' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '|' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '|' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '|' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6908,12 +6975,12 @@ Element* List_bitxor::eval(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '^' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '^' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '^' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '^' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6993,12 +7060,12 @@ Element* List_bitandnot::eval(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '&~' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '&~' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '&~' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '&~' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7094,10 +7161,10 @@ Element* List_plusmultiply::eval(LispE* lisp) {
         shape2 = liste[4]->eval(lisp);
         
         if (!shape1->isList() || shape1->size() != 2)
-            throw new Error("Error: The first shape should be a list of two elements");
+            return lisp->check_error(this, new Error("Error: The first shape should be a list of two elements"), idxinfo);
         
         if (!shape2->isList() || shape2->size() != 2)
-            throw new Error("Error: The second shape should be a list of two elements");
+            return lisp->check_error(this, new Error("Error: The second shape should be a list of two elements"), idxinfo);
 
         long sh10 = shape1->index(0)->asInteger();
         long sh11 = shape1->index(1)->asInteger();
@@ -7105,15 +7172,15 @@ Element* List_plusmultiply::eval(LispE* lisp) {
         long sh21 = shape2->index(1)->asInteger();
 
         if (m1->type != m2->type)
-            throw new Error("Error: The two matrices should have the same type");
+            return lisp->check_error(this, new Error("Error: The two matrices should have the same type"), idxinfo);
                 
         if (sh20 != sh11)
-            throw new Error("Error: Incompatible shapes");
+            return lisp->check_error(this, new Error("Error: Incompatible shapes"), idxinfo);
         
         if (m1->size() != sh10*sh11)
-            throw new Error("Error: Mismatch between shape and size of first matrix");
+            return lisp->check_error(this, new Error("Error: Mismatch between shape and size of first matrix"), idxinfo);
         if (m2->size() != sh20*sh21)
-            throw new Error("Error: Mismatch between shape and size of second matrix");
+            return lisp->check_error(this, new Error("Error: Mismatch between shape and size of second matrix"), idxinfo);
         
         res = m1->matrix_product(lisp, m2, sh11, sh10, sh21);
     }

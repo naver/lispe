@@ -1,0 +1,182 @@
+######################################
+# Grammar for the basic language
+######################################
+# The goal of this grammar is to build a tree in which each node has the rule name as label.
+# The rule name is the element before the := sign.
+# It can be preceded with some special characters.
+######################################
+# The ° in front of a rule defines the entry point of the grammar
+# The ! in front of a rule means that any %x or $xxx will only be tested and will not appear in the final tree.
+# The & in front of a rule means that the rule label will be inserted in the final tree if the number of elements is > 1
+# The ^ in front of a rule means that the tree item will not contain the rule label 
+######################################
+# Comments are introduced with a '#'
+######################################
+# The ^ is the "or" operator, it selects the appropriate value among different calls
+# % is used to check for a specific punctuation while $ or € checks for a specific string
+# Note that "$token" pushes "token"" in a protected list of labels, which prevents "Word" to recognize "token" as word
+# [..] encloses a sequence of actions
+# We use: ? for optional values, * for zero or any values and + for at least one value
+######################################
+# Word, astring and anumber are declared outside the grammar (see compiler.lisp)
+# Word checks if a string is made of alphabetical or digits characters, starting with a character
+# astring checks if it is a string enclosed between ".."
+# anumber checks if it is a number
+######################################
+# Each rule is compiled into one or more LispE functions
+# ?,*,+ when used in a rule triggers the creation of a specific function starting with
+# ? : O_
+# * : S_
+# + : P_
+######################################
+
+;1 expecting a closing "]" >>>
+;2 expecting a closing ")" for a "method" >>>
+;3 expecting a closing "]" for "list" >>>
+;4 expecting a closing tag for "function" >>>
+;5 expecting a closing tag for "if" >>>
+;6 expecting a closing tag for "while" >>>
+;7 expecting a closing tag for "forin" >>>
+;8 expecting a closing tag for "for" >>>
+;9 error when analysing a method >>>
+;10 error when analysing an interval, you can't chain intervals >>>
+;11 error when analysing a dictionary >>>
+;12 error when analysing a list comprehension >>>
+;13 error when analysing a "join" (Python style) >>>
+;14 error when analysing a "switch" >>>
+;15 error when analysing a try/catch >>>
+;16 error when defining a class >>>
+;17 error when analysing a lambda >>>
+
+# The ° indicates the entry point of the grammar (the top rule)
+°analyse := [classedef^jsfunc^jsrule^function^rule^patternrule^jspatternrule^expressions]+
+
+@append := push
+@len := size
+@strip := trim
+
+operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
+
+operatorop := [%< %< %=]^[%> %> %=]^[%^ %^ %=]^[%* %* %=]^[%& %=]^[%| %=]^[%+ %=]^[%- %=]^[%* %=]^[%/ %=]^[%% %=]^[%^ %=]
+
+orand := $or^$and^$xor
+
+comparator := [%< %>]^[%! %=]^[%< %=]^[%= %=]^[%> %=]^%<^%>^$in^$eq^$neq
+
+comparing := $not? computing [comparator computing]? [orand comparison]*
+
+^!comppar := %( comparing %)
+
+^comparison := comppar^comparing
+
+comparingmax := $not? computing comparator computing [orand comparisonmax]*
+
+^!compparmax := %( comparing %)
+
+^comparisonmax := compparmax^comparingmax
+
+!minus := %- anumber
+
+# We have different types of variable:
+interval := %[ computing? %: ;10 computing? %]
+
+!indexes := %[ ;1 computing [%, computing]* %]
+
+!valuelist := %[ ;3 [ computing [%, computing]* ]? %]
+
+!itemdictionary := [astring^minus^anumber^variable] %: computing
+!valuedictionary := %{ ;11 [itemdictionary [%, itemdictionary]* ]? %}
+
+!dimvariable :=  Word [interval^indexes]+
+
+!selfvariable := $Self %. [dimvariable^Word]
+
+variable := dimvariable^Word
+
+!variables := Word [%, Word]*
+
+!multiassignment := %[ variables %]
+
+!arguments := computing [%, computing]*
+
+
+!callmethod := %. Word %( ;2 [computing [%, computing]*]? %)
+callinterval := %[ computing? %: ;10 computing? %]
+!callindexes := %[ ;1 computing [%, computing]* %]
+
+call := [lambda^Word] %( arguments? %) [callinterval^callindexes^callmethod]*
+
+method := variable callmethod [callinterval^callindexes^callmethod]*
+
+catching := [$Except^$Catch] [%( Word %)]? expressions+
+!amaybe := $Try ;15  expressions+ catching $EndTry
+
+!assignmenttopself :=  selfvariable operatorop computing
+
+!assignmentself :=  selfvariable %= computing
+
+!assignmentop :=  variable operatorop computing
+
+!assignment := [multiassignment^variable] %= computing
+
+!assignmentg := [multiassignment^variable] %= %: computing
+
+!walrus := Word %: %=  computing
+
+!parenthetic := %( computing %)
+
+# Python join style. It is deactivated for the moment
+!tojoin := [variable^astring] %. Pythonjoin ;13 %( computing %)
+
+# We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
+# It keeps the final tree flatter
+^callitem := lispe^walrus^tojoin^call^lambda^comprehension^selfvariable^method^valuelist^valuedictionary^parenthetic^astring^minus^anumber^returning^variable
+
+# The & will skip the computing label if there is no operator
+&computing := callitem  [operator callitem]*
+
+# print 10+20, 30+40
+
+!multiop := Word computing [%, computing]*
+
+body := predicates+
+returning := [$return^$break] computing?
+
+# We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
+^expressions := lispe^assignmenttopself^assignmentself^assignmentop^assignmentg^assignment^switch^amaybe^forin^for^if^while^multiop^computing
+^predicates := lispe^assignmenttopself^assignmentself^assignmentself^assignmentop^assignmentg^assignment^comparisonmax^switch^amaybe^forin^for^if^while^multiop^computing
+
+!classedef := $Class Word ;16 classfunc+ $EndClass
+!classfunc := [$Function^$Def] Word %( $Self %, ;4 variables? %) expressions+ [$EndFunction^$EndDef] 
+
+!then := $Then? expressions+
+!else := $Else expressions+
+
+!tail := %$ variable
+!patternlist := %[ ;3 [ pattern [%, pattern]* tail? ]? %]
+!itempattern := [astring^minus^anumber^variable] %: pattern
+!patterndictionary := %{ ;11 [itempattern [%, itempattern]* tail? ]? %}
+pattern := patternlist^patterndictionary^astring^minus^anumber^variable
+!patterns := pattern [%, pattern]*
+!patternsjs := Word [%, pattern]*
+
+!parameters := %( ;4 variables? %)
+
+!function := [$Function^$Def] Word parameters expressions+ [$EndFunction^$EndDef]
+!rule := $Rule Word %( ;4 patterns %) predicates+ $EndRule
+!patternrule := $Pattern Word %( ;4 patterns %) predicates+ $EndPattern
+
+!jsfunc := [$FunctionJS^$DefJs] Word %( ;4 variables %) expressions+ [$EndFunctionJS^$EndDefJs]
+!jsrule := $RuleJs Word %( ;4 patternsjs %) predicates+ $EndRuleJS
+!jspatternrule := $Patternjs Word %( ;4 patternsjs %) predicates+ $EndPatternJS
+
+!lambda := %[ [$lambda^$λ] ;17 %( variables? %) body %]
+!comprehension := %[ computing $For ;12 Word $in computing [$If comparison]? %] 
+
+!elif := $Elif ;5 comparison then [elif^else]?
+!if := $If ;5 comparison then [elif^else]? $EndIf
+!while := $While ;6 comparison expressions+ $EndWhile
+!forin := $For variable $in ;7 callitem expressions+ $EndFor
+!for := $For ;8 assignment %, comparison %, assignment expressions+ $EndFor
+!acase := $case astring %: expressions
+!switch := $Switch ;14 %( variable %) acase+ $EndSwitch

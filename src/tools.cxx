@@ -25,6 +25,9 @@
 #define swprintf_s swprintf
 #endif
 
+#include <stdexcept>
+#include <cstdint>
+
 /*
  Some utility functions to manipulate strings
  Essentially:
@@ -1337,36 +1340,44 @@ Exporting string jsonstring(string value) {
     if (value == "")
         return "\"\"";
     
-    string res;
-    
-    if (value.find("\\") != -1)
-        value = s_replacingstring(value, "\\", "\\\\");
-    
-    if (value.find("\"") != -1) {
-        value = s_replacingstring(value, "\"", "\\\"");
+    string output = "\"";
+    for (uchar c: value) {
+        switch (c) {
+            case '\"': output += "\\\""; break;
+            case '\\': output += "\\\\"; break;
+            case '\n': output += "\\n"; break;
+            case '\r': output += "\\r"; break;
+            case '\t': output += "\\t"; break;
+            case '\b': output += "\\b"; break;
+            default:
+                output+=c;
+        }
     }
-    res += "\"";
-    res += value;
-    res += "\"";
-    return res;
+
+    output += "\"";
+    return output;
 }
 
 Exporting wstring wjsonstring(wstring value) {
     if (value == L"")
         return L"\"\"";
     
-    wstring res;
-    
-    if (value.find(L"\\") != -1)
-        value = s_wreplacestring(value, L"\\", L"\\\\");
-    
-    if (value.find(L"\"") != -1) {
-        value = s_wreplacestring(value, L"\"", L"\\\"");
+    wstring output = L"\"";
+    for (wchar_t c: value) {
+        switch (c) {
+            case L'\"': output += L"\\\""; break;
+            case L'\\': output += L"\\\\"; break;
+            case L'\n': output += L"\\n"; break;
+            case L'\r': output += L"\\r"; break;
+            case L'\t': output += L"\\t"; break;
+            case L'\b': output += L"\\b"; break;
+            default:
+                output+=c;
+        }
     }
-    res += L"\"";
-    res += value;
-    res += L"\"";
-    return res;
+
+    output += L"\"";
+    return output;
 }
 
 Exporting wstring wjsonstring(u_ustring value) {
@@ -1377,20 +1388,97 @@ Exporting u_ustring ujsonstring(u_ustring value) {
     if (value == U"")
         return U"\"\"";
     
-    u_ustring res;
-    
-    if (value.find(U"\\") != -1)
-        value = s_ureplacestring(value, U"\\", U"\\\\");
-    
-    if (value.find(U"\"") != -1) {
-        value = s_ureplacestring(value, U"\"", U"\\\"");
+    u_ustring output = U"\"";
+    for (u_uchar c: value) {
+        switch (c) {
+            case L'\"': output += U"\\\""; break;
+            case L'\\': output += U"\\\\"; break;
+            case L'\n': output += U"\\n"; break;
+            case L'\r': output += U"\\r"; break;
+            case L'\t': output += U"\\t"; break;
+            case L'\b': output += U"\\b"; break;
+            default:
+                output+=c;
+        }
     }
-    res += U"\"";
-    res += value;
-    res += U"\"";
-    return res;
+
+    output += U"\"";
+    return output;
 }
 
+
+Exporting string doublequoted(string value) {
+    if (value == "")
+        return "\"\"";
+    
+    string output = "\"";
+    uchar c;
+    for (long i = 0; i < value.size(); i++) {
+        c = value[i];
+        if (c == '\\') {
+            output += c;
+            output += value[++i];
+            continue;
+        }
+        if (c == '"')
+            output += "\\\"";
+        else
+            output += c;
+    }
+
+    output += "\"";
+    return output;
+}
+
+Exporting wstring wdoublequoted(wstring value) {
+    if (value == L"")
+        return L"\"\"";
+    
+    wstring output = L"\"";
+    wchar_t c;
+    for (long i = 0; i < value.size(); i++) {
+        c = value[i];
+        if (c == '\\') {
+            output += c;
+            output += value[++i];
+            continue;
+        }
+        if (c == '"')
+            output += L"\\\"";
+        else
+            output += c;
+    }
+
+    output += L"\"";
+    return output;
+}
+
+Exporting wstring wdoublequoted(u_ustring value) {
+    return wdoublequoted(_u_to_w(value));
+}
+
+Exporting u_ustring udoublequoted(u_ustring value) {
+    if (value == U"")
+        return U"\"\"";
+    
+    u_ustring output = U"\"";
+    u_uchar c;
+    for (long i = 0; i < value.size(); i++) {
+        c = value[i];
+        if (c == '\\') {
+            output += c;
+            output += value[++i];
+            continue;
+        }
+        if (c == '"')
+            output += U"\\\"";
+        else
+            output += c;
+    }
+
+    output += U"\"";
+    return output;
+}
 
 //--------------------------------------------------------------------
 
@@ -7422,8 +7510,10 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"\"\"\"?*\"\"\"=:96");                   //long strings Python way """.."""
     rules.push_back(U"\"{[\\-\"] ~%r}*\"=:34");     //string "" does not contain CR and can escape characters
     rules.push_back(U"b\"{[\\-\"] ~%r}*\"=:34");     //string "" does not contain CR and can escape characters
+    rules.push_back(U"j`?*`=:106");                   //long strings JS way (btoa inside)
     rules.push_back(U"`?*`=:96");                   //long strings Unix way
-    rules.push_back(U"b`?*`=:97");                   //long strings Unix way
+    rules.push_back(U"b`?*`=:96");                   //long strings Unix way
+    
 #ifdef WIN32
     //In Windows, strings are always stored as UTF-8 strings...
     //For this reason, we need to handle them through their code...
@@ -7547,3 +7637,129 @@ void segmenter_automaton::setrules() {
 }
 
 //------------------------------------------------------------------------
+
+// Table d'encodage Base64
+static const char base64_chars[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+// Table de décodage Base64
+static const int base64_index[256] = {
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,62,-1,-1,-1,63, // +, /
+    52,53,54,55,56,57,58,59,60,61,-1,-1,-1,-1,-1,-1,  // 0-9
+    -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14, // A-O
+    15,16,17,18,19,20,21,22,23,24,25,-1,-1,-1,-1,-1,  // P-Z
+    -1,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,  // a-o
+    41,42,43,44,45,46,47,48,49,50,51,-1,-1,-1,-1,-1,  // p-z
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+};
+
+// btoa : UTF-32 → Base64 (via UTF-8)
+// Identique au btoa() de JavaScript : convertit d'abord en UTF-8, puis encode en Base64
+std::u32string btoa_utf32(const std::string utf8) {
+    
+    // Étape 2 : Encoder UTF-8 en Base64
+    std::string base64;
+    size_t len = utf8.size();
+    base64.reserve(((len + 2) / 3) * 4);
+    
+    for (size_t i = 0; i < len; i += 3) {
+        uint32_t triplet = 0;
+        int padding = 0;
+        
+        triplet |= (static_cast<unsigned char>(utf8[i])) << 16;
+        
+        if (i + 1 < len) {
+            triplet |= (static_cast<unsigned char>(utf8[i + 1])) << 8;
+        } else {
+            padding++;
+        }
+        
+        if (i + 2 < len) {
+            triplet |= static_cast<unsigned char>(utf8[i + 2]);
+        } else {
+            padding++;
+        }
+        
+        base64 += base64_chars[(triplet >> 18) & 0x3F];
+        base64 += base64_chars[(triplet >> 12) & 0x3F];
+        
+        if (padding < 2) {
+            base64 += base64_chars[(triplet >> 6) & 0x3F];
+        } else {
+            base64 += '=';
+        }
+        
+        if (padding < 1) {
+            base64 += base64_chars[triplet & 0x3F];
+        } else {
+            base64 += '=';
+        }
+    }
+    
+    // Étape 3 : Convertir le résultat Base64 (ASCII) en UTF-32
+    std::u32string result;
+    result.reserve(base64.size());
+    for (char c : base64) {
+        result += static_cast<char32_t>(c);
+    }
+    return result;
+}
+
+// atob : Base64 → UTF-32 (via UTF-8)
+// Identique au atob() de JavaScript : décode du Base64, puis interprète comme UTF-8
+std::string atob_utf32(const std::u32string& input) {
+    // Étape 1 : Convertir Base64 UTF-32 en std::string (ASCII pur)
+    std::string base64;
+    base64.reserve(input.size());
+    for (char32_t c : input) {
+        if (c > 127) throw new Error(U"Invalid Base64 character (non-ASCII)");
+        // Ignorer les espaces et retours chariot
+        if (c == ' ' || c == '\n' || c == '\r' || c == '\t') continue;
+        base64 += static_cast<char>(c);
+    }
+    
+    // Étape 2 : Décoder Base64 → octets UTF-8
+    // Retirer le padding pour calculer la taille
+    size_t len = base64.size();
+    if (len % 4 != 0) throw new Error(U"Invalid Base64 string length");
+    
+    size_t padding = 0;
+    if (len > 0 && base64[len - 1] == '=') padding++;
+    if (len > 1 && base64[len - 2] == '=') padding++;
+    
+    std::string utf8;
+    utf8.reserve((len / 4) * 3 - padding);
+    
+    for (size_t i = 0; i < len; i += 4) {
+        int a = base64_index[static_cast<unsigned char>(base64[i])];
+        int b = base64_index[static_cast<unsigned char>(base64[i + 1])];
+        int c = (base64[i + 2] == '=') ? 0 : base64_index[static_cast<unsigned char>(base64[i + 2])];
+        int d = (base64[i + 3] == '=') ? 0 : base64_index[static_cast<unsigned char>(base64[i + 3])];
+        
+        if (a < 0 || b < 0 || (base64[i + 2] != '=' && c < 0) || (base64[i + 3] != '=' && d < 0)) {
+            throw new Error(U"Invalid Base64 character");
+        }
+        
+        uint32_t triplet = (a << 18) | (b << 12) | (c << 6) | d;
+        
+        utf8 += static_cast<char>((triplet >> 16) & 0xFF);
+        if (base64[i + 2] != '=') {
+            utf8 += static_cast<char>((triplet >> 8) & 0xFF);
+        }
+        if (base64[i + 3] != '=') {
+            utf8 += static_cast<char>(triplet & 0xFF);
+        }
+    }
+    
+    // Étape 3 : Convertir UTF-8 → UTF-32
+    return utf8;
+}

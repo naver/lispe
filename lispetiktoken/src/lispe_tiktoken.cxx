@@ -507,8 +507,9 @@ public:
         Element* vocab = lisp->get_variable(L"vocab");
         Element* special = lisp->get_variable(L"special_tokens");
         Element* pattern = lisp->get_variable(L"pattern");
-        if (vocab->type != t_dictionary)
+        if (vocab->type != t_dictionary && vocab->type != t_dictionaryjson)
             throw new Error("Wrong vocabulary format for tiktoken");
+            
         Vocab vocabulary;
         string s;
         std::vector<uint8_t> v;

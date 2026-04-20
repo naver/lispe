@@ -431,7 +431,7 @@ Element* List_class_eval::eval(LispE* lisp) {
     if (class_definition->same) {
         try {
             if (sz != size() - 1)
-                throw new Error("Error: argument list mismatch with the parameter list");
+                return lisp->check_error(this, new Error("Error: argument list mismatch with the parameter list"), idxinfo);
     
             // For each of the parameters we record in the stack
             for (i = 0; i < sz; i++) {
@@ -465,7 +465,7 @@ Element* List_class_eval::eval(LispE* lisp) {
             
             for (i = 0; i < sz; i++) {
                 if (nv->liste[i] == emptyatom_)
-                    throw new Error("Error: Missing arguments");
+                    return lisp->check_error(this, new Error("Error: Missing arguments"), idxinfo);
             }
         }
         catch (Error* err) {
@@ -523,7 +523,7 @@ Element* List_class_eval::eval(LispE* lisp) {
             element = p->liste[i];
             switch(element->size()) {
                 case 0:
-                    throw new Error("Error: Missing arguments");
+                    return lisp->check_error(this, new Error("Error: Missing arguments"), idxinfo);
                 case 1:
                     data = null_;
                     break;
@@ -596,11 +596,12 @@ Element* List_function_eval::eval(LispE* lisp) {
     Element* element;
     try {
         do {
+            i = 3;
             if (nbinstructions == 4)
-                element = body->liste[3]->eval(lisp);
+                element = body->liste[i]->eval(lisp);
             else {
                 element = null_;
-                for (i = 3; i < nbinstructions && element != terminal_ && element->type != l_return; i++) {
+                for (; i < nbinstructions && element != terminal_ && element->type != l_return; i++) {
                     element->release();
                     element = body->liste[i]->eval(lisp);
                 }
@@ -619,7 +620,10 @@ Element* List_function_eval::eval(LispE* lisp) {
     catch (Error* err) {
         lisp->pop();
         lisp->check_end_trace(tr, localtrace);
-        return lisp->check_error(this, err, idxinfo);
+        i = body->liste[i]->infoIdx();
+        if (!i)
+            i = idxinfo;
+        return lisp->check_error(this, err, i);
     }
     
     lisp->resetStack();
@@ -649,7 +653,7 @@ Element* List_thread_eval::eval(LispE* lisp) {
         message += L" ";
         message += body->liste[2]->asString(lisp);
         message += L"...)'";
-        throw new Error(message);
+        return lisp->check_error(this, new Error(message), idxinfo);
     }
     
     if (defaultarguments == parameters->size())
@@ -666,7 +670,7 @@ Element* List_thread_eval::eval(LispE* lisp) {
     the->thid = new std::thread(launchthread, the);
     if (the->thid == NULL) {
         delete the;
-        throw new Error("Error: Too many threads created. Cannot execute it...");
+        return lisp->check_error(this, new Error("Error: Too many threads created. Cannot execute it..."), idxinfo);
     }
     
     lisp->delegation->clean_threads(the);
@@ -733,12 +737,12 @@ Element* List_library_pattern_eval::eval(LispE* lisp) {
                 if (match != check_ok) {
                     element->release();
                     if (match == check_mismatch)
-                        throw new Error(L"Error: Size mismatch between argument list and data structure definition");
+                        return lisp->check_error(this, new Error(L"Error: Size mismatch between argument list and data structure definition"), idxinfo);
                     else {
                         std::wstringstream message;
                         message << L"Error: Mismatch on argument: " << match;
                         message << " (" << lisp->asString(lisp->getDataStructure(ilabel)->index(match)->label()) << " required)";
-                        throw new Error(message.str());
+                        return lisp->check_error(this, new Error(message.str()), idxinfo);
                     }
                 }
             }
@@ -879,6 +883,7 @@ Element* List_data_eval::eval(LispE* lisp) {
     values->append(first);
     Element* element;
     long nbarguments = liste.size()-1;
+
     try {
         for (long i = 1; i <= nbarguments; i++) {
             element = liste[i]->eval(lisp);
@@ -942,12 +947,12 @@ Element* List_pattern_eval::eval(LispE* lisp) {
                 if (match != check_ok) {
                     element->release();
                     if (match == check_mismatch)
-                        throw new Error(L"Error: Size mismatch between argument list and data structure definition");
+                        return lisp->check_error(this, new Error(L"Error: Size mismatch between argument list and data structure definition"), idxinfo);
                     else {
                         std::wstringstream message;
                         message << L"Error: Mismatch on argument: " << match;
                         message << " (" << lisp->asString(lisp->getDataStructure(ilabel)->index(match)->label()) << " required)";
-                        throw new Error(message.str());
+                        return lisp->check_error(this, new Error(message.str()), idxinfo);
                     }
                 }
             }
@@ -1072,11 +1077,12 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     try {
         nbarguments = current_body->size();
         do {
+            i = 3;
             if (nbarguments == 4)
-                element = current_body->index(3)->eval(lisp);
+                element = current_body->index(i)->eval(lisp);
             else {
                 element = null_;
-                for (i = 3; i < nbarguments && element != terminal_ && element->type != l_return; i++) {
+                for (; i < nbarguments && element != terminal_ && element->type != l_return; i++) {
                     element->release();
                     element = current_body->index(i)->eval(lisp);
                 }
@@ -1097,7 +1103,10 @@ Element* List_pattern_eval::eval(LispE* lisp) {
         arguments->release();
         lisp->pop();
         lisp->check_end_trace(tr, localtrace);
-        return lisp->check_error(this, err, idxinfo);
+        i = current_body->index(i)->infoIdx();
+        if (!i)
+            i = idxinfo;
+        return lisp->check_error(this, err, i);
     }
 
     arguments->release(element);
@@ -1165,10 +1174,8 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         arguments->release();
-#ifndef LISPE_WASM_NO_EXCEPTION
-        err->release();
-#endif
-        return null_;
+        lisp->resetStack();
+        return lisp->check_error(this, err, idxinfo);
     }
 
     char tr = lisp->check_trace_in_function();
@@ -1177,6 +1184,8 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
     if (space == -1) {
         arguments->release();
+        lisp->resetStack();
+        lisp->check_end_trace(tr, localtrace);
         wstring message = L"Error: Could not find a match for function: '";
         message += lisp->asString(function_label);
         message += L"'";
@@ -1196,11 +1205,15 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             break;
         }
     }
+    
     if (current_body == NULL) {
         arguments->release();
         lisp->resetStack();
         lisp->check_end_trace(tr, localtrace);
-        return null_;
+        wstring message = L"Error: Could not find a match for function: '";
+        message += lisp->asString(function_label);
+        message += L"'";
+        return lisp->check_error(this, new Error(message), idxinfo);
     }
 
     ilabel = 1;
@@ -1208,6 +1221,8 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     lisp->push(current_body);
     Element* copying;
     Element* ele;
+    Element* current_error = null_;
+
     
     while (current_body != NULL) {
         match = false;
@@ -1260,21 +1275,32 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             arguments->release();
             lisp->resetStack();
             lisp->check_end_trace(tr, localtrace);
-            return null_;
+            if (current_error == null_) {
+                wstring message = L"Error: Could not find a match for function: '";
+                message += lisp->asString(function_label);
+                message += L"'";
+                return lisp->check_error(this, new Error(message), idxinfo);
+            }
+            return lisp->check_error(this, (Error*)current_error, idxinfo);
         }
         
         bool success = true;
         element = true_;
+#ifndef LISPE_WASM_NO_EXCEPTION
+        current_error->release();
+#endif
+        current_error = null_;
         try {
+            i = 3;
             long nbinstructions = current_body->size();
             if (nbinstructions == 4) {
-                element = current_body->index(3)->eval(lisp);
+                element = current_body->index(i)->eval(lisp);
                 success = element->Boolean();
             }
             else {
                 element = true_;
                 success = true;
-                for (i = 3; i < nbinstructions && element->type != l_return && success; i++) {
+                for (; i < nbinstructions && element->type != l_return && success; i++) {
                     element->release();
                     element = current_body->index(i)->eval(lisp);
                     success = element->Boolean();
@@ -1291,9 +1317,10 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             }
         }
         catch (Error* err) {
-#ifndef LISPE_WASM_NO_EXCEPTION
-        err->release();
-#endif
+            current_error = err;
+            i = current_body->index(i)->infoIdx();
+            if (!i)
+                i = idxinfo;
             success = false;
         }
         if (success) {
@@ -1304,6 +1331,8 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             return lisp->pop(element);
         }
         element->release();
+        if (current_error != null_)
+            break;
         current_body = NULL;
         if (ilabel < sz) {
             lisp->clear_top_stack();
@@ -1326,11 +1355,15 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     }
     arguments->release();
     lisp->pop(null_);
+    lisp->resetStack();
     lisp->check_end_trace(tr, localtrace);
-    wstring message = L"Error: Could not find a match for function: '";
-    message += lisp->asString(function_label);
-    message += L"'";
-    return lisp->check_error(this, new Error(message), idxinfo);
+    if (current_error == null_) {
+        wstring message = L"Error: Could not find a match for function: '";
+        message += lisp->asString(function_label);
+        message += L"'";
+        return lisp->check_error(this, new Error(message), idxinfo);
+    }
+    return lisp->check_error(this, (Error*)current_error, (int)i);
 }
 
 /*
@@ -1392,22 +1425,21 @@ Element* List_prolog_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         arguments->release();
-#ifndef LISPE_WASM_NO_EXCEPTION
-        err->release();
-#endif
-        return null_;
+        lisp->resetStack();
+        return lisp->check_error(this, err, idxinfo);
     }
 
     char tr = lisp->check_trace_in_function();
+
+    List* final_result = lisp->provideList();
 
     current_body = NULL;
     int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
     if (space == -1) {
         arguments->release();
-        wstring message = L"Error: Could not find a match for function: '";
-        message += lisp->asString(function_label);
-        message += L"'";
-        return lisp->check_error(this, new Error(message), idxinfo);
+        lisp->resetStack();
+        lisp->check_end_trace(tr, localtrace);
+        return final_result;
     }
 
     auto& functions = lisp->delegation->method_pool[space]->at(function_label);
@@ -1427,7 +1459,7 @@ Element* List_prolog_eval::eval(LispE* lisp) {
         arguments->release();
         lisp->resetStack();
         lisp->check_end_trace(tr, localtrace);
-        return null_;
+        return final_result;
     }
 
     ilabel = 1;
@@ -1436,7 +1468,6 @@ Element* List_prolog_eval::eval(LispE* lisp) {
     Element* copying;
     Element* ele;
     
-    List* final_result = lisp->provideList();
     bool end_of_execution = false;
     
     while (current_body != NULL) {
@@ -2709,7 +2740,7 @@ Element* Listincode::eval_call_function(LispE* lisp) {
         case t_class_instance:
             return execute_instance_function(lisp, (List_instance*)body);
         default: {
-            throw new Error("Unknown function call");
+            return lisp->check_error(this, new Error("Unknown function call"), idxinfo);
         }
     }
 }
@@ -2968,7 +2999,7 @@ Element* List_scan_eval::eval(LispE* lisp) {
             long increment;
             evalAsInteger(3, lisp, increment);
             if (increment <= 0)
-                throw new Error("Error: wrong value for the increment");
+                return lisp->check_error(this, new Error("Error: wrong value for the increment"), idxinfo);
             //We will slice our list in slices of size increment
             Element* slice;
             long nb_elements;
@@ -3151,7 +3182,7 @@ Element* List::backscan(LispE* lisp, Element* current_list, long sz) {
 
 Element* List_lambda_eval::backscan(LispE* lisp, Element* current_list, long sz) {
     if (labels.size() != 2)
-        throw new Error("Error: Wrong number of arguments");
+        return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
     
     List* res = lisp->provideList();
 
@@ -3202,7 +3233,7 @@ Element* List_backscan_eval::eval(LispE* lisp) {
     Element* current_list = liste[2]->eval(lisp);
     if (!current_list->isList()) {
         current_list->release();
-        throw new Error("Error: argument for 'backscan' should be a list");
+        return lisp->check_error(this, new Error("Error: argument for 'backscan' should be a list"), idxinfo);
     }
 
     Element* op = null_;
@@ -3221,7 +3252,7 @@ Element* List_backscan_eval::eval(LispE* lisp) {
             long increment;
             evalAsInteger(3, lisp, increment);
             if (increment <= 0)
-                throw new Error("Error: wrong value for the increment");
+                return lisp->check_error(this, new Error("Error: wrong value for the increment"), idxinfo);
             //We will slice our list in slices of size increment
             Element* slice;
             long nb_elements;
@@ -3411,7 +3442,7 @@ Element* List::reduce(LispE* lisp, Element* current_list, long sz) {
 
 Element* List_lambda_eval::reduce(LispE* lisp, Element* current_list, long sz) {
     if (labels.size() != 2)
-        throw new Error("Error: Wrong number of arguments");
+        return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
     
     int16_t arg1 = 0;
     int16_t arg2 = 0;
@@ -3480,7 +3511,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
         current_list = liste[2]->eval(lisp);
         
         if (!current_list->isList())
-            throw new Error("Error: argument for 'reduce' should be a list");
+            return lisp->check_error(this, new Error("Error: argument for 'reduce' should be a list"), idxinfo);
         
         sz = current_list->size();
         if (!sz) {
@@ -3497,7 +3528,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
             long increment;
             evalAsInteger(3, lisp, increment);
             if (increment <= 0)
-                throw new Error("Error: wrong value for the increment");
+                return lisp->check_error(this, new Error("Error: wrong value for the increment"), idxinfo);
             //We will slice our list in slices of size increment
             Element* slice;
             long nb_elements;
@@ -3673,7 +3704,7 @@ Element* List::backreduce(LispE* lisp, Element* current_list, long sz) {
 
 Element* List_lambda_eval::backreduce(LispE* lisp, Element* current_list, long sz) {
     if (labels.size() != 2)
-        throw new Error("Error: Wrong number of arguments");
+        return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
     
     int16_t arg1 = 0;
     int16_t arg2 = 0;
@@ -3751,7 +3782,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         current_list = liste[2]->eval(lisp);
         
         if (!current_list->isList())
-            throw new Error("Error: argument for 'backreduce' should be a list");
+            return lisp->check_error(this, new Error("Error: argument for 'backreduce' should be a list"), idxinfo);
         
         sz = current_list->size();
         if (!sz) {
@@ -3766,7 +3797,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
             long increment;
             evalAsInteger(3, lisp, increment);
             if (increment <= 0)
-                throw new Error("Error: wrong value for the increment");
+                return lisp->check_error(this, new Error("Error: wrong value for the increment"), idxinfo);
             //We will slice our list in slices of size increment
             Element* slice;
             long nb_elements;
@@ -3965,7 +3996,7 @@ Element* List_maplist_eval::eval(LispE* lisp) {
             if (e->size())
                 call = lisp->provideCallforTWO(e, ps);
             else
-                throw new Error("Error: empty list not accepted here");
+                return lisp->check_error(this, new Error("Error: empty list not accepted here"), idxinfo);
         }
         else {
             op = eval_body_as_argument(lisp, op);
@@ -3986,6 +4017,7 @@ Element* List_maplist_eval::eval(LispE* lisp) {
         if (choice) {
             switch (e->type) {
                 case t_string:
+                case t_longstring:
                     container = lisp->provideStrings();
                     break;
                 case t_stringbyte:
@@ -4099,7 +4131,10 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                 case t_string:
                     result = lisp->provideString();
                     break;
-                case t_stringbyte:
+                case t_longstring:
+                    result = new Longstring();
+                    break;
+               case t_stringbyte:
                     result = new Stringbyte();
                     break;
                 case t_llist:
@@ -4128,10 +4163,10 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
         
         if (op->isLambda()) {
             if (!op->index(1)->size())
-                throw new Error("Error: Wrong number of arguments");
+                return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
             label = op->index(1)->index(0)->label();
             if (label < l_final)
-                throw new Error("Error: Wrong argument");
+                return lisp->check_error(this, new Error("Error: Wrong argument"), idxinfo);
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
@@ -4182,7 +4217,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                 if (e->size())
                     call = lisp->provideCallforTWO(e, ps);
                 else
-                    throw new Error("Error: empty list not accepted here");
+                    return lisp->check_error(this, new Error("Error: empty list not accepted here"), idxinfo);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -4291,6 +4326,9 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                 case t_string:
                     result = lisp->provideString();
                     break;
+                case t_longstring:
+                    result = new Longstring();
+                    break;
                 case t_stringbytes:
                     result = new Stringbytes();
                     break;
@@ -4323,10 +4361,10 @@ Element* List_takelist_eval::eval(LispE* lisp) {
         
         if (op->isLambda()) {
             if (!op->index(1)->size())
-                throw new Error("Error: Wrong number of arguments");
+                return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
             label = op->index(1)->index(0)->label();
             if (label < l_final)
-                throw new Error("Error: Wrong argument");
+                return lisp->check_error(this, new Error("Error: Wrong argument"), idxinfo);
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
@@ -4384,7 +4422,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                 if (e->size())
                     call = lisp->provideCallforTWO(e, ps);
                 else
-                    throw new Error("Error: empty list not accepted here");
+                    return lisp->check_error(this, new Error("Error: empty list not accepted here"), idxinfo);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -4498,6 +4536,9 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                 case t_string:
                     result = lisp->provideString();
                     break;
+                case t_longstring:
+                    result = new Longstring();
+                    break;
                 case t_stringbytes:
                     result = new Stringbytes();
                     break;
@@ -4534,10 +4575,10 @@ Element* List_droplist_eval::eval(LispE* lisp) {
         
         if (op->isLambda()) {
             if (!op->index(1)->size())
-                throw new Error("Error: Wrong number of arguments");
+                return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
             label = op->index(1)->index(0)->label();
             if (label < l_final)
-                throw new Error("Error: Wrong argument");
+                return lisp->check_error(this, new Error("Error: Wrong argument"), idxinfo);
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
@@ -4591,7 +4632,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                 if (e->size())
                     call = lisp->provideCallforTWO(e, ps);
                 else
-                    throw new Error("Error: empty list not accepted here");
+                    return lisp->check_error(this, new Error("Error: empty list not accepted here"), idxinfo);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -4686,10 +4727,10 @@ Element* List_scanlist_eval::eval(LispE* lisp) {
                 
         if (op->isLambda()) {
             if (!op->index(1)->size())
-                throw new Error("Error: Wrong number of arguments");
+                return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
             label = op->index(1)->index(0)->label();
             if (label < l_final)
-                throw new Error("Error: Wrong argument");
+                return lisp->check_error(this, new Error("Error: Wrong argument"), idxinfo);
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
@@ -4716,7 +4757,7 @@ Element* List_scanlist_eval::eval(LispE* lisp) {
                 if (e->size())
                     call = lisp->provideCallforTWO(e, ps);
                 else
-                    throw new Error("Error: empty list not accepted here");
+                    return lisp->check_error(this, new Error("Error: empty list not accepted here"), idxinfo);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -4784,7 +4825,7 @@ Element* List_outerproduct_eval::eval(LispE* lisp) {
         l2 = liste[3]->eval(lisp);
         
         if (!l1->isList() || !l2->isList())
-            throw new Error("Error: arguments for '°' are lists");
+            return lisp->check_error(this, new Error("Error: arguments for '°' are lists"), idxinfo);
         
         if (l1 == l2) {
             switch (l2->type) {
@@ -4963,7 +5004,7 @@ Element* List_zipwith_eval::eval(LispE* lisp) {
     Element* container = liste[2]->eval(lisp);
     if (!container->isList()) {
         container->release();
-        throw new Error(L"Error: 'zipwith' only accepts lists as arguments");
+        return lisp->check_error(this, new Error(L"Error: 'zipwith' only accepts lists as arguments"), idxinfo);
     }
     
     int16_t listsize = size();
@@ -4997,7 +5038,7 @@ Element* List_zipwith_eval::eval(LispE* lisp) {
                 container = null_;
             }
             else
-                throw new Error(L"Error: 'zipwith' only accepts lists of same size as arguments");
+                return lisp->check_error(this, new Error(L"Error: 'zipwith' only accepts lists of same size as arguments"), idxinfo);
         }
         
         if (!szl) {
@@ -5026,6 +5067,7 @@ Element* List_zipwith_eval::eval(LispE* lisp) {
         if (choose) {
             switch (value->type) {
                 case t_string:
+                case t_longstring:
                     container = lisp->provideStrings();
                     break;
                 case t_stringbyte:
@@ -5084,7 +5126,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
         //First element is the comparison function OR an operator
         container = liste[2]->eval(lisp);
         if (!container->isList())
-            throw new Error(L"Error: the second argument should be a list for 'sort'");
+            return lisp->check_error(this, new Error(L"Error: the second argument should be a list for 'sort'"), idxinfo);
     }
     catch (Error* err) {
         comparator->force_release();
@@ -5104,7 +5146,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             try {
                 complist = NULL;
                 if (!comparator->isList())
-                    throw new Error("Error: Expecting a list");
+                    return lisp->check_error(this, new Error("Error: Expecting a list"), idxinfo);
                 
                 complist = (List*)comparator;
                 complist->append(null_);
@@ -5141,7 +5183,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             complist->in_quote(2, l->index(0));
             try {
                 if (complist->eval(lisp)->Boolean()) {
-                    throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+                    return lisp->check_error(this, new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'."), idxinfo);
                 }
             }
             catch (Error* err) {
@@ -5176,7 +5218,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             complist->in_quote(2, l->index(0));
             try {
                 if (complist->eval(lisp)->Boolean()) {
-                    throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+                    return lisp->check_error(this, new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'."), idxinfo);
                 }
             }
             catch (Error* err) {

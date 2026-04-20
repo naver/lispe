@@ -24,7 +24,7 @@
 //String method implementation
 //------------------------------------------------------------
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit, str_btoa, str_atob,
     str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_chrbyte, str_is_punctuation,
     str_format, str_padding, str_fill, str_getstruct, str_startwith, str_endwith, str_sprintf,
     str_edit_distance, str_read_json, str_write_json, str_parse_json, str_string_json, str_json_dictionary, str_ngrams,
@@ -426,6 +426,8 @@ public:
             sformat = s_ureplacestring(sformat, v, e->asUString(lisp));
             v[0] = U'n';
         }
+        if (val->type == t_longstring)
+            return new Longstring(sformat);
         return lisp->provideString(sformat);
     }
 
@@ -500,9 +502,13 @@ public:
         }
         if (left) {
             padd += value;
+            if (val->type == t_longstring)
+                return new Longstring(padd);
             return lisp->provideString(padd);
         }
         value += padd;
+        if (val->type == t_longstring)
+            return new Longstring(value);
         return lisp->provideString(value);
     }
 
@@ -646,8 +652,11 @@ public:
         }
         
         u_ustring sval;
-        if (nb <= 0)
+        if (nb <= 0) {
+            if (v->type == t_longstring)
+                return new Longstring(sval);
             return lisp->provideString(sval);
+        }
         
         sval = v->asUString(lisp);
         u_ustring val;
@@ -656,6 +665,9 @@ public:
             nb--;
         }
         
+        if (v->type == t_longstring)
+            return new Longstring(val);
+
         return lisp->provideString(val);
     }
     
@@ -1189,7 +1201,7 @@ public:
                 Element* end =  lisp->get_variable(v_str);
                 if (end->type == t_stringbyte)
                     return method_replace8(lisp, end);
-                if (end->type != t_string)
+                if (end->type != t_string && end->type != t_longstring)
                     throw new Error("Error: cannot apply 'replace' to this type of object");
                 return method_replace(lisp, end);
             }
@@ -1197,6 +1209,10 @@ public:
                 Element* v = lisp->get_variable(v_str);
                 u_ustring s =  v->asUString(lisp);
                 s = lisp->handlingutf8->u_to_lower(s);
+                if (v->type == t_stringbyte)
+                    return new Stringbyte(s);
+                if (v->type == t_longstring)
+                    return new Longstring(s);
                 return lisp->provideString(s);
             }
             case str_uppercase: {
@@ -1205,13 +1221,13 @@ public:
                 s = lisp->handlingutf8->u_to_upper(s);
                 if (v->type == t_stringbyte)
                     return new Stringbyte(s);
+                if (v->type == t_longstring)
+                    return new Longstring(s);
                 return lisp->provideString(s);
             }
             case str_is_emoji: {
                 Element* v = lisp->get_variable(v_str);
                 u_ustring s =  v->asUString(lisp);
-                if (v->type == t_stringbyte)
-                    return new Stringbyte(s);
                 return booleans_[lisp->handlingutf8->u_is_emoji(s)];
             }
             case str_is_lowercase: {
@@ -1240,6 +1256,8 @@ public:
                 }
                 u_ustring s =  v->asUString(lisp);
                 s = s_uleft(s,n);
+                if (v->type == t_longstring)
+                    return new Longstring(s);
                 return lisp->provideString(s);
             }
             case str_right: {
@@ -1252,6 +1270,8 @@ public:
                 }
                 u_ustring s =  v->asUString(lisp);
                 s = s_uright(s, n);
+                if (v->type == t_longstring)
+                    return new Longstring(s);
                 return lisp->provideString(s);
             }
             case str_middle: {
@@ -1265,6 +1285,8 @@ public:
                 }
                 u_ustring strvalue =  v->asUString(lisp);
                 strvalue = s_umiddle(strvalue,p,n);
+                if (v->type == t_longstring)
+                    return new Longstring(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_ngrams: {
@@ -1283,6 +1305,8 @@ public:
                 
                 u_ustring strvalue =  v->asUString(lisp);
                 strvalue = u_trim0(strvalue);
+                if (v->type == t_longstring)
+                    return new Longstring(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trim:  {
@@ -1295,6 +1319,8 @@ public:
                 
                 u_ustring strvalue =  v->asUString(lisp);
                 strvalue = u_trim(strvalue);
+                if (v->type == t_longstring)
+                    return new Longstring(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trimleft:  {
@@ -1307,6 +1333,8 @@ public:
                 
                 u_ustring strvalue =  v->asUString(lisp);
                 strvalue = u_trimleft(strvalue);
+                if (v->type == t_longstring)
+                    return new Longstring(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trimright:  {
@@ -1319,6 +1347,8 @@ public:
                 
                 u_ustring strvalue =  v->asUString(lisp);
                 strvalue = u_trimright(strvalue);
+                if (v->type == t_longstring)
+                    return new Longstring(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_split_empty:
@@ -1436,6 +1466,8 @@ public:
                 s = lisp->handlingutf8->s_deaccentuate(s);
                 if (v->type == t_stringbyte)
                     return new Stringbyte(s);
+                if (v->type == t_longstring)
+                    return new Longstring(s);
                 return lisp->provideString(s);
             }
             case str_segment_lispe: {
@@ -1553,6 +1585,16 @@ public:
             }
             case str_base: {
                 return methodBase(lisp);
+            }
+            case str_atob: {
+                u_ustring v = lisp->get_variable(v_str)->asUString(lisp);
+                string res = atob_utf32(v);
+                return lisp->provideString(res);
+            }
+            case str_btoa:{
+                string v = lisp->get_variable(v_str)->toString(lisp);
+                u_ustring res = btoa_utf32(v);
+                return lisp->provideString(res);
             }
             case str_indent: {
                 bool lm = lisp->get_variable(U"lispmode")->Boolean();
@@ -1691,6 +1733,13 @@ public:
                 return L"Check if a string ends with a given string";
             case str_json_dictionary:
                 return L"Creates a JSON dictionary, where keys are ordered along creation";
+            case str_atob: {
+                return L"Converts a string from Base64";
+            }
+            case str_btoa:{
+                return L"Converts a string into Base64";
+            }
+
         }
 		return L"";
     }
@@ -1726,6 +1775,9 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));
     lisp->extension("deflib startwith (str fnd)", new Stringmethod(lisp, str_startwith));
     lisp->extension("deflib endwith (str fnd)", new Stringmethod(lisp, str_endwith));
+
+    lisp->extension("deflib btoa (str)", new Stringmethod(lisp, str_btoa));
+    lisp->extension("deflib atob (str)", new Stringmethod(lisp, str_atob));
 
     lisp->extension("deflib lowerp (str)", new Stringmethod(lisp, str_is_lowercase));
     lisp->extension("deflib upperp (str)", new Stringmethod(lisp, str_is_uppercase));

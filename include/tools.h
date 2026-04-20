@@ -79,7 +79,16 @@ Exporting string jsonstring(string value);
 Exporting wstring wjsonstring(wstring value);
 Exporting wstring wjsonstring(u_ustring value);
 Exporting u_ustring ujsonstring(u_ustring value);
+
+Exporting string doublequoted(string value);
+Exporting wstring wdoublequoted(wstring value);
+Exporting wstring wdoublequoted(u_ustring value);
+Exporting u_ustring udoublequoted(u_ustring value);
+
 Exporting string cs_unicode_to_utf8(UWCHAR code);
+
+Exporting std::u32string btoa_utf32(const std::string utf8);
+Exporting std::string atob_utf32(const std::u32string& input);
 
 UWCHAR getonechar(string& s, long& i);
 

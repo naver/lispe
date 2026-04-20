@@ -1392,6 +1392,7 @@ public:
     Element* evall_atomise(LispE* lisp);
     Element* evall_atomp(LispE* lisp);
     Element* evall_atoms(LispE* lisp);
+    Element* evall_aslongstring(LispE* lisp);
     Element* evall_bitandequal(LispE* lisp);
     Element* evall_bitandnotequal(LispE* lisp);
     Element* evall_bitorequal(LispE* lisp);
@@ -1402,6 +1403,7 @@ public:
     Element* evall_compile(LispE* lisp);
     Element* evall_conspoint(LispE* lisp);
     Element* evall_consp(LispE* lisp);
+    Element* evall_containerp(LispE* lisp);
     Element* evall_complex(LispE* lisp);
     Element* evall_real(LispE* lisp);
     Element* evall_imaginary(LispE* lisp);
@@ -1483,6 +1485,7 @@ public:
     Element* evall_threadstore(LispE* lisp);
     Element* evall_threadspace(LispE* lisp);
     Element* evall_throw(LispE* lisp);
+    Element* evall_stop(LispE* lisp);
     Element* evall_trace(LispE* lisp);
     Element* evall_transpose(LispE* lisp);
     Element* evall_trigger(LispE* lisp);
@@ -1520,6 +1523,8 @@ public:
     Element* evall_plus(LispE* lisp);
     Element* evall_infix(LispE* lisp);
     Element* eval_infix(LispE* lisp);
+    
+    Element* evall_memory(LispE* lisp);
     
     //Composable functions
     Element* evall_map_cps(LispE*);
@@ -2794,6 +2799,33 @@ public:
     }
 };
 
+class List_containerp_eval : public Listincode {
+public:
+    List_containerp_eval(Listincode* l) : Listincode(l) {}
+    List_containerp_eval() {}
+    List_containerp_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_containerp_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_containerp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_containerp_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp) {
+        return evall_containerp(lisp);
+    }
+};
+
 class List_emptyp_eval : public Listincode {
 public:
     List_emptyp_eval(Listincode* l) : Listincode(l) {}
@@ -3249,6 +3281,33 @@ public:
     
     List* cloning() {
         return new List_in_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_in_it_eval : public Listincode {
+public:
+    
+    List_in_it_eval(Listincode* l) : Listincode(l) {}
+    List_in_it_eval(List* l) : Listincode(l) {}
+    List_in_it_eval() {}
+    List_in_it_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_in_it_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_in_it_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_in_it_eval(multiple);
     }
     
     Element* eval(LispE* lisp);
@@ -11839,7 +11898,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += L" ";
-            buffer += wjsonstring(liste[i]);
+            buffer += wdoublequoted(liste[i]);
         }
         buffer += L")";
         return buffer;
@@ -11857,7 +11916,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += U" ";
-            buffer += ujsonstring(liste[i]);
+            buffer += udoublequoted(liste[i]);
         }
         buffer += U")";
         return buffer;
@@ -12344,7 +12403,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += " ";
-            buffer += jsonstring(liste[i]);
+            buffer += doublequoted(liste[i]);
         }
         buffer += ")";
         return buffer;
@@ -12364,7 +12423,7 @@ public:
                 buffer += L" ";
             u = L"";
             s_utf8_to_unicode(u, liste[i], liste[i].size());
-            buffer += wjsonstring(u);
+            buffer += wdoublequoted(u);
         }
         buffer += L")";
         return buffer;
@@ -12384,7 +12443,7 @@ public:
                 buffer += U" ";
             u = U"";
             s_utf8_to_unicode(u, liste[i], liste[i].size());
-            buffer += ujsonstring(u);
+            buffer += udoublequoted(u);
         }
         buffer += U")";
         return buffer;

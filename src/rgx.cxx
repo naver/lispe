@@ -988,6 +988,8 @@ public:
             u_ustring res = w.substr(debut, fin - debut);
             if (type == t_stringbyte)
                 return new Stringbyte(res);
+            if (type == t_longstring)
+                return new Longstring(res);
             return lisp->provideString(res);
         }
         return emptystring_;
@@ -1051,6 +1053,8 @@ public:
             w=w.substr(0,resultats[i])+rep+w.substr(resultats[i+1],w.size()-resultats[i+1]);
         if (type == t_stringbyte )
             return new Stringbyte(w);
+        if (type == t_longstring)
+            return new Longstring(w);
         return lisp->provideString(w);
     }
 
@@ -1149,6 +1153,8 @@ public:
                 val = w.substr(b, e - b);
                 if (type == t_stringbyte)
                     return new Stringbyte(val);
+                if (type == t_longstring)
+                    return new Longstring(val);
                 return lisp->provideString(val);
             }
             return emptystring_;
@@ -1160,6 +1166,8 @@ public:
             wstring val = w.substr(b, e - b);
             if (type == t_stringbyte)
                 return new Stringbyte(val);
+            if (type == t_longstring)
+                return new Longstring(val);
             return lisp->provideString(val);
         }
         
@@ -1249,6 +1257,8 @@ public:
         w = regex_replace(w, *au, rep);
         if (type == t_stringbyte)
             return new Stringbyte(w);
+        if (type == t_longstring)
+            return new Longstring(w);
         return lisp->provideString(w);
     }
 

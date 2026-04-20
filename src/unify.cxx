@@ -424,24 +424,11 @@ bool Listargumentclass::unify(LispE* lisp, Element* value, bool record) {
         return false;
     }
     
-    long szvalue = value->size();
-    long ivalue = 0;
-    
-    //this contains a data structure definition
-    //This method is used to check if value matches the data structure in 'this'
-    //rec==false, if the first element is a data structure name...
-    bool test = true;
-    Element* e;
-    long irule = 1;
-    for (; irule < szrules && test; irule++, ivalue++) {
-        e = liste[irule];
-        test = (e == null_ || e->unify_kleene(lisp, value, this, ivalue, irule, rec));
-        rec = record;
-    }
+    Element* e = liste[1];
+    bool test = (e == null_ || e->unify(lisp, value, rec));
     setmark(false);
-    return (test && (irule == szrules) && (ivalue >= szvalue));
+    return test;
 }
-
 
 bool LList::unify(LispE* lisp, Element* value, bool record) {
     if (liste.empty())

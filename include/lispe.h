@@ -261,6 +261,7 @@ public:
         cleaning();
     }
     
+    Element* size();
     //------------------------------------------
 
     void reset_to_true(bool s) {
@@ -552,6 +553,8 @@ public:
     
     Element* execute(string code);
     Element* execute(string code, string path_name);
+    
+    Element* execute_code(string code);
     
     Element* compile_lisp_code(string& code);
     Element* compile_lisp_code(u_ustring& code);

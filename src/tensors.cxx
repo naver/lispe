@@ -1972,7 +1972,7 @@ template<> Element* Tenseur_string::rank(LispE* lisp, vecte<long>& positions) {
     if (res != result)
         result->release();
     
-    if (res->type == t_strings || res->type == t_string)
+    if (res->type == t_strings || res->type == t_string || res->type == t_longstring)
         return res;
     
     //We steal the ITEM structure of res
@@ -4132,6 +4132,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                     second_element = lisp->provideNumbers();
                     break;
                 case t_string:
+                case t_longstring:
                     second_element = lisp->provideStrings();
                     break;
                 case t_stringbyte:
@@ -4733,6 +4734,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
                 values->flatten(lisp, (Numbers*)val);
                 break;
             }
+            case t_longstring:
             case t_string: {
                 val = lisp->provideStrings();
                 values->flatten(lisp, (Strings*)val);
@@ -4769,6 +4771,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
                         result = new Matrice_number(lisp, shape[0], (Numbers*)val, shape[1]);
                         break;
                     }
+                    case t_longstring:
                     case t_string: {
                         result = new Matrice_string(lisp, shape[0], (Strings*)val, shape[1]);
                         break;
@@ -4796,6 +4799,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
                         result = new Tenseur_number(shape, (Numbers*)val);
                         break;
                     }
+                    case t_longstring:
                     case t_string: {
                         result = new Tenseur_string(shape, (Strings*)val);
                         break;

@@ -661,8 +661,11 @@ public:
 
     bool recordingFunction(Element* e, int16_t label, uint16_t space) {
         if (!space) {
-            if (function_pool[space]->check(label))
+            if (function_pool[space]->check(label)) {
+                if ((*function_pool[space])[label] == e)
+                    return true;
                 return false;
+            }
             
             function_spaces[label] = space;
             (*function_pool[space])[label] = e;

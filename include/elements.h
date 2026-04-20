@@ -42,6 +42,8 @@ class Strings;
 class Stringbytes;
 class ITEM;
 
+void increment_total();
+void decrement_total();
 
 #ifdef LISPE_WASM_NO_EXCEPTION
 #define sent_error(e) return lisp->delegation->set_error(new Error(e))
@@ -63,7 +65,7 @@ typedef enum {
     //Default types
     t_emptystring, t_operator, t_atom,
     t_short, t_integer, t_float, t_number, t_complex,
-    t_string, t_plus_string, t_minus_string, t_minus_plus_string, t_stringbyte,
+    t_string, t_plus_string, t_minus_string, t_minus_plus_string, t_stringbyte, t_longstring, 
     t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings, t_stringbytes,
     t_list, t_llist,
     t_matrix_string, t_matrix_stringbyte, t_matrix_short, t_matrix_number, t_matrix_float, t_matrix_integer,
@@ -77,10 +79,10 @@ typedef enum {
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, 
-    l_next, l_compose, l_enumerate, l_record_in_stack, l_force,
+    l_next, l_compose, l_enumerate, l_record_in_stack, l_force, l_stop, l_memory,
     
     //Default Lisp instructions
-    l_number, l_float, l_format, l_string, l_stringbyte, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary, l_bytes,
+    l_number, l_float, l_format, l_string, l_stringbyte, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary, l_bytes, l_aslongstring,
         
     //threads
     l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear, l_threadspace, l_thread,
@@ -98,7 +100,7 @@ typedef enum {
     l_catch, l_throw, l_maybe, l_pattern,
     
     //Check values
-    l_atomp, l_numberp, l_consp, l_emptyp, l_zerop, l_nullp, l_stringp,
+    l_atomp, l_numberp, l_consp, l_emptyp, l_zerop, l_nullp, l_stringp, l_containerp,
     l_quote, l_quoted, l_emptylist,
     //Numerical operations
     l_sign, l_signp, l_minus_plus,
@@ -126,7 +128,7 @@ typedef enum {
     
     //Comparisons
         
-    l_in, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip, l_swap,
+    l_in, l_in_it, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip, l_swap,
     l_fread, l_fwrite, l_fappend, l_fget, l_fput, l_fsize, l_fseek, l_ftell, l_fopen, l_fclose,
     l_bread, l_bwrite, l_bappend,
     
@@ -253,6 +255,8 @@ public:
 #endif
     
     Element(int16_t ty) {
+        increment_total();
+
         type = ty;
         status = s_destructible;
 
@@ -279,6 +283,7 @@ public:
     }
     
     virtual ~Element() {
+        decrement_total();
 #ifdef MACDEBUG
         lock_indexes.lock();
         __indexes[__idx] = NULL;
@@ -463,6 +468,10 @@ public:
     virtual void push_element_true(LispE* lisp, List* l);
     virtual void push_element_front(LispE* lisp, List* l);
     virtual void push_element_back(LispE* lisp, List* l);
+    
+    virtual int infoIdx() {
+        return 0;
+    }
     
     /*
      Duplication is forced
@@ -2848,16 +2857,24 @@ public:
     Element* cdr(LispE*);
     
     
-    virtual wstring wstringInList(LispE* lisp) {
+    wstring jsonString(LispE* lisp) {
         return wjsonstring(content);
+    }
+    
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        os << jsonstring(toString(lisp));
+    }
+
+    virtual wstring wstringInList(LispE* lisp) {
+        return wdoublequoted(content);
     }
 
     virtual string stringInList(LispE* lisp) {
-        return jsonstring(toString(lisp));
+        return doublequoted(toString(lisp));
     }
 
     virtual u_ustring stringInUList(LispE* lisp) {
-        return ujsonstring(content);
+        return udoublequoted(content);
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
@@ -2909,6 +2926,74 @@ public:
     Element* plus(LispE* l, Element* e);
     Element* thekeys(LispE* lisp);
     Element* to_strings(LispE* lisp);
+};
+
+class Longstring : public String {
+public:
+    
+    Longstring() : String() {type = t_longstring;}
+    Longstring(wstring d) : String(d) {type = t_longstring;}
+    Longstring(u_ustring& d) : String(d) {type = t_longstring;}
+    Longstring(u_ustring& d, uint16_t s) : String(d, s) {type = t_longstring;}
+
+    wstring wstringInList(LispE* lisp) {
+        wstring cnt;
+        if (content.find(U"`") == -1) {
+            cnt = L"`";
+            cnt += _u_to_w(content);
+            cnt += L"`";
+            return cnt;
+        }
+        cnt = L"«";
+        cnt += _u_to_w(content);
+        cnt += L"»";
+        return cnt;
+    }
+
+    string stringInList(LispE* lisp) {
+        string cnt;
+        s_unicode_to_utf8(cnt, content);
+        if (content.find(U"`") == -1) {
+            cnt = "`" + cnt;
+            cnt += "`";
+            return cnt;
+        }
+        cnt = "«" + cnt;
+        cnt += "»";
+        return cnt;
+    }
+
+    u_ustring stringInUList(LispE* lisp) {
+        u_ustring cnt;
+        if (content.find(U"`") == -1) {
+            cnt = U"`";
+            cnt += content;
+            cnt += U"`";
+            return cnt;
+        }
+        cnt = U"«";
+        cnt += content;
+        cnt += U"»";
+        return cnt;
+    }
+
+    Element* copyatom(LispE* lisp, uint16_t s) {
+        return (status < s)?this:new Longstring(content);
+    }
+    
+    Element* fullcopy() {
+        return new Longstring(content);
+    }
+
+    // There is a difference between the two copies
+    //The first one makes a final copy
+    virtual Element* copying(bool duplicate = true) {
+        if (!status)
+            return this;
+        
+        return new Longstring(content);
+    }
+
 };
 
 class Stringpool : public String {
@@ -3119,16 +3204,24 @@ public:
     Element* cdr(LispE*);
     
     
-    virtual string stringInList(LispE* lisp) {
-        return jsonstring(toString(lisp));
+    wstring jsonString(LispE* lisp) {
+        return wjsonstring(asString(lisp));
+    }
+    
+    void jsonStream(LispE* lisp, std::ostream& os) {
+        os << jsonstring(toString(lisp));
     }
 
-    virtual wstring wstringInList(LispE* lisp) {
-        return wjsonstring(asUString(lisp));
+    wstring wstringInList(LispE* lisp) {
+        return wdoublequoted(asString(lisp));
     }
 
-    virtual u_ustring stringInUList(LispE* lisp) {
-        return ujsonstring(asUString(lisp));
+    string stringInList(LispE* lisp) {
+        return doublequoted(toString(lisp));
+    }
+
+    u_ustring stringInUList(LispE* lisp) {
+        return udoublequoted(asUString(lisp));
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
@@ -3816,7 +3909,7 @@ public:
             }
             else
                 premier = false;
-            tampon += wjsonstring(a.first);
+            tampon += wdoublequoted(a.first);
             tampon += L":";
             tampon += a.second->wstringInList(lisp);
         }
@@ -3844,7 +3937,7 @@ public:
             }
             else
                 premier = false;
-            tampon += ujsonstring(a.first);
+            tampon += udoublequoted(a.first);
             tampon += U":";
             tampon += a.second->stringInUList(lisp);
         }
@@ -3897,6 +3990,11 @@ public:
         e->increment();
     }
 
+    void store(u_ustring k, Element* e) {
+        dictionary[k] = e;
+        e->increment();
+    }
+    
     Element* replace(LispE* lisp, Element* i, Element* e) {
         u_ustring k = i->asUString(lisp);
         recording(k, e);
@@ -4124,7 +4222,7 @@ public:
             }
             else
                 premier = false;
-            tampon += wjsonstring(the_keys[i]);
+            tampon += wdoublequoted(the_keys[i]);
             tampon += L":";
             tampon += dictionary[the_keys[i]]->wstringInList(lisp);
         }
@@ -4152,7 +4250,7 @@ public:
             }
             else
                 premier = false;
-            tampon += ujsonstring(the_keys[i]);
+            tampon += udoublequoted(the_keys[i]);
             tampon += U":";
             tampon += dictionary[the_keys[i]]->stringInUList(lisp);
         }
@@ -4300,6 +4398,10 @@ public:
         return true;
     }
     
+    bool isContainer() {
+        return true;
+    }
+
     bool isEmpty() {
         return dictionary.empty();
     }
@@ -4314,10 +4416,6 @@ public:
             release();
             e->decrementkeep();
         }
-        return true;
-    }
-
-    bool isContainer() {
         return true;
     }
     
@@ -4750,6 +4848,10 @@ public:
         return true;
     }
     
+    bool isContainer() {
+        return true;
+    }
+
     bool isEmpty() {
         return dictionary.empty();
     }
@@ -4775,10 +4877,6 @@ public:
             release();
             e->decrementkeep();
         }
-        return true;
-    }
-
-    bool isContainer() {
         return true;
     }
     
@@ -5323,7 +5421,7 @@ public:
             }
             else
                 premier = false;
-            tampon += wjsonstring(a);
+            tampon += wdoublequoted(a);
         }
         tampon += L"}";
         return tampon;
@@ -5342,7 +5440,7 @@ public:
             }
             else
                 premier = false;
-            tampon += ujsonstring(a);
+            tampon += udoublequoted(a);
         }
         tampon += U"}";
         return tampon;
@@ -6793,7 +6891,7 @@ public:
             }
             else
                 premier = false;
-            tampon += wjsonstring(a.first);
+            tampon += wdoublequoted(a.first);
             tampon += L":";
             tampon += a.second->wstringInList(lisp);
         }
@@ -6821,7 +6919,7 @@ public:
             }
             else
                 premier = false;
-            tampon += ujsonstring(a.first);
+            tampon += udoublequoted(a.first);
             tampon += U":";
             tampon += a.second->stringInUList(lisp);
         }
@@ -6967,6 +7065,10 @@ public:
         return true;
     }
     
+    bool isContainer() {
+        return true;
+    }
+
     bool isEmpty() {
         return tree.empty();
     }
@@ -6981,10 +7083,6 @@ public:
             release();
             e->decrementkeep();
         }
-        return true;
-    }
-
-    bool isContainer() {
         return true;
     }
     
@@ -7409,6 +7507,10 @@ public:
         return true;
     }
     
+    bool isContainer() {
+        return true;
+    }
+
     bool isEmpty() {
         return tree.empty();
     }
@@ -7434,10 +7536,6 @@ public:
             release();
             e->decrementkeep();
         }
-        return true;
-    }
-
-    bool isContainer() {
         return true;
     }
     
@@ -7948,6 +8046,10 @@ public:
         return true;
     }
     
+    bool isContainer() {
+        return true;
+    }
+
     bool unify(LispE* lisp, Element* e, bool record);
     
     bool traverse(LispE*, Dictionary*, Strings* keys, Integers* consummed, long di, long i, bool record);
@@ -7994,6 +8096,10 @@ public:
         return true;
     }
     
+    bool isContainer() {
+        return true;
+    }
+
     Element* dictionary(LispE*) {
         return dico;
     }

@@ -332,7 +332,7 @@ Element* Set_s::loop(LispE* lisp, int16_t label, List* code) {
         e->release();
         e = lisp->get_variable(label);
         if (e != element) {
-            if (e->type != t_string) {
+            if (e->type != t_string && e->type != t_longstring) {
                 e = lisp->provideString();
                 lisp->recording(e, label);
             }

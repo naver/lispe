@@ -1141,7 +1141,7 @@ Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
             e->release();
             e = lisp->get_variable(label);
             if (e != element) {
-                if (e->type != t_string) {
+                if (e->type != t_string && e->type != t_longstring) {
                     e = lisp->provideString(_keys->liste[i]);
                     lisp->recording(e, label);
                 }
@@ -1205,7 +1205,7 @@ Element* Dictionary_json::loop(LispE* lisp, int16_t label, List* code) {
         e->release();
         e = lisp->get_variable(label);
         if (e != element) {
-            if (e->type != t_string) {
+            if (e->type != t_string && e->type != t_longstring) {
                 e = lisp->provideString(the_keys[i]);
                 lisp->recording(e, label);
             }
@@ -2580,7 +2580,7 @@ Element* Tree::loop(LispE* lisp, int16_t label, List* code) {
             e->release();
             e = lisp->get_variable(label);
             if (e != element) {
-                if (e->type != t_string) {
+                if (e->type != t_string && e->type != t_longstring) {
                     e = lisp->provideString(_keys->liste[i]);
                     lisp->recording(e, label);
                 }

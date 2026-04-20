@@ -13,9 +13,278 @@
 
 #include "lispe.h"
 #include <mlx/mlx.h>
+#include <cstring>
+#include <cassert>
 
 using namespace std;
 namespace mx = mlx::core;
+
+ // ============================================================================
+ // KV-Cache XOR Delta Compression
+ // ============================================================================
+ // Each KV vector (e.g. 96 float16 = 192 bytes) is stored as an XOR delta
+ // relative to the previous vector. The first vector is stored as-is.
+ // Consecutive vectors in a KV-Cache are highly correlated, so XOR deltas
+ // are very sparse (~85-95% zero bits), enabling efficient compression.
+ //
+ // Storage layout per head:
+ // Per-line uint8 quantization of float16 KV vectors.
+ // Each line of D float16 values is stored as D uint8 + float16 min/max.
+ //
+ // Three operations:
+ //   kv_cache_push          - Add a new KV line (quantize on the fly)
+ //   kv_streaming_scores    - Q * K^T via per-line dequantization (no full materialization)
+ //   kv_decompress          - Full decompression back to mx::array [B, H, L, D]
+ // ============================================================================
+// Per-line uint8 quantization: each line of D float16 values is stored as
+// D uint8 values + min/max (2 float16 = 4 bytes).
+// Line storage: 4 + D bytes = 68 bytes for D=64, vs 128 bytes raw → 0.53x compression.
+// Decompression: v[i] = min + q[i] * (max - min) / 255.0  (one FMA per value)
+// No checkpoints needed — each line is independently decompressible (O(1) random access).
+// GPU buffers are maintained incrementally: only new lines are appended at each push.
+
+struct KVCompressedHead {
+    // Per-line quantized storage — flat contiguous buffer
+    std::vector<uint8_t> quantized;   // [n_lines * D] uint8 values (contiguous)
+    std::vector<uint16_t> line_min;   // [n_lines] min as float16 bits
+    std::vector<uint16_t> line_max;   // [n_lines] max as float16 bits
+    int D;        // dimension (head_dim, e.g. 64)
+    int n_lines;  // number of lines pushed
+
+    // Diagnostic: accumulate quantization error stats
+    double diag_total_err = 0.0;
+    size_t diag_total_vals = 0;
+    double diag_max_err = 0.0;
+
+    KVCompressedHead() : D(0), n_lines(0) {}
+    KVCompressedHead(int dim) : D(dim), n_lines(0) {}
+
+    int num_lines() const { return n_lines; }
+
+    // Push a new raw vector (D float16 values reinterpreted as uint16_t)
+    void push(const uint16_t* raw_vec) {
+        // Find min/max as float values
+        float fmin = std::numeric_limits<float>::max();
+        float fmax = -std::numeric_limits<float>::max();
+        for (int d = 0; d < D; d++) {
+            mx::float16_t f16;
+            std::memcpy(&f16, &raw_vec[d], sizeof(uint16_t));
+            float val = static_cast<float>(f16);
+            if (val < fmin) fmin = val;
+            if (val > fmax) fmax = val;
+        }
+
+        // Convert min/max to float16 for storage
+        mx::float16_t f16_min = static_cast<mx::float16_t>(fmin);
+        mx::float16_t f16_max = static_cast<mx::float16_t>(fmax);
+        uint16_t min_bits, max_bits;
+        std::memcpy(&min_bits, &f16_min, sizeof(uint16_t));
+        std::memcpy(&max_bits, &f16_max, sizeof(uint16_t));
+
+        // Re-read min/max back from float16 to get exact stored values
+        float stored_min = static_cast<float>(f16_min);
+        float stored_max = static_cast<float>(f16_max);
+        float range = stored_max - stored_min;
+
+        // Grow flat buffer and quantize directly into it
+        size_t offset = quantized.size();
+        quantized.resize(offset + D);
+        uint8_t* dst = &quantized[offset];
+
+        if (range < 1e-10f) {
+            std::memset(dst, 0, D);
+        } else {
+            float inv_range = 255.0f / range;
+            for (int d = 0; d < D; d++) {
+                mx::float16_t f16;
+                std::memcpy(&f16, &raw_vec[d], sizeof(uint16_t));
+                float val = static_cast<float>(f16);
+                float q = (val - stored_min) * inv_range;
+                int qi = (int)(q + 0.5f);
+                if (qi < 0) qi = 0;
+                if (qi > 255) qi = 255;
+                dst[d] = (uint8_t)qi;
+
+                // Diagnostic: measure reconstruction error
+                float reconstructed = stored_min + qi * (range / 255.0f);
+                float err = std::fabs(val - reconstructed);
+                diag_total_err += err;
+                diag_total_vals++;
+                if (err > diag_max_err) diag_max_err = err;
+            }
+        }
+
+        line_min.push_back(min_bits);
+        line_max.push_back(max_bits);
+        n_lines++;
+    }
+
+    // Decompress line i into D float16 values (as uint16_t)
+    void decompress_line(int i, uint16_t* out) const {
+        mx::float16_t f16_min, f16_max;
+        std::memcpy(&f16_min, &line_min[i], sizeof(uint16_t));
+        std::memcpy(&f16_max, &line_max[i], sizeof(uint16_t));
+        float min_val = static_cast<float>(f16_min);
+        float max_val = static_cast<float>(f16_max);
+        float scale = (max_val - min_val) / 255.0f;
+
+        const uint8_t* qv = &quantized[i * D];
+        for (int d = 0; d < D; d++) {
+            float val = min_val + qv[d] * scale;
+            mx::float16_t f16 = static_cast<mx::float16_t>(val);
+            std::memcpy(&out[d], &f16, sizeof(uint16_t));
+        }
+    }
+
+    // Decompress all lines into a contiguous buffer of float16 (as uint16_t)
+    void decompress_all(std::vector<uint16_t>& out) const {
+        out.resize(n_lines * D);
+        for (int i = 0; i < n_lines; i++) {
+            decompress_line(i, &out[i * D]);
+        }
+    }
+};
+
+struct KVCompressedCache {
+    std::vector<KVCompressedHead> heads;  // B * H heads (flattened)
+    int B, H, D;
+    bool is_keys;
+
+    // CPU flat buffers — maintained incrementally with stride layout.
+    // Layout: flat_q[bh * N_alloc * D + n * D + d], flat_min/max[bh * N_alloc + n]
+    // At each token, only new lines are appended. The shader uses stride_N (= N_alloc)
+    // for inter-head addressing and N for the loop bound.
+    std::vector<uint8_t> flat_q;       // [BH * N_alloc * D]
+    std::vector<uint16_t> flat_min;    // [BH * N_alloc]
+    std::vector<uint16_t> flat_max;    // [BH * N_alloc]
+    int N_committed;  // lines currently in flat buffers
+    int N_alloc;      // allocated capacity (lines per head)
+
+    KVCompressedCache() : B(0), H(0), D(0), is_keys(true), N_committed(0), N_alloc(0) {}
+    KVCompressedCache(int b, int h, int d, bool keys)
+        : B(b), H(h), D(d), is_keys(keys), N_committed(0), N_alloc(0) {
+        heads.resize(b * h, KVCompressedHead(d));
+    }
+
+    int num_lines() const {
+        if (heads.empty()) return 0;
+        return heads[0].num_lines();
+    }
+
+    // Ensure flat buffers have room for at least N lines per head
+    void ensure_capacity(int N_needed) {
+        if (N_needed <= N_alloc) return;
+        int BH = B * H;
+        int new_alloc = std::max(N_needed, std::max(N_alloc * 2, 64));
+
+        std::vector<uint8_t> new_q(BH * new_alloc * D, 0);
+        std::vector<uint16_t> new_min(BH * new_alloc, 0);
+        std::vector<uint16_t> new_max(BH * new_alloc, 0);
+
+        if (N_committed > 0) {
+            for (int bh = 0; bh < BH; bh++) {
+                std::memcpy(&new_q[bh * new_alloc * D],
+                            &flat_q[bh * N_alloc * D],
+                            N_committed * D * sizeof(uint8_t));
+                std::memcpy(&new_min[bh * new_alloc],
+                            &flat_min[bh * N_alloc],
+                            N_committed * sizeof(uint16_t));
+                std::memcpy(&new_max[bh * new_alloc],
+                            &flat_max[bh * N_alloc],
+                            N_committed * sizeof(uint16_t));
+            }
+        }
+
+        flat_q = std::move(new_q);
+        flat_min = std::move(new_min);
+        flat_max = std::move(new_max);
+        N_alloc = new_alloc;
+    }
+
+    // Commit new lines from heads into the flat buffers
+    void commit_to_flat() {
+        int N = num_lines();
+        if (N == N_committed) return;
+
+        ensure_capacity(N);
+        int BH = B * H;
+        int new_lines = N - N_committed;
+
+        for (int bh = 0; bh < BH; bh++) {
+            const auto& head = heads[bh];
+            std::memcpy(&flat_q[(bh * N_alloc + N_committed) * D],
+                        &head.quantized[N_committed * D],
+                        new_lines * D * sizeof(uint8_t));
+            std::memcpy(&flat_min[bh * N_alloc + N_committed],
+                        &head.line_min[N_committed],
+                        new_lines * sizeof(uint16_t));
+            std::memcpy(&flat_max[bh * N_alloc + N_committed],
+                        &head.line_max[N_committed],
+                        new_lines * sizeof(uint16_t));
+        }
+        N_committed = N;
+    }
+
+    // Get decompressed data as mx::array [B, H, N, D] float16
+    mx::array get_decompressed() {
+        int BH = B * H;
+        int N = num_lines();
+        if (N == 0) {
+            return mx::zeros({B, H, 0, D}, mx::float16);
+        }
+
+        std::vector<uint16_t> full_data(BH * N * D);
+        for (int bh = 0; bh < BH; bh++) {
+            std::vector<uint16_t> hd;
+            heads[bh].decompress_all(hd);
+            std::memcpy(&full_data[bh * N * D], hd.data(), N * D * sizeof(uint16_t));
+        }
+
+        mx::array result(reinterpret_cast<const mx::float16_t*>(full_data.data()),
+                         {B, H, N, D}, mx::float16);
+        mx::eval(result);
+        return result;
+    }
+
+    // Flatten for GPU: wraps flat buffers directly as mx::array.
+    // The shader uses stride_N (= N_alloc) for inter-head addressing and N for loop bound.
+    // Single CPU→GPU transfer per call; no compaction needed.
+    std::tuple<mx::array, mx::array, mx::array> flatten_for_gpu() {
+        commit_to_flat();
+
+        int BH = B * H;
+        int N = N_committed;
+
+        if (N == 0) {
+            return {mx::zeros({1}, mx::uint8), mx::zeros({1}, mx::float16),
+                    mx::zeros({1}, mx::float16)};
+        }
+
+        mx::array q_arr(flat_q.data(), {BH * N_alloc * D}, mx::uint8);
+        mx::array min_arr(reinterpret_cast<const mx::float16_t*>(flat_min.data()),
+                          {BH * N_alloc}, mx::float16);
+        mx::array max_arr(reinterpret_cast<const mx::float16_t*>(flat_max.data()),
+                          {BH * N_alloc}, mx::float16);
+        mx::eval({q_arr, min_arr, max_arr});
+        return {q_arr, min_arr, max_arr};
+    }
+};
+
+// Global registry of compressed caches (keyed by integer ID)
+static std::unordered_map<long, KVCompressedCache*> kv_compressed_caches;
+static long kv_cache_next_id = 1;
+
+static long kv_register_cache(KVCompressedCache* cache) {
+    long id = kv_cache_next_id++;
+    kv_compressed_caches[id] = cache;
+    return id;
+}
+
+static KVCompressedCache* kv_get_cache(long id) {
+    auto it = kv_compressed_caches.find(id);
+    if (it == kv_compressed_caches.end()) return nullptr;
+    return it->second;
+}
 
  // Enum for MLX method actions
 enum mlx_method_actions {
@@ -288,7 +557,14 @@ enum mlx_method_actions {
     // Group 30: Explicit evaluation (lazy evaluation)
     mlx_method_eval,
     // Group 31: Conversion to LispE
-    mlx_method_tolist
+    mlx_method_tolist,
+    // Group 32: KV-Cache XOR delta compression
+    mlx_method_kv_cache_push,
+    mlx_method_kv_streaming_scores,
+    mlx_method_kv_decompress,
+    mlx_method_kv_compressed_attention,
+    mlx_method_kv_cache_free,
+    mlx_method_kv_cache_stats
 };
 
  // Type for MLX arrays
@@ -1145,6 +1421,13 @@ public:
     Element* method_eval(LispE* lisp);
     // Group 31: Conversion to LispE
     Element* method_tolist(LispE* lisp);
+    // Group 32: KV-Cache XOR delta compression
+    Element* method_kv_cache_push(LispE* lisp);
+    Element* method_kv_streaming_scores(LispE* lisp);
+    Element* method_kv_decompress(LispE* lisp);
+    Element* method_kv_compressed_attention(LispE* lisp);
+    Element* method_kv_cache_free(LispE* lisp);
+    Element* method_kv_cache_stats(LispE* lisp);
 };
 
  // ============================================================================
@@ -1656,6 +1939,19 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
         // Group 31: Conversion to LispE
         case mlx_method_tolist:
             return method_tolist(lisp);
+        // Group 32: KV-Cache XOR delta compression
+        case mlx_method_kv_cache_push:
+            return method_kv_cache_push(lisp);
+        case mlx_method_kv_streaming_scores:
+            return method_kv_streaming_scores(lisp);
+        case mlx_method_kv_decompress:
+            return method_kv_decompress(lisp);
+        case mlx_method_kv_compressed_attention:
+            return method_kv_compressed_attention(lisp);
+        case mlx_method_kv_cache_free:
+            return method_kv_cache_free(lisp);
+        case mlx_method_kv_cache_stats:
+            return method_kv_cache_stats(lisp);
         default:
             return null_;
     }
@@ -2154,6 +2450,19 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
         // Group 31: Conversion to LispE
         case mlx_method_tolist:
             return L"Convert MLX array to LispE list (floats, integers, or numbers)";
+        // Group 32: KV-Cache XOR delta compression
+        case mlx_method_kv_cache_push:
+            return L"Push a new KV line into XOR delta compressed cache, returns cache_id";
+        case mlx_method_kv_streaming_scores:
+            return L"Compute attention scores Q*K^T via streaming XOR decompression";
+        case mlx_method_kv_decompress:
+            return L"Fully decompress a KV compressed cache back to an MLX array";
+        case mlx_method_kv_compressed_attention:
+            return L"Fused compressed SDPA: attention directly on XOR delta KV caches via Metal shader";
+        case mlx_method_kv_cache_free:
+            return L"Free a compressed KV cache and release its memory";
+        case mlx_method_kv_cache_stats:
+            return L"Return compression statistics for a compressed KV cache";
     }
     return L"";
 }
@@ -7095,7 +7404,8 @@ Element* Lispe_mlx_methods::method_scaled_dot_product_attention(LispE* lisp) {
             sinks = element_to_array(lisp, sinks_elem);
         }
 
-        mx::array result = mx::fast::scaled_dot_product_attention(queries, keys, values, scale, mask_mode, mask_arrs, sinks);
+        std::optional<mx::array> mask_opt = mask_arrs.empty() ? std::nullopt : std::optional<mx::array>(mask_arrs[0]);
+        mx::array result = mx::fast::scaled_dot_product_attention(queries, keys, values, scale, mask_mode, mask_opt, sinks);
         return new MLXArray(std::move(result));
     } catch (const std::exception& e) {
         throw new Error("Error in mlx_scaled_dot_product_attention: " + std::string(e.what()));
@@ -8554,6 +8864,569 @@ Element* Lispe_mlx_methods::method_tolist(LispE* lisp) {
 }
 
  // ============================================================================
+ // KV-Cache XOR Delta Compression - Method implementations
+ // ============================================================================
+
+ // mlx_kv_cache_push - Push a new KV tensor into a compressed cache
+ // First call creates the cache; subsequent calls append.
+ // Input tensor shape: [B, H, 1, D] (single new KV line, float16 or bfloat16)
+ // Returns: cache_id (integer) to reference this compressed cache
+ // Signature: deflib mlx_kv_cache_push(cache_id tensor is_keys)
+Element* Lispe_mlx_methods::method_kv_cache_push(LispE* lisp) {
+    try {
+        Element* id_elem = lisp->get_variable(U"cache_id");
+        Element* tensor_elem = lisp->get_variable(U"tensor");
+        Element* is_keys_elem = lisp->get_variable(U"is_keys");
+
+        if (tensor_elem->type != t_mlx_array) {
+            throw new Error("mlx_kv_cache_push: Expected MLX array for tensor");
+        }
+
+        mx::array& tensor = ((MLXArray*)tensor_elem)->array;
+        mx::eval(tensor);
+
+        auto shape = tensor.shape();
+        if (shape.size() != 4) {
+            throw new Error("mlx_kv_cache_push: tensor must have 4 dimensions [B, H, L, D]");
+        }
+
+        int B = shape[0];
+        int H = shape[1];
+        int L = shape[2];  // number of new lines to push (can be > 1 for prefill)
+        int D = shape[3];
+
+        bool is_keys = (is_keys_elem != null_) ? is_keys_elem->Boolean() : true;
+
+        // Convert to float16 if not already, and ensure contiguous [B, H, L, D] layout.
+        // After mlx_transpose([0,2,1,3]) the tensor is logically [B, H, L, D] but
+        // physically [B, L, H, D] in memory. We must flatten+reshape to force
+        // contiguous row-major layout before accessing raw data pointers.
+        mx::array t16 = tensor;
+        if (tensor.dtype() != mx::float16) {
+            t16 = mx::astype(tensor, mx::float16);
+        }
+        t16 = mx::flatten(t16);
+        t16 = mx::reshape(t16, {B, H, L, D});
+        mx::eval(t16);
+
+        // Get or create cache
+        long cache_id = 0;
+        KVCompressedCache* cache = nullptr;
+
+        if (id_elem != null_ && id_elem->isNumber()) {
+            cache_id = id_elem->asInteger();
+            cache = kv_get_cache(cache_id);
+        }
+
+        if (cache == nullptr) {
+            // Create new cache
+            cache = new KVCompressedCache(B, H, D, is_keys);
+            cache_id = kv_register_cache(cache);
+        } else {
+            // Verify dimensions match
+            if (cache->B != B || cache->H != H || cache->D != D) {
+                throw new Error("mlx_kv_cache_push: tensor dimensions don't match existing cache");
+            }
+        }
+
+        // Access raw float16 data as uint16_t
+        const uint16_t* data = reinterpret_cast<const uint16_t*>(t16.data<mx::float16_t>());
+
+        // Push each line for each head
+        // Tensor layout [B, H, L, D] is contiguous: b * (H*L*D) + h * (L*D) + l * D + d
+        for (int b = 0; b < B; b++) {
+            for (int h = 0; h < H; h++) {
+                KVCompressedHead& head = cache->heads[b * H + h];
+                for (int l = 0; l < L; l++) {
+                    const uint16_t* vec = data + b * (H * L * D) + h * (L * D) + l * D;
+                    head.push(vec);
+                }
+            }
+        }
+
+        return lisp->provideInteger(cache_id);
+
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_cache_push: " + std::string(e.what()));
+    }
+}
+
+ // mlx_kv_streaming_scores - Compute Q * K^T attention scores via per-line dequantization
+ // Each K line is dequantized on the fly and used for the dot product, then discarded.
+ // queries: [B, H, Lq, D] float32 (or float16, will be cast to float32)
+ // Returns: [B, H, Lq, Lk] float32 attention scores (unscaled)
+ // Signature: deflib mlx_kv_streaming_scores(cache_id queries)
+Element* Lispe_mlx_methods::method_kv_streaming_scores(LispE* lisp) {
+    try {
+        Element* id_elem = lisp->get_variable(U"cache_id");
+        Element* queries_elem = lisp->get_variable(U"queries");
+
+        if (queries_elem->type != t_mlx_array) {
+            throw new Error("mlx_kv_streaming_scores: Expected MLX array for queries");
+        }
+
+        long cache_id = id_elem->asInteger();
+        KVCompressedCache* cache = kv_get_cache(cache_id);
+        if (cache == nullptr) {
+            throw new Error("mlx_kv_streaming_scores: Invalid cache_id");
+        }
+
+        mx::array& queries = ((MLXArray*)queries_elem)->array;
+
+        // Cast queries to float32 for CPU dot product
+        mx::array q32 = (queries.dtype() != mx::float32) ?
+            mx::astype(queries, mx::float32) : queries;
+        mx::eval(q32);
+
+        auto qshape = q32.shape();
+        if (qshape.size() != 4) {
+            throw new Error("mlx_kv_streaming_scores: queries must be [B, H, Lq, D]");
+        }
+
+        int B = qshape[0];
+        int H = qshape[1];
+        int Lq = qshape[2];
+        int D = qshape[3];
+
+        if (B != cache->B || H != cache->H || D != cache->D) {
+            throw new Error("mlx_kv_streaming_scores: dimension mismatch with cache");
+        }
+
+        int Lk = cache->num_lines();
+        if (Lk == 0) {
+            throw new Error("mlx_kv_streaming_scores: cache is empty");
+        }
+
+        // Output: [B, H, Lq, Lk] float32
+        std::vector<float> output(B * H * Lq * Lk);
+        const float* qdata = q32.data<float>();
+        std::vector<uint16_t> kraw(D);
+
+        for (int b = 0; b < B; b++) {
+            for (int h = 0; h < H; h++) {
+                KVCompressedHead& head = cache->heads[b * H + h];
+                for (int q = 0; q < Lq; q++) {
+                    const float* qvec = qdata + b * (H * Lq * D) + h * (Lq * D) + q * D;
+                    float* out_ptr = output.data() + b * (H * Lq * Lk) + h * (Lq * Lk) + q * Lk;
+                    for (int k = 0; k < Lk; k++) {
+                        // Dequantize line k to float16 bits
+                        head.decompress_line(k, kraw.data());
+                        // Dot product (convert float16 bits to float on the fly)
+                        float dot = 0.0f;
+                        for (int d = 0; d < D; d++) {
+                            _Float16 f16;
+                            std::memcpy(&f16, &kraw[d], sizeof(uint16_t));
+                            dot += qvec[d] * (float)f16;
+                        }
+                        out_ptr[k] = dot;
+                    }
+                }
+            }
+        }
+
+        // Create MLX array from output
+        mx::array result = mx::array(output.data(), {B, H, Lq, Lk}, mx::float32);
+        return new MLXArray(std::move(result));
+
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_streaming_scores: " + std::string(e.what()));
+    }
+}
+
+ // mlx_kv_decompress - Fully decompress a compressed KV cache back to MLX array
+ // Returns: [B, H, L, D] float16 tensor (original values, lossless)
+ // Signature: deflib mlx_kv_decompress(cache_id)
+Element* Lispe_mlx_methods::method_kv_decompress(LispE* lisp) {
+    try {
+        Element* id_elem = lisp->get_variable(U"cache_id");
+
+        long cache_id = id_elem->asInteger();
+        KVCompressedCache* cache = kv_get_cache(cache_id);
+        if (cache == nullptr) {
+            throw new Error("mlx_kv_decompress: Invalid cache_id");
+        }
+
+        int B = cache->B;
+        int H = cache->H;
+        int D = cache->D;
+        int L = cache->num_lines();
+
+        if (L == 0) {
+            // Return empty array
+            mx::array result = mx::zeros({B, H, 0, D}, mx::float16);
+            return new MLXArray(std::move(result));
+        }
+
+        // Decompress all heads into a [B, H, L, D] contiguous float16 buffer
+        std::vector<uint16_t> full_data(B * H * L * D);
+
+        for (int b = 0; b < B; b++) {
+            for (int h = 0; h < H; h++) {
+                KVCompressedHead& head = cache->heads[b * H + h];
+                std::vector<uint16_t> head_data;
+                head.decompress_all(head_data);
+                // Copy into full_data at the right position
+                uint16_t* dst = full_data.data() + b * (H * L * D) + h * (L * D);
+                std::memcpy(dst, head_data.data(), L * D * sizeof(uint16_t));
+            }
+        }
+
+        // Create MLX float16 array from raw uint16_t buffer
+        // reinterpret as float16
+        mx::array result = mx::array(
+            reinterpret_cast<const mx::float16_t*>(full_data.data()),
+            {B, H, L, D},
+            mx::float16
+        );
+        // Force copy since full_data is on the stack
+        mx::eval(result);
+
+        return new MLXArray(std::move(result));
+
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_decompress: " + std::string(e.what()));
+    }
+}
+
+ // ============================================================================
+ // Metal shader for compressed SDPA (uint8 quantized KV cache)
+ // ============================================================================
+ // This kernel reads uint8 quantized K and V caches directly on GPU,
+ // dequantizing values on the fly during the attention computation.
+ // Each line has: D uint8 values + min/max float16 per line.
+ // Dequantization: v = min + q * (max - min) / 255.0  (one FMA per value)
+ //
+ // Layout:
+ //   queries:     [B*n_heads, D] float16  (single query per head, L=1 decode)
+ //   k_quant:     [B*H_kv, N, D] uint8    (quantized K values)
+ //   k_min:       [B*H_kv, N] float16     (per-line min for K)
+ //   k_max:       [B*H_kv, N] float16     (per-line max for K)
+ //   v_quant:     [B*H_kv, N, D] uint8    (quantized V values)
+ //   v_min:       [B*H_kv, N] float16     (per-line min for V)
+ //   v_max:       [B*H_kv, N] float16     (per-line max for V)
+ //   params:      [6] int32  {N, n_kv_heads, use_sinks, num_q_heads, D, stride_N}
+ //   scale_arr:   [1] float32
+ //   sinks_arr:   [n_heads] float16 (or [1] dummy if no sinks)
+ //   out:         [B*n_heads, D] float16
+ //
+ // Grid: (B*n_heads * 1024, 1, 1) total threads
+ // Threadgroup: (1024, 1, 1) = 32 simdgroups × 32 threads
+ // ============================================================================
+
+static const std::string sdpa_quant_compressed_header =
+    "#include <metal_simdgroup>\n"
+    "#include <metal_math>\n"
+    "using namespace metal;\n";
+
+static const std::string sdpa_quant_compressed_source = R"(
+    // === Multi-simdgroup uint8 quantized SDPA ===
+    // Each simdgroup processes a range of sequence lines.
+    // No XOR chains — each line is independently dequantizable.
+    // Dequant: val = min + uint8_val * (max - min) / 255.0
+    constexpr int BD = 32;    // threads per simdgroup
+    constexpr int NUM_SG = 32; // simdgroups per threadgroup
+    constexpr int MAX_QPT = 8;
+
+    uint q_head = threadgroup_position_in_grid.x;
+    uint sgid = simdgroup_index_in_threadgroup;
+    uint slid = thread_index_in_simdgroup;
+
+    // Read runtime parameters
+    int N           = params[0];
+    int n_kv_heads  = params[1];
+    int use_sinks   = params[2];
+    int num_q_heads = params[3];
+    int D           = params[4];
+    int stride_N    = params[5];  // allocated capacity per head (>= N)
+    int QPT         = D / BD;
+
+    float scale_val = scale_arr[0];
+
+    // GQA mapping
+    uint kv_head = q_head * uint(n_kv_heads) / uint(num_q_heads);
+
+    // Thread-local registers
+    float q[MAX_QPT];
+    float o[MAX_QPT];
+    for (int j = 0; j < QPT; j++) o[j] = 0.0f;
+
+    // Load query (pre-scaled)
+    uint q_base = q_head * D + slid * QPT;
+    for (int j = 0; j < QPT; j++) {
+        q[j] = float(queries[q_base + j]) * scale_val;
+    }
+
+    // Online softmax accumulators
+    float max_score = -HUGE_VALF;
+    float sum_exp = 0.0f;
+
+    // Sinks init
+    if (use_sinks != 0 && sgid == 0) {
+        max_score = float(sinks_arr[q_head % num_q_heads]);
+        sum_exp = 1.0f;
+    }
+
+    // Base offsets for this KV head (use stride_N for inter-head spacing)
+    uint kv_base = kv_head * stride_N;
+    uint kv_data_base = kv_head * stride_N * D;
+    uint thread_d = slid * QPT;
+
+    // === Each simdgroup processes lines: sgid, sgid+NUM_SG, sgid+2*NUM_SG, ... ===
+    for (int i = int(sgid); i < N; i += NUM_SG) {
+        // Dequantize K line i and compute dot product with query
+        float k_min_val = float(k_min[kv_base + i]);
+        float k_scale = (float(k_max[kv_base + i]) - k_min_val) / 255.0f;
+        uint k_data_off = kv_data_base + i * D + thread_d;
+
+        float score = 0.0f;
+        for (int j = 0; j < QPT; j++) {
+            float k_val = k_min_val + float(k_quant[k_data_off + j]) * k_scale;
+            score += q[j] * k_val;
+        }
+        score = simd_sum(score);
+
+        // Online softmax update
+        float new_max = max(max_score, score);
+        float factor = exp(max_score - new_max);
+        float exp_score = exp(score - new_max);
+        max_score = new_max;
+        sum_exp = sum_exp * factor + exp_score;
+
+        // Dequantize V line i and accumulate weighted output
+        float v_min_val = float(v_min[kv_base + i]);
+        float v_scale = (float(v_max[kv_base + i]) - v_min_val) / 255.0f;
+        uint v_data_off = kv_data_base + i * D + thread_d;
+
+        for (int j = 0; j < QPT; j++) {
+            float v_val = v_min_val + float(v_quant[v_data_off + j]) * v_scale;
+            o[j] = o[j] * factor + exp_score * v_val;
+        }
+    }
+
+    // === Cross-simdgroup reduction (mirrors MLX sdpa_vector.h) ===
+    threadgroup float tg_max[NUM_SG];
+    threadgroup float tg_sum[NUM_SG];
+    threadgroup float tg_out[NUM_SG * BD];
+
+    if (slid == 0) {
+        tg_max[sgid] = max_score;
+        tg_sum[sgid] = sum_exp;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    float loaded_max = tg_max[slid];
+    float global_max = simd_max(loaded_max);
+    float factor = exp(loaded_max - global_max);
+    float global_sum = simd_sum(tg_sum[slid] * factor);
+
+    for (int j = 0; j < QPT; j++) {
+        tg_out[slid * NUM_SG + sgid] = o[j];
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        o[j] = simd_sum(tg_out[sgid * BD + slid] * factor);
+        o[j] = (global_sum == 0.0f) ? 0.0f : (o[j] / global_sum);
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+
+    // Write output
+    if (slid == 0) {
+        uint out_base = q_head * D + sgid * QPT;
+        for (int j = 0; j < QPT; j++) {
+            out[out_base + j] = half(o[j]);
+        }
+    }
+)";
+
+// Returns cached Metal kernel function for quantized compressed SDPA
+static mx::fast::CustomKernelFunction& get_compressed_sdpa_kernel() {
+    static mx::fast::CustomKernelFunction fn = mx::fast::metal_kernel(
+        "sdpa_quant_compressed_v1",
+        {"queries", "k_quant", "k_min", "k_max",
+         "v_quant", "v_min", "v_max",
+         "params", "scale_arr", "sinks_arr"},
+        {"out"},
+        sdpa_quant_compressed_source,
+        sdpa_quant_compressed_header,
+        true,   // ensure_row_contiguous
+        false   // atomic_outputs
+    );
+    return fn;
+}
+
+ // mlx_kv_compressed_attention - Fused compressed SDPA via Metal shader
+ // KV stored as uint8 quantized values. The shader dequantizes K/V on-the-fly
+ // during attention computation — no decompression step needed.
+ // Signature: deflib mlx_kv_compressed_attention(queries k_cache_id v_cache_id scale (sinks))
+
+Element* Lispe_mlx_methods::method_kv_compressed_attention(LispE* lisp) {
+    Element* queries_elem = lisp->get_variable(U"queries");
+    Element* k_cache_id_elem = lisp->get_variable(U"k_cache_id");
+    Element* v_cache_id_elem = lisp->get_variable(U"v_cache_id");
+    Element* scale_elem = lisp->get_variable(U"scale");
+    Element* sinks_elem = lisp->get_variable(U"sinks");
+
+    try {
+        mx::array queries = element_to_array(lisp, queries_elem);
+        long k_id = k_cache_id_elem->asInteger();
+        long v_id = v_cache_id_elem->asInteger();
+        float scale = scale_elem->asNumber();
+
+        KVCompressedCache* k_cache = kv_get_cache(k_id);
+        KVCompressedCache* v_cache = kv_get_cache(v_id);
+        if (!k_cache || !v_cache) {
+            throw new Error("mlx_kv_compressed_attention: Invalid cache_id");
+        }
+
+        int N = k_cache->num_lines();
+        if (N == 0) {
+            throw new Error("mlx_kv_compressed_attention: Empty KV cache");
+        }
+
+        // Query shape: [B, n_heads, 1, D] — extract dimensions
+        auto q_shape = queries.shape();
+        if (q_shape.size() != 4 || q_shape[2] != 1) {
+            throw new Error("mlx_kv_compressed_attention: queries must be [B, n_heads, 1, D]");
+        }
+        int B = q_shape[0];
+        int n_q_heads = q_shape[1];  // total query heads (B*n_heads after flatten)
+        int total_q_heads = B * n_q_heads;
+        int D = k_cache->D;
+        int H_kv = k_cache->H;
+
+        // Flatten quantized data for GPU (zero-copy: includes stride padding)
+        auto [k_quant, k_min, k_max] = k_cache->flatten_for_gpu();
+        auto [v_quant, v_min, v_max] = v_cache->flatten_for_gpu();
+
+        // stride_N = allocated capacity per head (for inter-head addressing in shader)
+        assert(k_cache->N_alloc == v_cache->N_alloc &&
+               "K and V caches must have identical allocation stride");
+        int stride_N = k_cache->N_alloc;
+
+        // Params: [N, B*n_kv_heads, use_sinks, B*num_q_heads, D, stride_N]
+        // Both head counts include B so GQA mapping works across batches
+        bool use_sinks = (sinks_elem != null_ && sinks_elem->type != v_emptyatom);
+        int total_kv_heads = B * H_kv;
+        std::vector<int32_t> params_data = {
+            N, total_kv_heads, use_sinks ? 1 : 0, total_q_heads, D, stride_N
+        };
+        mx::array params_arr(params_data.data(), {6}, mx::int32);
+
+        // Scale
+        mx::array scale_arr = mx::array({scale});
+
+        // Sinks array (or dummy)
+        mx::array sinks_arr = use_sinks
+            ? element_to_array(lisp, sinks_elem)
+            : mx::zeros({1}, mx::float16);
+
+        // Flatten queries to [B*n_heads, D] — keep original dtype (float16 or float32)
+        mx::array q_flat = mx::flatten(queries, 0, 2);  // [B*n_heads*1, D] = [B*n_heads, D]
+        mx::eval({q_flat, params_arr, scale_arr, sinks_arr});
+
+        // Launch fused quantized SDPA shader
+        // IMPORTANT: MLX grid = total threads, NOT threadgroups!
+        auto& kernel = get_compressed_sdpa_kernel();
+        auto results = kernel(
+            {q_flat, k_quant, k_min, k_max,
+             v_quant, v_min, v_max,
+             params_arr, scale_arr, sinks_arr},
+            {{total_q_heads, D}},              // output_shapes
+            {mx::float16},                     // output_dtypes
+            {total_q_heads * 1024, 1, 1},      // grid (total threads!)
+            {1024, 1, 1},                      // threadgroup
+            {},                            // template_args
+            std::nullopt,                  // init_value
+            false,                         // verbose
+            std::monostate{}               // stream (default)
+        );
+        mx::array shader_out = mx::reshape(results[0], {q_shape[0], q_shape[1], 1, D});
+        mx::eval(shader_out);
+
+        return new MLXArray(std::move(shader_out));
+
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_compressed_attention: " + std::string(e.what()));
+    }
+}
+
+ // mlx_kv_cache_free - Free a compressed KV cache and release its memory
+ // Signature: deflib mlx_kv_cache_free(cache_id)
+ // Returns: true if freed, nil if cache_id not found
+Element* Lispe_mlx_methods::method_kv_cache_free(LispE* lisp) {
+    try {
+        Element* id_elem = lisp->get_variable(U"cache_id");
+        long cache_id = id_elem->asInteger();
+
+        auto it = kv_compressed_caches.find(cache_id);
+        if (it == kv_compressed_caches.end()) {
+            return null_;
+        }
+        delete it->second;
+        kv_compressed_caches.erase(it);
+        return true_;
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_cache_free: " + std::string(e.what()));
+    }
+}
+
+ // mlx_kv_cache_stats - Return compression statistics for a compressed KV cache
+ // Signature: deflib mlx_kv_cache_stats(cache_id)
+ // Returns: dictionary with keys: lines, heads, D,
+ //   raw_bytes, compressed_bytes, compression_ratio, avg_err, max_err
+Element* Lispe_mlx_methods::method_kv_cache_stats(LispE* lisp) {
+    try {
+        Element* id_elem = lisp->get_variable(U"cache_id");
+        long cache_id = id_elem->asInteger();
+
+        KVCompressedCache* cache = kv_get_cache(cache_id);
+        if (!cache) {
+            throw new Error("mlx_kv_cache_stats: Invalid cache_id");
+        }
+
+        int N = cache->num_lines();
+        int BH = cache->B * cache->H;
+        int D = cache->D;
+
+        // Raw size: BH * N * D * 2 bytes (float16)
+        size_t raw_bytes = (size_t)BH * N * D * sizeof(uint16_t);
+
+        // Compressed size: BH * N * (D + 4) bytes
+        // D uint8 values + 2 float16 (min, max) = D + 4 bytes per line
+        size_t compressed_bytes = (size_t)BH * N * (D + 4);
+
+        double ratio = (compressed_bytes > 0) ? (double)raw_bytes / compressed_bytes : 0.0;
+
+        // Aggregate diagnostic error stats across all heads
+        double total_err = 0.0;
+        size_t total_vals = 0;
+        double max_err = 0.0;
+        for (int bh = 0; bh < BH; bh++) {
+            const auto& head = cache->heads[bh];
+            total_err += head.diag_total_err;
+            total_vals += head.diag_total_vals;
+            if (head.diag_max_err > max_err) max_err = head.diag_max_err;
+        }
+        double avg_err = (total_vals > 0) ? total_err / total_vals : 0.0;
+
+        // Build result dictionary
+        Dictionary* d = new Dictionary();
+        u_ustring k;
+        k = U"lines"; d->recording(k, lisp->provideInteger(N));
+        k = U"heads"; d->recording(k, lisp->provideInteger(BH));
+        k = U"D"; d->recording(k, lisp->provideInteger(D));
+        k = U"raw_bytes"; d->recording(k, lisp->provideInteger((long)raw_bytes));
+        k = U"compressed_bytes"; d->recording(k, lisp->provideInteger((long)compressed_bytes));
+        k = U"compression_ratio"; d->recording(k, lisp->provideNumber(ratio));
+        k = U"avg_quant_error"; d->recording(k, lisp->provideNumber(avg_err));
+        k = U"max_quant_error"; d->recording(k, lisp->provideNumber(max_err));
+
+        return d;
+
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_cache_stats: " + std::string(e.what()));
+    }
+}
+
+ // ============================================================================
  // Module initialization function
  // ============================================================================
 
@@ -9304,6 +10177,25 @@ Exporting bool InitialisationModule(LispE* lisp) {
     // Group 31: Conversion to LispE
     lisp->extension("deflib mlx_tolist(array)",
                     new Lispe_mlx_methods(mlx_method_tolist));
+
+    // Group 32: KV-Cache XOR delta compression
+    lisp->extension("deflib mlx_kv_cache_push(cache_id tensor is_keys)",
+                    new Lispe_mlx_methods(mlx_method_kv_cache_push));
+
+    lisp->extension("deflib mlx_kv_streaming_scores(cache_id queries)",
+                    new Lispe_mlx_methods(mlx_method_kv_streaming_scores));
+
+    lisp->extension("deflib mlx_kv_decompress(cache_id)",
+                    new Lispe_mlx_methods(mlx_method_kv_decompress));
+
+    lisp->extension("deflib mlx_kv_compressed_attention(queries k_cache_id v_cache_id scale (sinks))",
+                    new Lispe_mlx_methods(mlx_method_kv_compressed_attention));
+
+    lisp->extension("deflib mlx_kv_cache_free(cache_id)",
+                    new Lispe_mlx_methods(mlx_method_kv_cache_free));
+
+    lisp->extension("deflib mlx_kv_cache_stats(cache_id)",
+                    new Lispe_mlx_methods(mlx_method_kv_cache_stats));
 
     return true;
 }

@@ -5502,7 +5502,7 @@ Element* List_dividen::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -5514,7 +5514,7 @@ Element* List_dividen::eval(LispE* lisp) {
 Element* List_divide2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (!first_element->isList())
-        throw new Error("Error: cannot apply '/' to one element");
+        return lisp->check_error(this, new Error("Error: cannot apply '/' to one element"), idxinfo);
     
     Element* lst = first_element;
     
@@ -5523,7 +5523,7 @@ Element* List_divide2::eval(LispE* lisp) {
         switch (lst->type) {
             case t_stringbytes:
             case t_strings:
-                throw new Error("Error: cannot apply '/' to a string");
+                return lisp->check_error(this, new Error("Error: cannot apply '/' to a string"), idxinfo);
             case t_floats:
             case t_shorts:
             case t_integers:
@@ -5570,7 +5570,7 @@ Element* List_divide2::eval(LispE* lisp) {
             lst->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return first_element;
@@ -5591,7 +5591,7 @@ Element* List_divide3::eval(LispE* lisp) {
         second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return first_element;
@@ -5705,7 +5705,7 @@ Element* List_minusn::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -5715,7 +5715,7 @@ Element* List_minusn::eval(LispE* lisp) {
 Element* List_minus2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (!first_element->isList())
-        throw new Error("Error: cannot apply '-' to one element");
+        return lisp->check_error(this, new Error("Error: cannot apply '-' to one element"), idxinfo);
     
     Element* lst = first_element;
     
@@ -5724,7 +5724,7 @@ Element* List_minus2::eval(LispE* lisp) {
         switch (lst->type) {
             case t_stringbytes:
             case t_strings:
-                throw new Error("Error: cannot apply '-' to a string");
+                return lisp->check_error(this, new Error("Error: cannot apply '-' to a string"), idxinfo);
             case t_floats:
             case t_shorts:
             case t_integers:
@@ -5771,7 +5771,7 @@ Element* List_minus2::eval(LispE* lisp) {
             lst->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return first_element;
@@ -5790,7 +5790,7 @@ Element* List_minus3::eval(LispE* lisp) {
     catch (Error* err) {
         lisp->resetStack();
         first_element->release();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -5914,7 +5914,7 @@ Element* List_multiplyn::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -5924,7 +5924,7 @@ Element* List_multiplyn::eval(LispE* lisp) {
 Element* List_multiply2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (!first_element->isList())
-        throw new Error("Error: cannot apply '*' to one element");
+        return lisp->check_error(this, new Error("Error: cannot apply '*' to one element"), idxinfo);
     
     Element* lst = first_element;
     
@@ -5933,7 +5933,7 @@ Element* List_multiply2::eval(LispE* lisp) {
         switch (lst->type) {
             case t_stringbytes:
             case t_strings:
-                throw new Error("Error: cannot apply '*' to a string");
+                return lisp->check_error(this, new Error("Error: cannot apply '*' to a string"), idxinfo);
             case t_floats: {
                 float v = ((Floats*)lst)->liste.product();
                 first_element->release();
@@ -5991,7 +5991,7 @@ Element* List_multiply2::eval(LispE* lisp) {
             lst->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -6011,7 +6011,7 @@ Element* List_multiply3::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -6137,7 +6137,7 @@ Element* List_plusn::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -6147,7 +6147,7 @@ Element* List_plusn::eval(LispE* lisp) {
 Element* List_plus2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (!first_element->isList())
-        throw new Error("Error: cannot apply '+' to one element");
+        return lisp->check_error(this, new Error("Error: cannot apply '+' to one element"), idxinfo);
     
     Element* lst = first_element;
     
@@ -6218,7 +6218,7 @@ Element* List_plus2::eval(LispE* lisp) {
             lst->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return first_element;
@@ -6237,7 +6237,7 @@ Element* List_plus3::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -6353,12 +6353,12 @@ Element* List_powern::eval(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '^^' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '^^' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '^^' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '^^' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6416,7 +6416,7 @@ Element* List_powern::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -6457,7 +6457,7 @@ Element* List_power2::eval(LispE* lisp) {
     }
     catch(Error* err) {
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -7085,7 +7085,7 @@ Element* List_divideequal_list::eval(LispE* lisp) {
     catch (Error* err) {
         exec->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     listsize = liste.size();
@@ -7095,12 +7095,12 @@ Element* List_divideequal_list::eval(LispE* lisp) {
     try {
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '/' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '/' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '/' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '/' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7160,7 +7160,7 @@ Element* List_divideequal_list::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     exec->append(first_element->quoting());
@@ -7183,12 +7183,12 @@ Element* List_divideequal_var::eval(LispE* lisp) {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '/' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '/' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '/' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '/' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7247,7 +7247,7 @@ Element* List_divideequal_var::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -7514,7 +7514,7 @@ Element* List_minusequal_list::eval(LispE* lisp) {
     catch (Error* err) {
         lisp->resetStack();
         exec->release();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     listsize = liste.size();
@@ -7524,12 +7524,12 @@ Element* List_minusequal_list::eval(LispE* lisp) {
     try {
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '-' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '-' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '-' to a string");
+                        return lisp->check_error(this, new Error("Error: cannot apply '-' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7589,7 +7589,7 @@ Element* List_minusequal_list::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     exec->append(first_element->quoting());
@@ -7612,12 +7612,12 @@ Element* List_minusequal_var::eval(LispE* lisp) {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '-' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '-' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '-' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '-' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7676,7 +7676,7 @@ Element* List_minusequal_var::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -7944,7 +7944,7 @@ Element* List_multiplyequal_list::eval(LispE* lisp) {
     catch (Error* err) {
         exec->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     listsize = liste.size();
@@ -7954,12 +7954,12 @@ Element* List_multiplyequal_list::eval(LispE* lisp) {
     try {
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '*' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '*' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '*' to a string");
+                    return lisp->check_error(this, new Error("Error: cannot apply '*' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -8019,7 +8019,7 @@ Element* List_multiplyequal_list::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     exec->append(first_element->quoting());
@@ -8042,12 +8042,12 @@ Element* List_multiplyequal_var::eval(LispE* lisp) {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '*' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '*' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '*' to a string");
+                        return lisp->check_error(this, new Error("Error: cannot apply '*' to a string"), idxinfo);
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -8106,7 +8106,7 @@ Element* List_multiplyequal_var::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -8260,7 +8260,7 @@ Element* List_plusequal_list::eval(LispE* lisp) {
     catch (Error* err) {
         exec->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     listsize = liste.size();
@@ -8270,7 +8270,7 @@ Element* List_plusequal_list::eval(LispE* lisp) {
     try {
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '+' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '+' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8342,7 +8342,7 @@ Element* List_plusequal_list::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     exec->append(first_element->quoting());
@@ -8365,7 +8365,7 @@ Element* List_plusequal_var::eval(LispE* lisp) {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '+' to one element");
+                return lisp->check_error(this, new Error("Error: cannot apply '+' to one element"), idxinfo);
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8437,7 +8437,7 @@ Element* List_plusequal_var::eval(LispE* lisp) {
             second_element->release();
         first_element->release();
         lisp->resetStack();
-        throw err;
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();

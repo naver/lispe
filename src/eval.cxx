@@ -734,6 +734,13 @@ Element* List::evall_atomise(LispE* lisp) {
     return theatoms;
 }
 
+Element* List::evall_aslongstring(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    u_ustring str = element->asUString(lisp);
+    element->release();
+    return new Longstring(str);
+}
+
 Element* List::evall_atomp(LispE* lisp) {
     Element* atome = liste[1]->eval(lisp);
     if (atome == emptylist_ || atome->isAtom())
@@ -1003,6 +1010,13 @@ Element* List::evall_conspoint(LispE* lisp) {
 Element* List::evall_consp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     bool b = element->isList();
+    element->release();
+    return booleans_[b];
+}
+
+Element* List::evall_containerp(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    bool b = element->isContainer();
     element->release();
     return booleans_[b];
 }
@@ -1390,7 +1404,7 @@ Element* List::evall_index_zero(LispE* lisp) {
         
         if (result == null_) {
             container->release();
-            if (the_type == t_string || the_type == t_strings || the_type == t_sets)
+            if (the_type == t_string || the_type == t_longstring || the_type == t_strings || the_type == t_sets)
                 return emptystring_;
             return zero_value;
         }
@@ -1898,6 +1912,10 @@ Element* List::evall_threadspace(LispE* lisp) {
     return evalthreadspace(lisp, liste.size(), 1);
 }
 
+Element* List::evall_stop(LispE* lisp) {
+    lisp->stop();
+    return True_;
+}
 
 Element* List::evall_throw(LispE* lisp) {
     u_ustring msg;
