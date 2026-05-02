@@ -11,6 +11,13 @@ var __ATMAIN__ = []; // functions called when main() is to be run
 var __ATEXIT__ = []; // functions called during shutdown
 var __ATPOSTRUN__ = []; // functions called after the main() is called
 
+// Emscripten 5.x no longer exposes HEAP32/HEAPF64 on Module.
+// Create fresh typed array views from the wasm memory buffer each time,
+// since the buffer can be detached after memory growth.
+function getWasmBuffer() { return (Module["memory"] || Module.wasmMemory).buffer; }
+function getHEAP32() { return new Int32Array(getWasmBuffer()); }
+function getHEAPF64() { return new Float64Array(getWasmBuffer()); }
+
 //-----------------------------------------------------------------
 //In elements
 const encode = function stringToIntegerArray(str, array) {
@@ -23,8 +30,9 @@ const encode = function stringToIntegerArray(str, array) {
 const decode = function integerArrayToString(array, sz) {
     str = "";        
     sz *= 4;
+    var heap32 = getHEAP32();
     for (let pointer=0; pointer < sz; pointer+=4) {
-        str += String.fromCharCode(Module.HEAP32[pointer + array>>2]);
+        str += String.fromCharCode(heap32[pointer + array>>2]);
     }
     Module._free(array);
     return str;
@@ -33,8 +41,9 @@ const decode = function integerArrayToString(array, sz) {
 const decode_float_as_str = function toFloatArray(array, sz) {
     str = "";
     sz *= 8;
+    var heapf64 = getHEAPF64();
     for (let pointer=0; pointer < sz; pointer+=8) {
-        str += String.fromCharCode(Module.HEAPF64[pointer + array>>3]);
+        str += String.fromCharCode(heapf64[pointer + array>>3]);
     }
     Module._free(array);
     return str;
@@ -44,8 +53,9 @@ const decode_float = function toFloatArray(array, sz) {
     value = new Float64Array(sz);
     sz *= 8;
     i = 0;
+    var heapf64 = getHEAPF64();
     for (let pointer=0; pointer < sz; pointer+=8) {
-        value[i] = Module.HEAPF64[pointer + array>>3];
+        value[i] = heapf64[pointer + array>>3];
         i++;
     }
     Module._free(array);
@@ -56,8 +66,9 @@ const decode_int = function toIntArray(array, sz) {
     value = new Int32Array(sz);
     sz *= 4;
     i = 0;
+    var heap32 = getHEAP32();
     for (let pointer=0; pointer < sz; pointer+=4) {
-        value[i] = Module.HEAP32[pointer + array>>2];
+        value[i] = heap32[pointer + array>>2];
         i++;
     }
     Module._free(array);
@@ -65,7 +76,7 @@ const decode_int = function toIntArray(array, sz) {
 }
 
 const decode_size = function toFirstIntArray(array) {
-    val = Module.HEAP32[array>>2];
+    val = getHEAP32()[array>>2];
     Module._free(array);
     return val;
 }
@@ -80,19 +91,19 @@ function provideCharactersAsInts(code) {
     }
     arr[code.length] = 0;
     a_buffer = Module._malloc(nb * 4);
-    Module.HEAP32.set(arr, a_buffer >> 2)
+    getHEAP32().set(arr, a_buffer >> 2)
     return a_buffer;
 }
 
 function provideIntegers(nb, values) {
     a_buffer = Module._malloc((nb + 1) * 4);
-    Module.HEAP32.set(values, a_buffer >> 2)
+    getHEAP32().set(values, a_buffer >> 2)
     return a_buffer;
 }
 
 function provideFloats(nb, values) {
     a_buffer = Module._malloc((nb + 1) * 8);
-    Module.HEAPF64.set(values, a_buffer >> 3)
+    getHEAPF64().set(values, a_buffer >> 3)
     return a_buffer;
 }
 
