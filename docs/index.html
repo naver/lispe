@@ -83,7 +83,7 @@
         <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
         <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
         <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
-        <input type="button" value="Python" OnClick="run_python()" id="button_python" />
+        <input type="button" value="Python" OnClick="run_python()" id="button_python" disabled />
     </div>
     <div class="codeRow">
         <div class="textAreaCode">
@@ -107,11 +107,11 @@
     <div class="textAreaColumn">
         <span>OUTPUT</span>
         <textarea name="evaluated" id="display_evaluation"></textarea>
-    </div>    
+    </div>
     <!-- We load our WASM library -->
     <script type="text/javascript">
-        //The initialisation below makes it possible to catch the print and println in your LispE code
-        //It automatically stores in 'display_evaluation' textarea the values that printed
+        // The initialisation below makes it possible to catch the print and println in your LispE code.
+        // It automatically stores in 'display_evaluation' textarea the values that are printed.
         var Module = {
             preRun: [],
             postRun: [],
@@ -119,7 +119,7 @@
                 var element = document.getElementById('display_evaluation');
                 if (element) element.value = '';
                 return function (text) {
-                    if (arguments.length > 1) 
+                    if (arguments.length > 1)
                         text = Array.prototype.slice.call(arguments).join(' ');
                     if (element) {
                         element.value += text + "\n";
@@ -144,18 +144,19 @@
                     }
                 };
             })()
-        };</script>
-    <script async type="text/javascript" src="lispe.js"></script>
-    <script async type="text/javascript" src="lispe_functions.js"></script>
+        };
+    </script>
+    <script type="text/javascript" src="lispe.js"></script>
+    <script type="text/javascript" src="lispe_functions.js"></script>
     <script type="text/javascript" src="basic_string.js"></script>
     <script type="text/javascript" src="transpiler_string.js"></script>
 
     <script type="text/javascript">
 
-        textFontSize = 14 + "px"
-        buttonHeight = 50 + "px";
-        buttonWidth = 130 + "px";
-        buttonFont = 12 + "px";
+        var textFontSize = 14 + "px";
+        var buttonHeight = 50 + "px";
+        var buttonWidth = 130 + "px";
+        var buttonFont = 12 + "px";
 
         document.getElementById('get_code').style.fontSize = textFontSize;
         document.getElementById('display_transpilation').style.fontSize = textFontSize;
@@ -186,43 +187,55 @@
         document.getElementById('button_python').style.fontWeight = "bolder";
         document.getElementById('button_python').style.color = "blue";
 
+        // ------------------------------------------------------------------
+        // State
+        // ------------------------------------------------------------------
+        // Index of the secondary LispE interpreter dedicated to the Python
+        // transpiler. -1 until the runtime is initialised.
+        var pythonInterpreterIdx = -1;
         var lastposition = 0;
-        //The next two modules were found on: https://www.vishalon.net/blog/javascript-getting-and-setting-caret-position-in-textarea
 
+        // ------------------------------------------------------------------
+        // Runtime initialisation: load the Python transpiler in a dedicated
+        // interpreter so it survives resets of the main one (idx=0).
+        // ------------------------------------------------------------------
+        Module.onRuntimeInitialized = function () {
+            try {
+                pythonInterpreterIdx = callCreateLispE();
+                callEvalLispE(pythonInterpreterIdx, basic_code);
+                callEvalLispE(pythonInterpreterIdx, transpiler_code);
+                document.getElementById('button_python').disabled = false;
+            } catch (e) {
+                console.error("Failed to initialise Python transpiler:", e);
+            }
+        };
+
+        // ------------------------------------------------------------------
+        // Caret helpers
+        // (from https://www.vishalon.net/blog/javascript-getting-and-setting-caret-position-in-textarea)
+        // ------------------------------------------------------------------
         function getCaretPosition(ctrl) {
-            // IE < 9 Support
+            // IE < 9
             if (document.selection) {
                 ctrl.focus();
                 var range = document.selection.createRange();
                 var rangelen = range.text.length;
                 range.moveStart('character', -ctrl.value.length);
                 var start = range.text.length - rangelen;
-                return {
-                    'start': start,
-                    'end': start + rangelen
-                };
-            } // IE >=9 and other browsers
-            else if (ctrl.selectionStart || ctrl.selectionStart == '0') {
-                return {
-                    'start': ctrl.selectionStart,
-                    'end': ctrl.selectionEnd
-                };
-            } else {
-                return {
-                    'start': 0,
-                    'end': 0
-                };
+                return { 'start': start, 'end': start + rangelen };
             }
+            // IE >= 9 and other browsers
+            else if (ctrl.selectionStart || ctrl.selectionStart == '0') {
+                return { 'start': ctrl.selectionStart, 'end': ctrl.selectionEnd };
+            }
+            return { 'start': 0, 'end': 0 };
         }
 
         function setCaretPosition(ctrl, start, end) {
-            // IE >= 9 and other browsers
             if (ctrl.setSelectionRange) {
                 ctrl.focus();
                 ctrl.setSelectionRange(start, end);
-            }
-            // IE < 9
-            else if (ctrl.createTextRange) {
+            } else if (ctrl.createTextRange) {
                 var range = ctrl.createTextRange();
                 range.collapse(true);
                 range.moveEnd('character', end);
@@ -231,36 +244,47 @@
             }
         }
 
-        //Execution of the code from the beginning of the window
+        // ------------------------------------------------------------------
+        // Output helper
+        // ------------------------------------------------------------------
+        function appendOutput(text) {
+            var eval_output = document.getElementById('display_evaluation');
+            eval_output.value += text + "\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
+        }
+
+        // ------------------------------------------------------------------
+        // Run all the code in the editor.
+        // ------------------------------------------------------------------
         function run_code() {
             var code_text = document.getElementById('get_code');
             var res;
-            (async () => {
-                try {
-                    res = await callEvalLispE(0, code_text.value);
-                }
-                catch (e) {
-                    res = e;
-                }
-                lastposition = code_text.value.length
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += res + "\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
-        };
-
-        function indentation_code() {
-            var code_text = document.getElementById('get_code');
-            (async () => {
-                var res = await callIndent(code_text.value);
-                code_text.value = res;
-            })();
+            try {
+                res = callEvalLispE(0, code_text.value);
+            } catch (e) {
+                res = e;
+            }
+            lastposition = code_text.value.length;
+            appendOutput(res);
         }
 
-        //The code is executed from the cursor position
-        function run_code_from() {
-            //We execute our code
+        // ------------------------------------------------------------------
+        // Indent the code in the editor.
+        // ------------------------------------------------------------------
+        function indentation_code() {
+            var code_text = document.getElementById('get_code');
+            try {
+                code_text.value = callIndent(code_text.value);
+            } catch (e) {
+                appendOutput("Indentation error: " + e);
+            }
+        }
 
+        // ------------------------------------------------------------------
+        // Run only the code typed since the last evaluation, starting from
+        // the caret's previously remembered position.
+        // ------------------------------------------------------------------
+        function run_code_from() {
             var txt = document.getElementById('get_code');
 
             var carret = getCaretPosition(txt);
@@ -268,64 +292,75 @@
                 lastposition = carret["start"];
             setCaretPosition(txt, lastposition, txt.value.length);
 
-            var code = txt.value.substring(lastposition)
+            var code = txt.value.substring(lastposition);
             lastposition = txt.value.length;
+
             var res;
-            (async () => {
-                try {
-                    res = await callEvalLispE(0, code);
-                }
-                catch (e) {
-                    res = e;
-                }
+            try {
+                res = callEvalLispE(0, code);
+            } catch (e) {
+                res = e;
+            }
+            appendOutput(res);
+        }
 
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += res + "\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
-        };
-
+        // ------------------------------------------------------------------
+        // Reset the main interpreter and run the editor's code from scratch.
+        // ------------------------------------------------------------------
         function reset_run_code() {
-            //We reset our code
             document.getElementById('display_evaluation').value = "";
-            (async () => {
-                await callResetLispE(0);
-                await run_code();
-            })();
-        };
+            try {
+                callResetLispE(0);
+            } catch (e) {
+                appendOutput("Reset error: " + e);
+                return;
+            }
+            run_code();
+        }
 
+        // ------------------------------------------------------------------
+        // Clear all editor and output panels.
+        // ------------------------------------------------------------------
         function clear_output() {
             document.getElementById('display_evaluation').value = "";
             document.getElementById('display_transpilation').value = "";
             document.getElementById('get_code').value = "";
-        };
+        }
 
+        // ------------------------------------------------------------------
+        // Transpile the editor's content (assumed Python) into LispE using
+        // the dedicated transpiler interpreter, then evaluate it in the main
+        // interpreter (idx=0).
+        // ------------------------------------------------------------------
         function run_python() {
+            if (pythonInterpreterIdx < 0) {
+                appendOutput("Python transpiler is not ready yet.");
+                return;
+            }
+
             var code_text = document.getElementById('get_code').value;
             var transpilation_output = document.getElementById('display_transpilation');
             var eval_output = document.getElementById('display_evaluation');
             transpilation_output.value = "";
             eval_output.value = "";
-            (async () => {
-                try {
-                    await callResetLispE(0);
-                    var bc = await callEvalLispE(0, basic_code);
-                    var tc = await callEvalLispE(0, transpiler_code);
-                    //var escaped = code_text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-                    var transpiled = await callEvalLispE(0, '(compilepython «' + code_text + '»)');
-                    transpilation_output.value = transpiled;
-                    if (transpiled.indexOf('ERROR>>>') === -1) {
-                        var res = await callEvalLispE(0, transpiled);
-                        eval_output.value += res + "\n";
-                        eval_output.scrollTop = eval_output.scrollHeight;
-                    } else {
-                        eval_output.value = "Transpilation error detected.\n" + transpiled;
-                    }
-                } catch (e) {
-                    eval_output.value += "Error: " + e + "\n";
+
+            try {
+                var transpiled = callEvalLispE(
+                    pythonInterpreterIdx,
+                    '(compilepython «' + code_text + '»)'
+                );
+                transpilation_output.value = transpiled;
+
+                if (transpiled.indexOf('ERROR>>>') === -1) {
+                    var res = callEvalLispE(0, transpiled);
+                    appendOutput(res);
+                } else {
+                    eval_output.value = "Transpilation error detected.\n" + transpiled;
                 }
-            })();
-        };
+            } catch (e) {
+                appendOutput("Error: " + e);
+            }
+        }
 
     </script>
 </body>
