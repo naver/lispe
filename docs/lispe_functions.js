@@ -13,13 +13,16 @@ var __ATPOSTRUN__ = []; // functions called after the main() is called
 
 // Emscripten 5.x no longer exposes HEAP32/HEAPF64 on Module.
 // Create fresh typed array views from the wasm memory buffer each time,
-// since the buffer can be detached after memory growth.
+// since the buffer can be detached after memory growth (e.g. after a _malloc).
+// IMPORTANT: never cache these views across a call that may grow memory.
 function getWasmBuffer() { return (Module["memory"] || Module.wasmMemory).buffer; }
 function getHEAP32() { return new Int32Array(getWasmBuffer()); }
 function getHEAPF64() { return new Float64Array(getWasmBuffer()); }
 
 //-----------------------------------------------------------------
-//In elements
+// Encoding / decoding helpers
+//-----------------------------------------------------------------
+
 const encode = function stringToIntegerArray(str, array) {
     for (let i = 0; i < str.length; i++) {
         array[i] = str.charCodeAt(i);
@@ -27,105 +30,108 @@ const encode = function stringToIntegerArray(str, array) {
     array[str.length] = 0;
 };
 
+// Decode `sz` int32-encoded chars at `array` into a JS string, then free `array`.
 const decode = function integerArrayToString(array, sz) {
-    str = "";        
-    sz *= 4;
-    var heap32 = getHEAP32();
-    for (let pointer=0; pointer < sz; pointer+=4) {
-        str += String.fromCharCode(heap32[pointer + array>>2]);
+    let str = "";
+    const heap32 = getHEAP32();
+    const base = array >> 2;
+    for (let i = 0; i < sz; i++) {
+        str += String.fromCharCode(heap32[base + i]);
     }
     Module._free(array);
     return str;
 };
 
-const decode_float_as_str = function toFloatArray(array, sz) {
-    str = "";
-    sz *= 8;
-    var heapf64 = getHEAPF64();
-    for (let pointer=0; pointer < sz; pointer+=8) {
-        str += String.fromCharCode(heapf64[pointer + array>>3]);
+// Decode `sz` float64-encoded chars (one char per double) at `array` into a JS string.
+const decode_float_as_str = function toFloatArrayAsStr(array, sz) {
+    let str = "";
+    const heapf64 = getHEAPF64();
+    const base = array >> 3;
+    for (let i = 0; i < sz; i++) {
+        str += String.fromCharCode(heapf64[base + i]);
     }
     Module._free(array);
     return str;
-}
+};
 
 const decode_float = function toFloatArray(array, sz) {
-    value = new Float64Array(sz);
-    sz *= 8;
-    i = 0;
-    var heapf64 = getHEAPF64();
-    for (let pointer=0; pointer < sz; pointer+=8) {
-        value[i] = heapf64[pointer + array>>3];
-        i++;
+    const value = new Float64Array(sz);
+    const heapf64 = getHEAPF64();
+    const base = array >> 3;
+    for (let i = 0; i < sz; i++) {
+        value[i] = heapf64[base + i];
     }
     Module._free(array);
     return value;
-}
+};
 
 const decode_int = function toIntArray(array, sz) {
-    value = new Int32Array(sz);
-    sz *= 4;
-    i = 0;
-    var heap32 = getHEAP32();
-    for (let pointer=0; pointer < sz; pointer+=4) {
-        value[i] = heap32[pointer + array>>2];
-        i++;
+    const value = new Int32Array(sz);
+    const heap32 = getHEAP32();
+    const base = array >> 2;
+    for (let i = 0; i < sz; i++) {
+        value[i] = heap32[base + i];
     }
     Module._free(array);
     return value;
-}
+};
 
 const decode_size = function toFirstIntArray(array) {
-    val = getHEAP32()[array>>2];
+    const val = getHEAP32()[array >> 2];
     Module._free(array);
     return val;
-}
+};
+
+//-----------------------------------------------------------------
+// Memory allocation helpers
+//-----------------------------------------------------------------
 
 function provideCharactersAsInts(code) {
-    //We need some room for error messages
-    nb = code.length + 1;
+    // We need some room for error messages
+    let nb = code.length + 1;
     nb = Math.max(20, nb);
-    arr = new Int32Array(nb);
-    for (i = 0; i < code.length; i++) {
+    const arr = new Int32Array(nb);
+    for (let i = 0; i < code.length; i++) {
         arr[i] = code.charCodeAt(i);
     }
     arr[code.length] = 0;
-    a_buffer = Module._malloc(nb * 4);
-    getHEAP32().set(arr, a_buffer >> 2)
+    const a_buffer = Module._malloc(nb * 4);
+    // getHEAP32() must be called AFTER the malloc, since malloc may grow memory.
+    getHEAP32().set(arr, a_buffer >> 2);
     return a_buffer;
 }
 
+// Allocate (nb+1) int32 slots. If `values` is provided, copy them into the buffer.
 function provideIntegers(nb, values) {
-    a_buffer = Module._malloc((nb + 1) * 4);
-    getHEAP32().set(values, a_buffer >> 2)
+    const a_buffer = Module._malloc((nb + 1) * 4);
+    if (values !== undefined && values !== null) {
+        getHEAP32().set(values, a_buffer >> 2);
+    }
     return a_buffer;
 }
 
+// Allocate (nb+1) float64 slots. If `values` is provided, copy them into the buffer.
 function provideFloats(nb, values) {
-    a_buffer = Module._malloc((nb + 1) * 8);
-    getHEAPF64().set(values, a_buffer >> 3)
+    const a_buffer = Module._malloc((nb + 1) * 8);
+    if (values !== undefined && values !== null) {
+        getHEAPF64().set(values, a_buffer >> 3);
+    }
     return a_buffer;
 }
 
-function provideIntegers(nb) {
-    return Module._malloc((nb + 1) * 4);
-}
-
-function provideFloats(nb) {
-    return Module._malloc((nb + 1) * 8);
-}
+//-----------------------------------------------------------------
+// Eval entry points returning vectors
+//-----------------------------------------------------------------
 
 function callEvalLispEToFloats(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-    entryFunction = Module['_eval_to_floats_lispe'];
+    const entryFunction = Module['_eval_to_floats_lispe'];
+    const string_to_array = provideCharactersAsInts(code);
+    const the_size = provideIntegers(2);
 
-    string_to_array = provideCharactersAsInts(code);
-
-    the_size = provideIntegers(2);
-
-    var float_result;
+    let float_result;
     try {
         float_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
     }
@@ -134,11 +140,11 @@ function callEvalLispEToFloats(lispe_idx, code) {
         Module._free(the_size);
         return handleException(e);
     }
-    sz = decode_size(the_size);
+    let sz = decode_size(the_size);
     if (sz < 0) {
         sz *= -1;
         Module._free(string_to_array);
-        str = decode_float_as_str(float_result, sz)
+        const str = decode_float_as_str(float_result, sz);
         throw new Error(str);
     }
     Module._free(string_to_array);
@@ -149,15 +155,11 @@ function callEvalLispEToInts(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
+    const entryFunction = Module['_eval_to_ints_lispe'];
+    const string_to_array = provideCharactersAsInts(code);
+    const the_size = provideIntegers(2);
 
-    entryFunction = Module['_eval_to_ints_lispe'];
-
-    string_to_array = provideCharactersAsInts(code);
-
-    the_size = provideIntegers(2);
-
-    var int_result;
-
+    let int_result;
     try {
         int_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
     }
@@ -166,11 +168,11 @@ function callEvalLispEToInts(lispe_idx, code) {
         Module._free(the_size);
         return handleException(e);
     }
-    sz = decode_size(the_size);
+    let sz = decode_size(the_size);
     if (sz < 0) {
         sz *= -1;
         Module._free(string_to_array);
-        str = decode(int_result, sz)
+        const str = decode(int_result, sz);
         throw new Error(str);
     }
     Module._free(string_to_array);
@@ -181,39 +183,37 @@ function callEvalLispEToStrings(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-
-    entryFunction = Module['_eval_to_strings_lispe'];
-
-    string_to_array = provideCharactersAsInts(code);
-
-    the_size = provideIntegers(2);
+    const entryFunction = Module['_eval_to_strings_lispe'];
+    const string_to_array = provideCharactersAsInts(code);
+    const the_size = provideIntegers(2);
 
     try {
-
-        string_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
-        sz = decode_size(the_size);
+        const string_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
+        let sz = decode_size(the_size);
         if (sz < 0) {
             sz *= -1;
             Module._free(string_to_array);
-            str = decode(string_result, sz)
+            const str = decode(string_result, sz);
             throw new Error(str);
         }
-        characters = decode_int(string_result, sz);
-        let str_vector = [];
+        const characters = decode_int(string_result, sz);
+        const str_vector = [];
         let s = "";
-        for (var i = 0; i < sz; i++) {
+        for (let i = 0; i < sz; i++) {
             if (characters[i] == 0) {
                 str_vector.push(s);
                 s = "";
             }
-            else
+            else {
                 s += String.fromCharCode(characters[i]);
+            }
         }
-        if (s != "")
+        if (s != "") {
             str_vector.push(s);
+        }
 
         Module._free(string_to_array);
-        return str_vector
+        return str_vector;
     }
     catch (e) {
         Module._free(string_to_array);
@@ -222,62 +222,64 @@ function callEvalLispEToStrings(lispe_idx, code) {
     }
 }
 
-//Important, values should have been created with provideIntegers
+//-----------------------------------------------------------------
+// Setq variants
+//-----------------------------------------------------------------
+
+// Set a LispE variable to an array of integers.
+// `vals` must be an Int32Array (or array-like compatible with TypedArray.set).
 function callSetqInts(lispe_idx, a_variable, vals, nb) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
+    if (!(vals instanceof Int32Array)) {
+        throw new Error("Expecting an Int32Array");
+    }
 
-    if (values instanceof Int32Array == false)
-        throw new Error("Expecting a Int32Array");
+    const entryFunction = Module['_eval_setq_ints_lispe'];
+    const string_to_array = provideCharactersAsInts(a_variable);
+    const values = provideIntegers(nb, vals);
 
-    entryFunction = Module['_eval_setq_ints_lispe'];
-
-    string_to_array = provideCharactersAsInts(a_variable);
-
-    values = provideIntegers(nb, vals);
-
-    var ret;
-
+    let ret;
     try {
         ret = entryFunction(lispe_idx, string_to_array, a_variable.length, values, nb);
     }
     catch (e) {
-        Module._free(value_to_array);
+        Module._free(string_to_array);
         Module._free(values);
-       return handleException(e);
+        return handleException(e);
     }
 
     Module._free(values);
     if (ret < 0) {
         ret *= -1;
-        str = decode(string_to_array, ret)
-       throw new Error(str);
+        const str = decode(string_to_array, ret);
+        throw new Error(str);
     }
-    Module._free(value_to_array);
+    Module._free(string_to_array);
     return true;
 }
 
+// Set a LispE variable to an array of floats.
+// `vals` must be a Float64Array.
 function callSetqFloats(lispe_idx, a_variable, vals, nb) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-    if (values instanceof Float64Array == false)
-        throw new Error("Expecting a Int32Array");
+    if (!(vals instanceof Float64Array)) {
+        throw new Error("Expecting a Float64Array");
+    }
 
+    const entryFunction = Module['_eval_setq_floats_lispe'];
+    const string_to_array = provideCharactersAsInts(a_variable);
+    const values = provideFloats(nb, vals);
 
-    entryFunction = Module['_eval_setq_floats_lispe'];
-
-    string_to_array = provideCharactersAsInts(a_variable);
-    var ret;
-
-    values = provideFloats(nb, vals);
-
+    let ret;
     try {
         ret = entryFunction(lispe_idx, string_to_array, a_variable.length, values, nb);
     }
     catch (e) {
-        Module._free(value_to_array);
+        Module._free(string_to_array);
         Module._free(values);
         return handleException(e);
     }
@@ -285,89 +287,80 @@ function callSetqFloats(lispe_idx, a_variable, vals, nb) {
     Module._free(values);
     if (ret < 0) {
         ret *= -1;
-        str = decode(string_to_array, ret)
+        const str = decode(string_to_array, ret);
         throw new Error(str);
     }
-    Module._free(value_to_array);
+    Module._free(string_to_array);
     return true;
 }
 
-//value is a int
+// Set a LispE variable to a single integer.
 function callSetqInt(lispe_idx, a_variable, value) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
+    const entryFunction = Module['_eval_setq_int_lispe'];
+    const string_to_array = provideCharactersAsInts(a_variable);
 
-    entryFunction = Module['_eval_setq_int_lispe'];
-
-    string_to_array = provideCharactersAsInts(a_variable);
-    var ret;
-
+    let ret;
     try {
         ret = entryFunction(lispe_idx, string_to_array, a_variable.length, value);
     }
     catch (e) {
-        Module._free(value_to_array);
+        Module._free(string_to_array);
         return handleException(e);
     }
 
     if (ret < 0) {
         ret *= -1;
-        str = decode(string_to_array, ret)
+        const str = decode(string_to_array, ret);
         throw new Error(str);
     }
-    Module._free(value_to_array);
+    Module._free(string_to_array);
     return true;
 }
 
-//value is float
+// Set a LispE variable to a single float.
 function callSetqFloat(lispe_idx, a_variable, value) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
+    const entryFunction = Module['_eval_setq_float_lispe'];
+    const string_to_array = provideCharactersAsInts(a_variable);
 
-    entryFunction = Module['_eval_setq_float_lispe'];
-
-    string_to_array = provideCharactersAsInts(a_variable);
-    var ret;
-
+    let ret;
     try {
-
         ret = entryFunction(lispe_idx, string_to_array, a_variable.length, value);
     }
     catch (e) {
-        Module._free(value_to_array);
+        Module._free(string_to_array);
         return handleException(e);
     }
 
     if (ret < 0) {
         ret *= -1;
-        str = decode(string_to_array, ret)
+        const str = decode(string_to_array, ret);
         throw new Error(str);
     }
-    Module._free(value_to_array);
+    Module._free(string_to_array);
     return true;
 }
 
-//value is a string
+// Set a LispE variable to a string.
 function callSetqString(lispe_idx, a_variable, value) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
-
 
     if (typeof value != "string") {
         throw new Error("Expecting a string as input");
     }
 
-    entryFunction = Module['_eval_setq_string_lispe'];
+    const entryFunction = Module['_eval_setq_string_lispe'];
+    const string_to_array = provideCharactersAsInts(a_variable);
+    const value_to_array = provideCharactersAsInts(value);
 
-    string_to_array = provideCharactersAsInts(a_variable);
-    value_to_array = provideCharactersAsInts(value);
-
-    var ret;
-
+    let ret;
     try {
-
         ret = entryFunction(lispe_idx, string_to_array, a_variable.length, value_to_array, value.length);
     }
     catch (e) {
@@ -379,33 +372,37 @@ function callSetqString(lispe_idx, a_variable, value) {
     Module._free(value_to_array);
     if (ret < 0) {
         ret *= -1;
-        str = decode(string_to_array, ret)
+        const str = decode(string_to_array, ret);
         throw new Error(str);
     }
     Module._free(string_to_array);
     return true;
 }
 
+//-----------------------------------------------------------------
+// Eval entry points returning scalars / strings
+//-----------------------------------------------------------------
+
 function callEvalLispEAsInt(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
+    const entryFunction = Module['_eval_to_int_lispe'];
+    const string_to_array = provideCharactersAsInts(code);
 
-    entryFunction = Module['_eval_to_int_lispe'];
-
-    string_to_array = provideCharactersAsInts(code);
-    var ret;
+    let ret;
     try {
-
-        ret = entryFunction(lispe_idx, string_to_array,  code.length, Math.max(20, code.length));
+        ret = entryFunction(lispe_idx, string_to_array, code.length, Math.max(20, code.length));
     }
     catch (e) {
         Module._free(string_to_array);
         return handleException(e);
     }
-    if (string_to_array[0] == 27) {
-        string_to_array[0] = 32;
-        str = decode(string_to_array, ret)
+    // Sentinel: if first slot was set to 27 (ESC), an error message was written into the buffer.
+    const heap32 = getHEAP32();
+    if (heap32[string_to_array >> 2] == 27) {
+        heap32[string_to_array >> 2] = 32;
+        const str = decode(string_to_array, ret);
         throw new Error(str);
     }
     Module._free(string_to_array);
@@ -416,22 +413,21 @@ function callEvalLispEAsFloat(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
+    const entryFunction = Module['_eval_to_float_lispe'];
+    const string_to_array = provideCharactersAsInts(code);
 
-    entryFunction = Module['_eval_to_float_lispe'];
-
-    string_to_array = provideCharactersAsInts(code);
-    var ret;
+    let ret;
     try {
-
         ret = entryFunction(lispe_idx, string_to_array, code.length, Math.max(20, code.length));
     }
     catch (e) {
         Module._free(string_to_array);
-       return handleException(e);
+        return handleException(e);
     }
-    if (string_to_array[0] == 27) {
-        string_to_array[0] = 32;
-        str = decode(string_to_array, ret)
+    const heap32 = getHEAP32();
+    if (heap32[string_to_array >> 2] == 27) {
+        heap32[string_to_array >> 2] = 32;
+        const str = decode(string_to_array, ret);
         throw new Error(str);
     }
     Module._free(string_to_array);
@@ -442,22 +438,18 @@ function callEvalLispEAsString(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-
-    entryFunction = Module['_eval_to_string_lispe'];
-
-    string_to_array = provideCharactersAsInts(code);
-
-    the_size = provideIntegers(2);
+    const entryFunction = Module['_eval_to_string_lispe'];
+    const string_to_array = provideCharactersAsInts(code);
+    const the_size = provideIntegers(2);
 
     try {
-
-        var result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
+        const result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
         Module._free(string_to_array);
-        sz = decode_size(the_size);
+        let sz = decode_size(the_size);
         if (sz < 0) {
             sz *= -1;
-            str = decode(result, sz)
-            throw new Error(str);    
+            const str = decode(result, sz);
+            throw new Error(str);
         }
         return decode(result, sz);
     }
@@ -472,22 +464,18 @@ function callEvalLispE(lispe_idx, code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-
-    entryFunction = Module['_eval_lispe'];
-
-    string_to_array = provideCharactersAsInts(code);
-
-    the_size = provideIntegers(2);
+    const entryFunction = Module['_eval_lispe'];
+    const string_to_array = provideCharactersAsInts(code);
+    const the_size = provideIntegers(2);
 
     try {
-
-        var result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
+        const result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
         Module._free(string_to_array);
-        sz = decode_size(the_size);
+        let sz = decode_size(the_size);
         if (sz < 0) {
             sz *= -1;
-            str = decode(result, sz)
-            throw new Error(str);    
+            const str = decode(result, sz);
+            throw new Error(str);
         }
         return decode(result, sz);
     }
@@ -497,21 +485,21 @@ function callEvalLispE(lispe_idx, code) {
         return handleException(e);
     }
 }
-//---------------------------------------------------------------
-//Note that the default LispE is idx=0
-// callEvalIdx(0, code) <=> callEval(code)
 
-//Creates a new LispE interpreter... 
-//Returns an index on that interpreter
+//---------------------------------------------------------------
+// Interpreter lifecycle
+// Note that the default LispE is idx=0
+// callEvalIdx(0, code) <=> callEval(code)
+//---------------------------------------------------------------
+
+// Creates a new LispE interpreter. Returns its index.
 function callCreateLispE() {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-    entryFunction = Module['_create_lispe'];
-
+    const entryFunction = Module['_create_lispe'];
     try {
-
-        lispe_idx = entryFunction();
+        const lispe_idx = entryFunction();
         position_in_buffer = 0;
         return lispe_idx;
     }
@@ -520,15 +508,13 @@ function callCreateLispE() {
     }
 }
 
-//To delete this interpreter
+// Delete a LispE interpreter.
 function callCleanLispE(lispe_idx) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-    entryFunction = Module['_clean_lispe'];
-
+    const entryFunction = Module['_clean_lispe'];
     try {
-
         entryFunction(lispe_idx);
         position_in_buffer = 0;
         return "true";
@@ -538,15 +524,13 @@ function callCleanLispE(lispe_idx) {
     }
 }
 
-//To reset this interpreter
+// Reset a LispE interpreter.
 function callResetLispE(lispe_idx) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-    entryFunction = Module['_reset_lispe'];
-
+    const entryFunction = Module['_reset_lispe'];
     try {
-
         entryFunction(lispe_idx);
         position_in_buffer = 0;
         return "true";
@@ -556,20 +540,19 @@ function callResetLispE(lispe_idx) {
     }
 }
 
-
+// Indent LispE code.
 function callIndent(code) {
     assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
-    entryFunction = Module['_eval_indent_lispe'];
-
-    string_to_array = provideCharactersAsInts(code);
-    the_size = provideIntegers(2);
+    const entryFunction = Module['_eval_indent_lispe'];
+    const string_to_array = provideCharactersAsInts(code);
+    const the_size = provideIntegers(2);
 
     try {
-        string_result = entryFunction(string_to_array, code.length, the_size);
+        const string_result = entryFunction(string_to_array, code.length, the_size);
         Module._free(string_to_array);
-        sz = decode_size(the_size);
+        const sz = decode_size(the_size);
         return decode(string_result, sz);
     }
     catch (e) {
