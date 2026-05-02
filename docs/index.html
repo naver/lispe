@@ -260,7 +260,7 @@
             var code_text = document.getElementById('get_code');
             var res;
             try {
-                res = callEvalLispE(0, code_text.value);
+                res = callEvalLispE(1, code_text.value);
             } catch (e) {
                 res = e;
             }
@@ -297,7 +297,7 @@
 
             var res;
             try {
-                res = callEvalLispE(0, code);
+                res = callEvalLispE(1, code);
             } catch (e) {
                 res = e;
             }
@@ -310,7 +310,7 @@
         function reset_run_code() {
             document.getElementById('display_evaluation').value = "";
             try {
-                callResetLispE(0);
+                callResetLispE(1);
             } catch (e) {
                 appendOutput("Reset error: " + e);
                 return;
@@ -352,7 +352,8 @@
                 transpilation_output.value = transpiled;
 
                 if (transpiled.indexOf('ERROR>>>') === -1) {
-                    var res = callEvalLispE(0, transpiled);
+                    callResetLispE(1);
+                    var res = callEvalLispE(1, transpiled);
                     appendOutput(res);
                 } else {
                     eval_output.value = "Transpilation error detected.\n" + transpiled;
