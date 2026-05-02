@@ -23,12 +23,20 @@
             padding: 5px 0;
         }
 
+        .codeRow {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            min-height: 0;
+            gap: 10px;
+            padding: 5px 0;
+        }
+
         .textAreaCode {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 0;
-            padding: 5px 0;
         }
 
         .textAreaCode span {
@@ -75,10 +83,12 @@
         <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
         <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
         <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
+        <input type="button" value="Python" OnClick="run_python()" id="button_python" />
     </div>
-    <div class="textAreaCode">
-        <span>Code</span>
-        <textarea name="code" id="get_code">; You can call a function in the pattern definition of the function
+    <div class="codeRow">
+        <div class="textAreaCode">
+            <span>Code</span>
+            <textarea name="code" id="get_code">; You can call a function in the pattern definition of the function
 (defun checking (x y) (eq 0 (% y x)))
 
 ; the argument should be an integer, whose value is a multiple of 15
@@ -88,6 +98,11 @@
 (defpat fizzbuzz ((integer_ (checking 5 x))) 'buzz)
 (defpat fizzbuzz (x) x)
 (mapcar 'fizzbuzz (range 1 100 1))</textarea>
+        </div>
+        <div class="textAreaCode">
+            <span>Transpilation</span>
+            <textarea name="transpilation" id="display_transpilation" readonly></textarea>
+        </div>
     </div>
     <div class="textAreaColumn">
         <span>OUTPUT</span>
@@ -132,6 +147,8 @@
         };</script>
     <script async type="text/javascript" src="lispe.js"></script>
     <script async type="text/javascript" src="lispe_functions.js"></script>
+    <script type="text/javascript" src="basic_string.js"></script>
+    <script type="text/javascript" src="transpiler_string.js"></script>
 
     <script type="text/javascript">
 
@@ -141,6 +158,7 @@
         buttonFont = 12 + "px";
 
         document.getElementById('get_code').style.fontSize = textFontSize;
+        document.getElementById('display_transpilation').style.fontSize = textFontSize;
         document.getElementById('display_evaluation').style.fontSize = textFontSize;
 
         document.getElementById('button_run').style.height = buttonHeight;
@@ -161,6 +179,12 @@
         document.getElementById('button_clear_output').style.height = buttonHeight;
         document.getElementById('button_clear_output').style.width = buttonWidth;
         document.getElementById('button_clear_output').style.fontSize = buttonFont;
+
+        document.getElementById('button_python').style.height = buttonHeight;
+        document.getElementById('button_python').style.width = buttonWidth;
+        document.getElementById('button_python').style.fontSize = buttonFont;
+        document.getElementById('button_python').style.fontWeight = "bolder";
+        document.getElementById('button_python').style.color = "blue";
 
         var lastposition = 0;
         //The next two modules were found on: https://www.vishalon.net/blog/javascript-getting-and-setting-caret-position-in-textarea
@@ -272,7 +296,35 @@
 
         function clear_output() {
             document.getElementById('display_evaluation').value = "";
+            document.getElementById('display_transpilation').value = "";
             document.getElementById('get_code').value = "";
+        };
+
+        function run_python() {
+            var code_text = document.getElementById('get_code').value;
+            var transpilation_output = document.getElementById('display_transpilation');
+            var eval_output = document.getElementById('display_evaluation');
+            transpilation_output.value = "";
+            eval_output.value = "";
+            (async () => {
+                try {
+                    await callResetLispE(0);
+                    var bc = await callEvalLispE(0, basic_code);
+                    var tc = await callEvalLispE(0, transpiler_code);
+                    //var escaped = code_text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                    var transpiled = await callEvalLispE(0, '(compilepython «' + code_text + '»)');
+                    transpilation_output.value = transpiled;
+                    if (transpiled.indexOf('ERROR>>>') === -1) {
+                        var res = await callEvalLispE(0, transpiled);
+                        eval_output.value += res + "\n";
+                        eval_output.scrollTop = eval_output.scrollHeight;
+                    } else {
+                        eval_output.value = "Transpilation error detected.\n" + transpiled;
+                    }
+                } catch (e) {
+                    eval_output.value += "Error: " + e + "\n";
+                }
+            })();
         };
 
     </script>
