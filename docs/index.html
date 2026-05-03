@@ -83,7 +83,7 @@
         <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
         <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
         <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
-        <input type="button" value="Python" OnClick="run_python()" id="button_python" disabled />
+        <input type="button" value="Python" OnClick="run_python()" id="button_python" />
     </div>
     <div class="codeRow">
         <div class="textAreaCode">
@@ -195,20 +195,6 @@
         var pythonInterpreterIdx = -1;
         var lastposition = 0;
 
-        // ------------------------------------------------------------------
-        // Runtime initialisation: load the Python transpiler in a dedicated
-        // interpreter so it survives resets of the main one (idx=0).
-        // ------------------------------------------------------------------
-        Module.onRuntimeInitialized = function () {
-            try {
-                pythonInterpreterIdx = callCreateLispE();
-                callEvalLispE(pythonInterpreterIdx, basic_code);
-                callEvalLispE(pythonInterpreterIdx, transpiler_code);
-                document.getElementById('button_python').disabled = false;
-            } catch (e) {
-                console.error("Failed to initialise Python transpiler:", e);
-            }
-        };
 
         // ------------------------------------------------------------------
         // Caret helpers
@@ -260,7 +246,7 @@
             var code_text = document.getElementById('get_code');
             var res;
             try {
-                res = callEvalLispE(1, code_text.value);
+                res = callEvalLispE(0, code_text.value);
             } catch (e) {
                 res = e;
             }
@@ -297,7 +283,7 @@
 
             var res;
             try {
-                res = callEvalLispE(1, code);
+                res = callEvalLispE(0, code);
             } catch (e) {
                 res = e;
             }
@@ -310,7 +296,7 @@
         function reset_run_code() {
             document.getElementById('display_evaluation').value = "";
             try {
-                callResetLispE(1);
+                callResetLispE(0);
             } catch (e) {
                 appendOutput("Reset error: " + e);
                 return;
@@ -334,8 +320,14 @@
         // ------------------------------------------------------------------
         function run_python() {
             if (pythonInterpreterIdx < 0) {
-                appendOutput("Python transpiler is not ready yet.");
-                return;
+                try {
+                    pythonInterpreterIdx = callCreateLispE();
+                    callEvalLispE(pythonInterpreterIdx, basic_code);
+                    callEvalLispE(pythonInterpreterIdx, transpiler_code);
+                } catch (e) {
+                    console.error("Failed to initialise Python transpiler:", e);
+                    return;
+                }
             }
 
             var code_text = document.getElementById('get_code').value;
@@ -352,8 +344,8 @@
                 transpilation_output.value = transpiled;
 
                 if (transpiled.indexOf('ERROR>>>') === -1) {
-                    callResetLispE(1);
-                    var res = callEvalLispE(1, transpiled);
+                    callResetLispE(0);
+                    var res = callEvalLispE(0, transpiled);
                     appendOutput(res);
                 } else {
                     eval_output.value = "Transpilation error detected.\n" + transpiled;
