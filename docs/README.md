@@ -16,6 +16,8 @@ Do `git clone https://github.com/juj/emsdk.git` to create a new version.
 ./emsdk activate latest
 ```
 
+_The current version of emsdk is 5.0.6_
+
 ### To compile
 
 The Makefile has been modified to be able to use: **emsdk**
@@ -45,17 +47,12 @@ You can also use python:
 
 ### index.html
 This file contains the minimum code to execute a LispE instruction from within a browser.
-The loading and initialisation of the *LispE* interpreter is done in *lispe_run.js*
-
-### lispe_run.js
-This is the encapsulation in JavaScript of the WASM libary loading.
-It exposes:
-```JavaScript
-function setMaxSizeInput(v); //which set the maximum size of code sent to Tamgu 
-function callEval(code); //which executes the execution of a piece of Tamgu code, it returns a string
-function callResetLispE(); which resets the current Tamgu interpreter
-```
 
 ### lispe.wasm
 This is the WASM library, which is loaded with tamgu_run.js.
 
+### lispe.js
+This is the WASM encapuslation code
+
+### lispe_functions.js
+This is the API description
