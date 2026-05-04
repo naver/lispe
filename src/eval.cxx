@@ -463,11 +463,6 @@ Element* Instruction::eval(LispE* lisp) {
 // This function is called when the 'eval' instruction is executed on a string
 // We need to clean the garbage after the compiling
 //------------------------------------------------------------------------------
-#ifdef LISPE_WASM_NO_EXCEPTION
-Element* LispE::EVAL(u_ustring& code) {
-    return _eval(code);
-}
-#endif
 
 
 #ifdef LISPE_WASM
@@ -719,41 +714,7 @@ Element* List::evall_addr_(LispE* lisp) {
 }
 
 
-#ifdef LISPE_WASM_NO_EXCEPTION
 
-Element* List::evall_root(LispE* lisp) {
-    size_t listsize = liste.size();
-
-    lisp->delegation->reset_context();
-    
-    //We might need to mark the last element as being terminal
-    //the block might belong to an if
-    liste.back()->setterminal(terminal);
-    
-    Element* element = null_;
-    
-    for (size_t i = 1; i < listsize && element->type != l_return && thrown_error == NULL; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
-    }
-    
-    if (element->type == l_return) {
-        if (element->type == l_break)
-            return null_;
-        
-        Element* value = element->eval(lisp);
-        element->release();
-        return value;
-    }
-
-    if (thrown_error != NULL) {
-        element->release();
-        return thrown_error;
-    }
-    
-    return element;
-}
-#else
 Element* List::evall_root(LispE* lisp) {
     size_t listsize = liste.size();
 
@@ -781,7 +742,6 @@ Element* List::evall_root(LispE* lisp) {
 
     return element;
 }
-#endif
 
 Element* List::evall_block(LispE* lisp) {
     long listsize = liste.size();
@@ -1605,43 +1565,7 @@ Element* List::evall_setg(LispE* lisp) {
     return True_;
 }
 
-#ifdef LISPE_WASM_NO_EXCEPTION
-Element* List::evall_let(LispE* lisp) {
-    long i;
-    vector<uint16_t> labels;
-    vector<Element*> values;
-    long sz = size();
-    Element* e;
-    Element* current;
 
-    List* variable_list = (List*)liste[1];
-    long sz_varlist = variable_list->size();
-    for (i = 0; i < sz_varlist; i++) {
-        current = variable_list->liste[i];
-        e = current->index(1)->eval(lisp);
-        if (thrown_error) {
-            for (i = 0; i < values.size(); i++)
-                lisp->put_and_keep(values[i], NULL, labels[i]);
-            return e;
-        }
-        labels.push_back(current->index(0)->label());
-        current = lisp->record_or_replace(e, labels.back());
-        values.push_back(current);
-    }
-
-    e = null_;
-    for (i = 2; i < sz && !thrown_error; i++) {
-        e->release();
-        e = liste[i]->eval(lisp);
-    }
-
-    e->increment();
-    for (i = 0; i < values.size(); i++)
-        lisp->put_and_keep(values[i], NULL, labels[i]);
-    e->decrementkeep();
-    return e;
-}
-#else
 Element* List::evall_let(LispE* lisp) {
     long i;
     vector<uint16_t> labels;
@@ -1686,7 +1610,7 @@ Element* List::evall_let(LispE* lisp) {
 
     return True_;
 }
-#endif
+
 
 Element* List::evall_setq(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);

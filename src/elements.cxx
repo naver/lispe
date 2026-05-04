@@ -46,16 +46,9 @@ Rankloop::Rankloop(LispE* lp, List* l) : List(l,0) {
     max_iterator = 0;
 }
 //------------------------------------------------------------------------------------------
-#ifdef LISPE_WASM_NO_EXCEPTION
-int16_t Element::function_label(LispE* lisp) {
-    lisp->delegation->set_error(new Error("Error: Not a function or a data structure"));
-    return -1;
-}
-#else
 int16_t Element::function_label(LispE* lisp) {
     throw new Error("Error: Not a function or a data structure");
 }
-#endif
 
 //------------------------------------------------------------------------------------------
 

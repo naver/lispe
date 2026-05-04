@@ -45,17 +45,10 @@ class ITEM;
 void increment_total();
 void decrement_total();
 
-#ifdef LISPE_WASM_NO_EXCEPTION
-#define sent_error(e) return lisp->delegation->set_error(new Error(e))
-#define sent_error_0(e) {lisp->delegation->set_error(new Error(e)); return 0;}
-#define sent_error_e(e) {lisp->delegation->set_error(new Error(e)); return;}
-#define sent_error_n(e) return new Error(e);
-#else
 #define sent_error(e) throw new Error(e)
 #define sent_error_0(e) throw new Error(e)
 #define sent_error_e(e) throw new Error(e)
 #define sent_error_n(e) throw new Error(e)
-#endif
 
 
 typedef enum {
@@ -792,12 +785,6 @@ public:
     
     //-----------------
     
-#ifdef LISPE_WASM_NO_EXCEPTION
-    Element* EVAL(LispE* lisp);
-    virtual Element* check_if_error(LispE*) {
-        return this;
-    }
-#endif
     
     virtual Element* eval_lambda_min(LispE*);
 
@@ -1192,9 +1179,6 @@ public:
         return false;
     }
     
-#ifdef LISPE_WASM_NO_EXCEPTION
-    Element* check_if_error(LispE*);
-#endif
     
     bool isError() {
         return true;

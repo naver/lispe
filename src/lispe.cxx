@@ -108,18 +108,6 @@ void clean_all_global_lispe() {
     global_lispe_interpreter.clear();
 }
 
-#ifdef LISPE_WASM_NO_EXCEPTION
-//In this case, errors are no longer treated as exceptions.
-Element* Element::EVAL(LispE* lisp) {
-    if (thrown_error)
-        return thrown_error;
-    return _eval(lisp)->check_if_error(lisp);
-}
-
-Element* Error::check_if_error(LispE* lisp) {
-    return lisp->delegation->set_error(this);
-}
-#endif
 #endif
 
 //------------------------------------------------------------------------------------------
@@ -1344,11 +1332,6 @@ void LispE::cleaning() {
                 a->second->decrement();
             }
         }
-#ifdef LISPE_WASM_NO_EXCEPTION
-        //In this case, errors are no longer treated as exceptions.
-        //We need to clean if an error still lurks around
-        delegation->reset_error();
-#endif
     }
 
     //Then if some of them are still running
@@ -3313,12 +3296,7 @@ Element* LispE::compile_eval(u_ustring& code) {
 
 Element* LispE::compile_string(u_ustring& code) {
     clearStop();
-    
-#ifdef LISPE_WASM_NO_EXCEPTION
-    //In this case, errors are no longer treated as exceptions.
-    delegation->reset_error();
-#endif
-    
+        
     //A little trick to compile code sequences
     Tokenizer parse;
     lisp_code retour = segmenting(code, parse);
@@ -3363,12 +3341,7 @@ Element* LispE::compile_string(u_ustring& code) {
 
 Element* LispE::compile_lisp_code(u_ustring& code) {
     clearStop();
-    
-#ifdef LISPE_WASM_NO_EXCEPTION
-    //In this case, errors are no longer treated as exceptions.
-    delegation->reset_error();
-#endif
-    
+        
     //A little trick to compile code sequences
     total_objects = 0;
     code = U"(__root__ " + code + U")";

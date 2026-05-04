@@ -697,14 +697,12 @@ Element* List_library_eval::eval(LispE* lisp) {
         lisp->pop();
         return lisp->check_error(this, err, idxinfo);
     }
-#ifndef LISPE_WASM_NO_EXCEPTION
     catch (void* x) {
         lisp->pop();
         if (((Error*)x)->type == t_error)
             return lisp->check_error(this, (Error*)x, idxinfo);
         return lisp->check_error(this, new Error("Unknown error"), idxinfo);
     }
-#endif
     lisp->resetStack();
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
@@ -861,14 +859,12 @@ Element* List_library_pattern_eval::eval(LispE* lisp) {
         lisp->pop();
         return lisp->check_error(this, err, idxinfo);
     }
-#ifndef LISPE_WASM_NO_EXCEPTION
     catch (void* x) {
         lisp->pop();
         if (((Error*)x)->type == t_error)
             return lisp->check_error(this, (Error*)x, idxinfo);
         return lisp->check_error(this, new Error("Unknown error"), idxinfo);
     }
-#endif
     lisp->resetStack();
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
@@ -1286,9 +1282,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
         
         bool success = true;
         element = true_;
-#ifndef LISPE_WASM_NO_EXCEPTION
         current_error->release();
-#endif
         current_error = null_;
         try {
             i = 3;
@@ -1552,9 +1546,7 @@ Element* List_prolog_eval::eval(LispE* lisp) {
             }
         }
         catch (Error* err) {
-#ifndef LISPE_WASM_NO_EXCEPTION
         err->release();
-#endif
             success = false;
         }
         if (success)
@@ -1624,34 +1616,8 @@ Element* List::eval_prolog(LispE* lisp, List* body) {
 }
 
 //------------------------------------------------------------------------------------------
-#ifdef LISPE_WASM_NO_EXCEPTION
+#ifdef LISPE_WASM
 void List::evalthread(LispE* lisp, List* body) {
-    Element* element = terminal_;
-    
-    long nbarguments = body->size();
-    
-    while (element == terminal_) {
-        if (nbarguments == 4)
-            element = body->liste[3]->eval(lisp);
-        else {
-            element = null_;
-            for (long i = 3; i < nbarguments && element != terminal_ && element->type != l_return && !element->isError(); i++) {
-                element->release();
-                element = body->liste[i]->eval(lisp);
-            }
-        }
-        if (element->isError()) {
-            lisp->delegation->setError((Error*)element);
-            return;
-        }
-        if (element->type == l_return) {
-            element->eval(lisp)->release();
-            element->release();
-            //This version protects 'e' from being destroyed in the stack.
-            return;
-        }
-    }
-    element->release();
 }
 #else
 void List::evalthread(LispE* lisp, List* body) {

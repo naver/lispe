@@ -24,14 +24,8 @@ public:
     u_link* _previous;
     uint32_t mark;
     uint16_t status;
-#ifdef LISPE_WASM_NO_EXCEPTION
-    bool error;
-#endif
 
     u_link(Element* v) {
-#ifdef LISPE_WASM_NO_EXCEPTION
-        error = false;
-#endif
         status = 0;
         mark = 0;
         value = v;
@@ -131,19 +125,6 @@ class u_link_last : public u_link {
 public:
     u_link_last(Element* v) : u_link(v) {}
 
-#ifdef LISPE_WASM_NO_EXCEPTION
-    void u_push(u_link* e) {
-        error = true;
-    }
-
-    void u_connect(Element* v) {
-        error = true;
-    }
-
-    void connect_as_last(Element* v) {
-        error = true;
-    }
-#else
     void u_push(u_link* e) {
         throw new Error("Error: cannot add an element to this list");
     }
@@ -155,7 +136,7 @@ public:
     void connect_as_last(Element* v) {
         throw new Error("Error: cannot add an element to this list");
     }
-#endif
+
     bool isFinal() {
         return true;
     }
@@ -320,12 +301,6 @@ public:
             c->insert(new u_link(v));
         else {
             c->u_connect(v);
-#ifdef LISPE_WASM_NO_EXCEPTION
-            if (c->error) {
-                c->error = false;
-                return false;
-            }
-#endif
         }
         return true;
     }

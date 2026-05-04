@@ -38,23 +38,7 @@ bool Listargumentquote::unify(LispE* lisp, Element* value, bool record) {
     return liste[1]->unify(lisp, value, false);
 }
 
-#ifdef LISPE_WASM_NO_EXCEPTION
-bool Listargumentfunction::unify(LispE* lisp, Element* value, bool record) {
-    //If it is a function embedding: (flip (in 'str x))
-    liste.object = value;
-    if (!argument->unify(lisp, value, record)) {
-        return false;
-    }
-    value = eval(lisp);
-    if (lisp->delegation->current_error) {
-        lisp->delegation->reset_context();
-        return false;
-    }
-    bool test = value->Boolean();
-    value->release();
-    return test;
-}
-#else
+
 bool Listargumentfunction::unify(LispE* lisp, Element* value, bool record) {
     //If it is a function embedding: (flip (in 'str x))
     liste.object = value;
@@ -73,7 +57,6 @@ bool Listargumentfunction::unify(LispE* lisp, Element* value, bool record) {
     value->release();
     return test;
 }
-#endif
 
 bool Listargumentdata::unify(LispE* lisp, Element* value, bool record) {
     liste.object = value;

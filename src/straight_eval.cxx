@@ -3745,130 +3745,6 @@ Element* List_xor_eval::eval(LispE* lisp) {
     return booleans_[test];
 }
 
-#ifdef LISPE_WASM_NO_EXCEPTION
-Element* List_setqv_eval::eval(LispE* lisp) {
-    Element* element = liste[2]->eval(lisp);
-    if (thrown_error)
-        return element;
-    if (liste[1]->type == t_list) {
-        if (liste[1]->size() != element->size()) {
-            element->release();
-            return new Error("Error: a list of variable should have the same size as its value.");
-        }
-        long sz = liste[1]->size();
-        uint16_t label;
-        for (long i = 0; i < sz; i++) {
-            label = liste[1]->index(i)->label();
-            lisp->storing_variable(element->index(i), label);
-        }
-        element->release();
-    }
-    else
-        lisp->storing_variable(element, liste[1]->label());
-    return element;
-}
-
-Element* List_setq_eval::eval(LispE* lisp) {
-    Element* element = liste[2]->eval(lisp);
-    if (thrown_error)
-        return element;
-    if (liste[1]->type == t_list) {
-        if (liste[1]->size() != element->size()) {
-            element->release();
-            return new Error("Error: a list of variable should have the same size as its value.");
-        }
-        long sz = liste[1]->size();
-        uint16_t label;
-        for (long i = 0; i < sz; i++) {
-            label = liste[1]->index(i)->label();
-            lisp->storing_variable(element->index(i), label);
-        }
-        element->release();
-    }
-    else
-        lisp->storing_variable(element, liste[1]->label());
-    return True_;
-}
-
-Element* List_setqequal_eval::eval(LispE* lisp) {
-    Element* element = liste[2]->eval(lisp);
-    if (thrown_error)
-        return element;
-    if (liste[1]->type == t_list) {
-        if (liste[1]->size() != element->size()) {
-            element->release();
-            return new Error("Error: a list of variable should have the same size as its value.");
-        }
-        long sz = liste[1]->size();
-        uint16_t label;
-        for (long i = 0; i < sz; i++) {
-            label = liste[1]->index(i)->label();
-            lisp->recording_back(element->index(i), label);
-        }
-        element->release();
-    }
-    else
-        lisp->recording_back(element, liste[1]->label());
-    return True_;
-}
-
-Element* List_setqi_eval::eval(LispE* lisp) {
-    List_instance* instance = lisp->current_instance;
-    if (instance == NULL)
-        return new Error("Error: setqi can only be used within an instance");
-    
-    lisp->checkState(this);
-    Element* element = liste[2]->eval(lisp)->duplicate_constant(lisp);
-    if (thrown_error)
-        return element;
-    int16_t label = liste[1]->label();
-    long i = instance->names.search(label);
-    if (i != -1) {
-        //In this case, we force the value onto the existing variable...
-        if (element != instance->liste[i]) {
-            instance->liste[i]->decrement();
-            instance->liste[i] = element;
-            element->increment();
-        }
-    }
-    else {
-        instance->names.push_back(label);
-        instance->append(element);
-    }
-    lisp->resetStack();
-    return True_;
-}
-
-Element* List_record_in_stack_eval::eval_in_class(LispE* lisp) {
-    List_instance* instance = lisp->current_instance;
-    if (instance == NULL) {
-        return new Error("Error: setqi can only be used within an instance");
-    }
-    
-    lisp->checkState(this);
-    Element* element = liste[2]->eval(lisp)->duplicate_constant(lisp);
-    if (thrown_error)
-        return element;
-
-    int16_t label = liste[1]->label();
-    long i = instance->names.search(label);
-    if (i != -1) {
-        //In this case, we force the value onto the existing variable...
-        if (element != instance->liste[i]) {
-            instance->liste[i]->decrement();
-            instance->liste[i] = element;
-            element->increment();
-        }
-    }
-    else {
-        instance->names.push_back(label);
-        instance->append(element);
-    }
-    lisp->resetStack();
-    return True_;
-}
-
-#else
 
 Element* List_setqv_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
@@ -4000,8 +3876,6 @@ Element* List_record_in_stack_eval::eval_in_class(LispE* lisp) {
     lisp->resetStack();
     return True_;
 }
-
-#endif
 
 Element* List_record_in_stack_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
@@ -4095,10 +3969,6 @@ Element* List_print_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         for (long i = 1; i < listsize; i++) {
             element = liste[i]->eval(lisp);
-#ifdef LISPE_WASM_NO_EXCEPTION
-            if (thrown_error != NULL)
-                return thrown_error;
-#endif
             val += element->toString(lisp);
             element->release();
         }
@@ -4128,10 +3998,6 @@ Element* List_printerr_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         for (long i = 1; i < listsize; i++) {
             element = liste[i]->eval(lisp);
-#ifdef LISPE_WASM_NO_EXCEPTION
-            if (thrown_error != NULL)
-                return thrown_error;
-#endif
             std::cerr << element->toString(lisp);
             element->release();
         }
@@ -4156,10 +4022,6 @@ Element* List_printerrln_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         for (long i = 1; i < listsize; i++) {
             element = liste[i]->eval(lisp);
-#ifdef LISPE_WASM_NO_EXCEPTION
-            if (thrown_error != NULL)
-                return thrown_error;
-#endif
             if (i != 1)
                 std::cerr << " ";
             std::cerr << element->toString(lisp);
@@ -4187,10 +4049,6 @@ Element* List_println_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         for (long i = 1; i < listsize; i++) {
             element = liste[i]->eval(lisp);
-#ifdef LISPE_WASM_NO_EXCEPTION
-            if (thrown_error != NULL)
-                return thrown_error;
-#endif
             if (i != 1)
                 val += " ";
             val += element->toString(lisp);
@@ -4546,36 +4404,7 @@ Element* List_max_eval::eval(LispE* lisp) {
     return first_element;
 }
 
-#ifdef LISPE_WASM_NO_EXCEPTION
-Element* List_maybe_eval::eval(LispE* lisp) {
-    long listsize = liste.size();
-    Element* first_element;
-    lisp->checkState(this);
-    
-    if (listsize == 2) {
-        first_element = liste[1]->eval(lisp);
-        bool val = (first_element->label() == t_maybe);
-        first_element->release();
-        lisp->resetStack();
-        return booleans_[val];
-    }
-    
-    first_element = null_;
-    for (long i = 1; i < listsize - 1 && thrown_error == NULL; i++) {
-        first_element->release();
-        first_element = liste[i]->eval(lisp);
-    }
 
-    if (thrown_error) {
-        lisp->delegation->reset_context();
-        first_element = liste.back()->eval(lisp);
-        lisp->resetStack();
-        return first_element;
-    }
-    lisp->resetStack();
-    return first_element;
-}
-#else
 Element* List_maybe_eval::eval(LispE* lisp) {
     long listsize = liste.size();
     Element* first_element;
@@ -4623,7 +4452,6 @@ Element* List_maybe_eval::eval(LispE* lisp) {
     lisp->resetStack();
     return first_element;
 }
-#endif
 
 Element* List_min_eval::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
@@ -5095,25 +4923,6 @@ Element* List_bodies_eval::eval(LispE* lisp) {
     return function;
 }
 
-#ifdef LISPE_WASM_NO_EXCEPTION
-Element* List_catch_eval::eval(LispE* lisp) {
-    long listsize = liste.size();
-    Element* element = null_;
-
-    lisp->checkState(this);
-    for (int16_t i = 1; i < listsize && thrown_error == NULL; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
-    }
-    if (thrown_error) {
-        //This error is converted into a non-blocking error message .
-        element = new Maybe(lisp, thrown_error);
-        lisp->delegation->reset_context();
-    }
-    lisp->resetStack();
-    return element;
-}
-#else
 Element* List_catch_eval::eval(LispE* lisp) {
     long listsize = liste.size();
     Element* element = null_;
@@ -5134,7 +4943,6 @@ Element* List_catch_eval::eval(LispE* lisp) {
     lisp->resetStack();
     return element;
 }
-#endif
 
 Element* List_cyclicp_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);

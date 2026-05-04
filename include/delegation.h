@@ -780,21 +780,6 @@ public:
         lock.unlocking(true);
     }
     
-#ifdef LISPE_WASM_NO_EXCEPTION
-    void throwError() {
-        //We need to  check if the error has not be thrown yet
-        stop_execution &= 0xFFFE;
-    }
-
-    inline void checkExecution() {
-        if (stop_execution) {
-            if (current_error != NULL)
-                current_error->decrement();
-            current_error = _THEEND;
-        }
-    }
-
-#else
     void throwError() {
         //We need to  check if the error has not be thrown yet
         stop_execution &= 0xFFFE;
@@ -807,7 +792,6 @@ public:
         if (stop_execution)
             throw _THEEND;
     }
-#endif
     
     void atomise(u_ustring& a, List* liste, bool tobelocked) {
         Element* e;

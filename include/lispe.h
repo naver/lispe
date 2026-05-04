@@ -522,19 +522,6 @@ public:
     
     Element* load_library(string name);
     Element* extension(string, Element* e = NULL);
-#ifdef LISPE_WASM_NO_EXCEPTION
-    Element* EVAL(u_ustring&);
-    Element* EVAL(wstring& w) {
-        u_ustring s = _w_to_u(w);
-        return _eval(s);
-    }
-    
-    Element* EVAL(string& w) {
-        u_ustring s;
-        s_utf8_to_unicode(s, w, w.size());
-        return _eval(s);
-    }
-#endif
     
     Element* eval(u_ustring&);
     Element* eval(wstring& w) {
@@ -646,96 +633,7 @@ public:
         delegation->windowmode = wnd;
     }
     
-#ifdef LISPE_WASM_NO_EXCEPTION
-    inline bool sendError() {
-        delegation->set_end();
-        return false;
-    }
 
-    inline void sendEnd() {
-        delegation->set_end();
-    }
-
-    inline bool sendError(u_ustring msg) {
-        delegation->set_error(new Error(msg));
-        return false;
-    }
-
-    inline void sendStackError() {
-        depth_stack++;
-        delegation->set_error(new Error(U"Stack overflow"));
-    }
-
-    inline bool check_existing_error(Element** res) {
-        *res = delegation->current_error;
-        return delegation->current_error;
-    }
-    
-    inline bool unboundAtomError(int16_t label, Element** res) {
-        u_ustring err = U"Error: Unbound atom: '";
-        err += delegation->code_to_string[label];
-        err += U"'";
-        *res = delegation->set_error(new Error(err));
-        return false;
-    }
-
-    inline Element* getDataStructure(int16_t label) {
-        Element* res;
-        check_existing_error(&res) ||
-        delegation->data_pool.search(label, &res) ||
-        unboundAtomError(label, &res);
-        return res;
-    }
-
-    inline Element* get(u_ustring name) {
-        int16_t label = encode(name);
-        Element* res;
-        check_existing_error(&res) ||
-        execution_stack.back()->variables.search(label, &res) ||
-        execution_stack.back()->get_instance_variable(label, &res) ||
-        execution_stack.vecteur[0]->variables.search(label, &res) ||
-        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
-        delegation->class_pool.search(label, &res) ||
-        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
-        delegation->function_pool[0]->search(label, &res) ||
-        unboundAtomError(label, &res);
-
-        return res;
-    }
-
-    inline Element* get(string name) {
-        int16_t label = encode(name);
-        Element* res;
-        check_existing_error(&res) ||
-        execution_stack.back()->variables.search(label, &res) ||
-        execution_stack.back()->get_instance_variable(label, &res) ||
-        execution_stack.vecteur[0]->variables.search(label, &res) ||
-        delegation->class_pool.search(label, &res) ||
-        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
-        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
-        delegation->function_pool[0]->search(label, &res) ||
-        unboundAtomError(label, &res);
-
-        return res;
-    }
-
-
-    inline Element* get(int16_t label) {
-        Element* res;
-        check_existing_error(&res) ||
-        execution_stack.back()->variables.search(label, &res) ||
-        execution_stack.back()->get_instance_variable(label, &res) ||
-        execution_stack.vecteur[0]->variables.search(label, &res) ||
-        delegation->class_pool.search(label, &res) ||
-        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
-        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
-        delegation->function_pool[0]->search(label, &res) ||
-        delegation->data_pool.search(label, &res) ||
-        unboundAtomError(label, &res);
-        
-        return res;
-    }
-#else
     inline bool sendError() {
         throw delegation->_THEEND;
     }
@@ -817,7 +715,6 @@ public:
         return res;
     }
     
-#endif
 
     inline void checkTrace(Listincode* l) {
         depth_stack++;
