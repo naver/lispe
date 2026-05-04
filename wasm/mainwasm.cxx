@@ -13,6 +13,8 @@
 //-------------------------------------------------------------------------------------------
 void display_console(std::string str);
 void display_console(u_ustring str);
+void display_error(std::string str);
+void display_error(u_ustring str);
 void moduleconsole(LispE *lisp);
 //------------------------------------------------------------------------------------------
 extern "C" {
@@ -29,7 +31,9 @@ EMSCRIPTEN_KEEPALIVE bool reset_lispe(int32_t idx) {
 }
 
 EMSCRIPTEN_KEEPALIVE int32_t create_lispe() {
-    return create_global_lispe();
+    int32_t idx = create_global_lispe();
+    moduleconsole(global_lispe(idx));
+    return idx;
 }
 
 /*
@@ -69,7 +73,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_lispe(int32_t idx,  int32_t* str_as_int, int3
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         size[0] = sz * -1;
         int32_t* value_as_int = new int32_t[sz];
@@ -86,13 +90,13 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_lispe(int32_t idx,  int32_t* str_as_int, int3
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->execute(cde, ".");
+        executed_code = lisp->execute_code(cde);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
             code = ((Element*)e)->asUString(lisp);
-            display_console(code);
+            display_error(code);
             ((Element*)e)->release();
             //We clean our result
             //code is encoded in UTF-32
@@ -148,7 +152,7 @@ EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t idx,  int32_t* str_as_
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         u_ustring code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         values = new double[sz];
         for (long i = 0; i < sz; i++)
@@ -163,13 +167,13 @@ EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t idx,  int32_t* str_as_
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code= lisp->eval(code);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
             code = ((Element*)e)->asUString(lisp);
-            display_console(code);
+            display_error(code);
             ((Element*)e)->release();
             //We clean our result
             //code is encoded in UTF-32
@@ -244,7 +248,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t idx,  int32_t* str_as_i
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         u_ustring code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         values = new int32_t[sz];
         for (long i = 0; i < sz; i++)
@@ -259,13 +263,13 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t idx,  int32_t* str_as_i
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code= lisp->eval(code);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
             code = ((Element*)e)->asUString(lisp);
-            display_console(code);
+            display_error(code);
             ((Element*)e)->release();
             //We clean our result
             //code is encoded in UTF-32
@@ -343,7 +347,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t idx,  int32_t* str_a
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         values = new int32_t[sz];
         for (long i = 0; i < sz; i++)
@@ -358,13 +362,13 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t idx,  int32_t* str_a
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code= lisp->eval(code);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
             code = ((Element*)e)->asUString(lisp);
-            display_console(code);
+            display_error(code);
             ((Element*)e)->release();
             //We clean our result
             //code is encoded in UTF-32
@@ -457,7 +461,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_int_lispe(int32_t idx,  int32_t* str_as_int
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         u_ustring code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         str_as_int[0] = 27;
         for (long i = 1; i < sz; i++)
@@ -472,13 +476,13 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_int_lispe(int32_t idx,  int32_t* str_as_int
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code= lisp->eval(code);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
             code = ((Element*)e)->asUString(lisp);
-            display_console(code);
+            display_error(code);
             ((Element*)e)->release();
             //We clean our result
             //code is encoded in UTF-32
@@ -518,7 +522,7 @@ EMSCRIPTEN_KEEPALIVE double eval_to_float_lispe(int32_t idx,  int32_t* str_as_in
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         u_ustring code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         str_as_int[0] = 27;
         for (long i = 1; i < sz; i++)
@@ -533,13 +537,13 @@ EMSCRIPTEN_KEEPALIVE double eval_to_float_lispe(int32_t idx,  int32_t* str_as_in
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code= lisp->eval(code);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
             code = ((Element*)e)->asUString(lisp);
-            display_console(code);
+            display_error(code);
             ((Element*)e)->release();
             //We clean our result
             //code is encoded in UTF-32
@@ -579,7 +583,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_string_lispe(int32_t idx,  int32_t* str_as
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         size[0] = sz * -1;
         int32_t* value_as_int = new int32_t[sz];
@@ -593,13 +597,13 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_string_lispe(int32_t idx,  int32_t* str_as
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code= lisp->eval(code);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
             code = ((Element*)e)->asUString(lisp);
-            display_console(code);
+            display_error(code);
             ((Element*)e)->release();
             //We clean our result
             //code is encoded in UTF-32
@@ -654,7 +658,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t idx,  int32_t* str_as_
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -693,7 +697,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_floats_lispe(int32_t idx,  int32_t* str_a
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -731,7 +735,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_int_lispe(int32_t idx,  int32_t* str_as_i
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -766,7 +770,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_float_lispe(int32_t idx,  int32_t* str_as
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];
@@ -802,7 +806,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t idx,  int32_t* str_a
     LispE* lisp = global_lispe(idx);
     if (lisp == NULL) {
         code = U"LispE was not initialized";
-        display_console(code);
+        display_error(code);
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str_as_int[i] = code[i];

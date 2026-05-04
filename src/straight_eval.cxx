@@ -4102,10 +4102,14 @@ Element* List_print_eval::eval(LispE* lisp) {
             val += element->toString(lisp);
             element->release();
         }
-        
+#ifdef LISPE_WASM
+        std::cout << val << "\n";
+        std::cout.flush();
+#else
         lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
         if (lisp->isThread)
             std::cout.flush();
+#endif
     }
     catch (Error* err) {
         return lisp->check_error(this, err, idxinfo);
@@ -4199,9 +4203,14 @@ Element* List_println_eval::eval(LispE* lisp) {
         val += "\n";
 #endif
         
+#ifdef LISPE_WASM
+        std::cout << val;
+        std::cout.flush();
+#else
         lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
         if (lisp->isThread)
             std::cout.flush();
+#endif
     }
     catch (Error* err) {
         return lisp->check_error(this, err, idxinfo);

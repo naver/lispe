@@ -100,7 +100,7 @@ typedef enum {
     l_catch, l_throw, l_maybe, l_pattern,
     
     //Check values
-    l_atomp, l_numberp, l_consp, l_emptyp, l_zerop, l_nullp, l_stringp, l_containerp,
+    l_atomp, l_numberp, l_consp, l_emptyp, l_zerop, l_nullp, l_stringp, l_containerp, l_boundp,
     l_quote, l_quoted, l_emptylist,
     //Numerical operations
     l_sign, l_signp, l_minus_plus,

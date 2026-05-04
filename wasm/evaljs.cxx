@@ -17,6 +17,13 @@ void display_error(std::string str) {
     EM_ASM({console.error(UTF8ToString($0));}, str.c_str());
 }
 
+void display_error(u_ustring s) {
+    string str;
+    s_unicode_to_utf8(str, s);
+    std::cout << str << std::endl;
+    EM_ASM({console.error(UTF8ToString($0));}, str.c_str());
+}
+
 void display_console(std::string str) {
     std::cout << str << std::endl;
     EM_ASM({console.log(UTF8ToString($0));}, str.c_str());

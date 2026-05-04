@@ -749,6 +749,18 @@ Element* List::evall_atomp(LispE* lisp) {
     return False_;
 }
 
+Element* List::evall_boundp(LispE* lisp) {
+    try {
+        Element* atome = liste[1]->eval(lisp);
+        atome->release();
+        return True_;
+    }
+    catch(Error* err) {
+        err->release();
+        return False_;
+    }
+}
+
 Element* List::evall_atoms(LispE* lisp) {
     return lisp->atomes();
 }

@@ -1393,6 +1393,7 @@ public:
     Element* evall_atomp(LispE* lisp);
     Element* evall_atoms(LispE* lisp);
     Element* evall_aslongstring(LispE* lisp);
+    Element* evall_boundp(LispE* lisp);
     Element* evall_bitandequal(LispE* lisp);
     Element* evall_bitandnotequal(LispE* lisp);
     Element* evall_bitorequal(LispE* lisp);
@@ -2742,6 +2743,33 @@ public:
     
     Element* eval(LispE* lisp) {
         return evall_atomp(lisp);
+    }
+};
+
+class List_boundp_eval : public Listincode {
+public:
+    List_boundp_eval(Listincode* l) : Listincode(l) {}
+    List_boundp_eval() {}
+    List_boundp_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_boundp_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_boundp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_boundp_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp) {
+        return evall_boundp(lisp);
     }
 };
 
