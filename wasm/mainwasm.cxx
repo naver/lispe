@@ -250,6 +250,7 @@ EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t idx,  int32_t* str_as_
     }
     
     //We clean our result
+    executed_code->release();
     return values;
 }
 
@@ -362,6 +363,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t idx,  int32_t* str_as_i
     }
     
     //We clean our result
+    executed_code->release();
     return values;
 }
 
@@ -480,6 +482,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t idx,  int32_t* str_a
         values[i] = characters[i];
     size[0] = sz;
     //We clean our result
+    executed_code->release();
     return values;
 }
 
