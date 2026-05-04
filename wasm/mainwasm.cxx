@@ -202,9 +202,31 @@ EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t idx,  int32_t* str_as_
             size[0] = 1;
             break;
         case t_integers:
+            sz = executed_code->size();
+            values = new double[sz];
+            size[0] = sz;
+            for (long i = 0; i < sz; i++)
+                values[i] = (double)((Integers*)executed_code)->liste[i];
+            break;
         case t_shorts:
+            sz = executed_code->size();
+            values = new double[sz];
+            size[0] = sz;
+            for (long i = 0; i < sz; i++)
+                values[i] = (double)((Shorts*)executed_code)->liste[i];
+            break;
         case t_numbers:
+            sz = executed_code->size();
+            values = ((Numbers*)executed_code)->liste.borrow();
+            size[0] = sz;
+            break;
         case t_floats:
+            sz = executed_code->size();
+            values = new double[sz];
+            size[0] = sz;
+            for (long i = 0; i < sz; i++)
+                values[i] = (double)((Floats*)executed_code)->liste[i];
+            break;
         case t_list:
             sz = executed_code->size();
             values = new double[sz];
@@ -218,7 +240,7 @@ EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t idx,  int32_t* str_as_
             size[0] = sz;
             u_link* a = ((LList*)executed_code)->liste.begin();
             for (; a != NULL; a = a->next()) {
-                values[sz] = a->value->asNumber();
+                values[--sz] = a->value->asNumber();
             }
             break;
         }
@@ -298,25 +320,40 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t idx,  int32_t* str_as_i
             size[0] = 1;
             break;
         case t_integers:
-        case t_shorts:
-        case t_numbers:
-        case t_floats:
-        case t_list:
             sz = executed_code->size();
             values = new int32_t[sz];
             size[0] = sz;
             for (long i = 0; i < sz; i++)
-                values[i] = executed_code->index(i)->asInteger();
+                values[i] = (int32_t)((Integers*)executed_code)->liste[i];
+            break;
+        case t_shorts:
+            sz = executed_code->size();
+            values = new int32_t[sz];
+            size[0] = sz;
+            for (long i = 0; i < sz; i++)
+                values[i] = (int32_t)((Shorts*)executed_code)->liste[i];
+            break;
+        case t_numbers:
+            sz = executed_code->size();
+            values = new int32_t[sz];
+            size[0] = sz;
+            for (long i = 0; i < sz; i++)
+                values[i] = (int32_t)((Numbers*)executed_code)->liste[i];
+            break;
+        case t_floats:
+            sz = executed_code->size();
+            values = new int32_t[sz];
+            size[0] = sz;
+            for (long i = 0; i < sz; i++)
+                values[i] = (int32_t)((Floats*)executed_code)->liste[i];
             break;
         case t_llist: {
-            long nbvalues = 0;
             sz = executed_code->size();
             values = new int32_t[sz];
             size[0] = sz;
             u_link* a = ((LList*)executed_code)->liste.begin();
-            for (; a != NULL && nbvalues < sz; a = a->next()) {
-                values[sz] = a->value->asInteger();
-                nbvalues++;
+            for (; a != NULL; a = a->next()) {
+                values[--sz] = a->value->asInteger();
             }
             break;
         }
