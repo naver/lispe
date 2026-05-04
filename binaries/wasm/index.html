@@ -235,27 +235,23 @@
         function run_code() {
             var code_text = document.getElementById('get_code');
             var res;
-            (async () => {
-                await set_data();
-                try {
-                    res = await callEvalLispELispE(0, code_text.value);
-                }
-                catch (e) {
-                    res = e;
-                }
-                lastposition = code_text.value.length
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += res + "\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
+            set_data();
+            try {
+                res = callEvalLispE(0, code_text.value);
+            }
+            catch (e) {
+                res = e;
+            }
+            lastposition = code_text.value.length
+            let eval_output = document.getElementById('display_evaluation')
+            eval_output.value += res + "\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
         };
 
         function indentation_code() {
             var code_text = document.getElementById('get_code');
-            (async () => {
-                var res = await callIndent(code_text.value);
-                code_text.value = res;
-            })();
+            var res = callIndent(code_text.value);
+            code_text.value = res;
         }
 
         //The code is executed from the cursor position
@@ -272,19 +268,17 @@
             var code = txt.value.substring(lastposition)
             lastposition = txt.value.length;
             var res;
-            (async () => {
-                await set_data();
-                try {
-                    res = await callEvalLispE(0, code);
-                }
-                catch (e) {
-                    res = e;
-                }
+            set_data();
+            try {
+                res = callEvalLispE(0, code);
+            }
+            catch (e) {
+                res = e;
+            }
 
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += res + "\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
+            let eval_output = document.getElementById('display_evaluation')
+            eval_output.value += res + "\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
         };
 
         //How to initialize a variable with an array of ints
@@ -296,18 +290,16 @@
             }
             //We store our floats into the variable "myfloats"
             var res;
-            (async () => {
-                await set_data();
-                try {
-                    res = await callSetqInts(0, "myInts", ints, 10);
-                }
-                catch (e) {
-                    res = e;
-                }
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += ints + "\nCreated 'myInts'\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
+            set_data();
+            try {
+                res = callSetqInts(0, "myInts", ints, 10);
+            }
+            catch (e) {
+                res = e;
+            }
+            let eval_output = document.getElementById('display_evaluation')
+            eval_output.value += ints + "\nCreated 'myInts'\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
         };
 
         //How to initialize a variable with an array of floats
@@ -319,18 +311,16 @@
 
             //We store our floats into the variable "myfloats"
             var res;
-            (async () => {
-                await set_data();
-                try {
-                    res = await callSetqFloats(0, "myFloats", floats, 10);
-                }
-                catch (e) {
-                    res = e;
-                }
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += ints + "\nCreated 'myFloats'\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
+            set_data();
+            try {
+                res = callSetqFloats(0, "myFloats", floats, 10);
+            }
+            catch (e) {
+                res = e;
+            }
+            let eval_output = document.getElementById('display_evaluation')
+            eval_output.value += floats + "\nCreated 'myFloats'\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
         };
 
         function run_code_to_strings() {
@@ -344,14 +334,12 @@
 
             var code = txt.value.substring(lastposition)
             lastposition = txt.value.length;
-            (async () => {
-                await set_data();
-                var res = await callEvalLispEToStrings(0, code);
+            set_data();
+            var res = callEvalLispEToStrings(0, code);
 
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += res + "\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
+            let eval_output = document.getElementById('display_evaluation')
+            eval_output.value += res + "\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
         };
 
         function run_code_to_ints() {
@@ -366,18 +354,16 @@
             var code = txt.value.substring(lastposition)
             lastposition = txt.value.length
             var res;
-            (async () => {
-                await set_data();
-                try {
-                    res = await callEvalLispEToInts(0, code);
-                }
-                catch (e) {
-                    res = e;
-                }
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += res + "\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
+            set_data();
+            try {
+                res = callEvalLispEToInts(0, code);
+            }
+            catch (e) {
+                res = e;
+            }
+            let eval_output = document.getElementById('display_evaluation')
+            eval_output.value += res + "\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
         };
 
         function run_code_to_floats() {
@@ -392,27 +378,23 @@
             var code = txt.value.substring(lastposition)
             lastposition = txt.value.length
             var res;
-            (async () => {
-                await set_data();
-                try {
-                    res = await callEvalLispEToFloats(0, code);
-                }
-                catch (e) {
-                    res = e;
-                }
+            set_data();
+            try {
+                res = callEvalLispEToFloats(0, code);
+            }
+            catch (e) {
+                res = e;
+            }
 
-                let eval_output = document.getElementById('display_evaluation')
-                eval_output.value += res + "\n";
-                eval_output.scrollTop = eval_output.scrollHeight;
-            })();
+            let eval_output = document.getElementById('display_evaluation')
+            eval_output.value += res + "\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
         };
 
         function reset_run_code() {
             //We reset our code
-            (async () => {
-                await callResetLispE(0);
-                await run_code();
-            })();
+            callResetLispE(0);
+            run_code();
         };
 
         function reset_code() {
