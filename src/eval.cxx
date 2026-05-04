@@ -554,62 +554,8 @@ Element* List::evall_js_sync(LispE* lisp) {
     return true_;
 }
 
-Element* LispE::eval(u_ustring& code) {
-    long garbage_size = garbages.size();
-    bool add = delegation->add_to_listing;
-    delegation->add_to_listing = false;
-    
-    //First we compile it, some elements will be stored in the garbage
-    //essentially lists and dictionaries
-    //eval can be called when threads are active, we need then to protect
-    //the access to the inner dictionaries
-    Element* e = NULL;
-    Element* element = NULL;
-    try {
-        element = compile_string(code);
-        e = e->eval(this);
-    }
-    catch (Error* err) {
-        e = err;
-    }
+#endif
 
-    delegation->add_to_listing = add;
-
-    //If nothing has been added to the garbage collector, we return the obtained value.
-    if (garbage_size == garbages.size())
-        return e;
-    
-    //We protect our new value, it can be saved in the garbage.
-    //It's better not to lose it... We protect these elements recursively
-    //Their status will be s_protect (status == 254).
-    //We will put their value back to 0 at the end of the process
-    e->protecting(true, this);
-    
-    //temporary keeps track of the elements that will be stored back in the
-    //garbage...
-
-    vector<Element*> temporary;
-    while (garbages.size() != garbage_size) {
-        element = garbages.back();
-        // Unprotected elements are destroyed
-        if (element->status == s_constant) {
-            delete element;
-        }
-        else //This is the returned value, we want to be able to destroy it later.
-            if (element->status != s_protect)
-                temporary.push_back(element);
-        garbages.pop_back();
-    }
-    
-    //Then we add temporary, this way we avoid holes in the structure.
-    for (const auto& a: temporary)
-        garbages.push_back(a);
-    
-    //We de-protect... Note that we now give the status s_destructible in this case
-    e->protecting(false, this);
-    return e;
-}
-#else
 Element* LispE::eval(u_ustring& code) {
     long garbage_size = garbages.size();
     bool add = delegation->add_to_listing;
@@ -674,7 +620,7 @@ Element* LispE::eval(u_ustring& code) {
     e->protecting(false, this);
     return e;
 }
-#endif
+
 //--------------------------------------------------------------------------------
 
 Element* List::evall_break(LispE* lisp) {

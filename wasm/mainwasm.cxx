@@ -162,20 +162,17 @@ EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t idx,  int32_t* str_as_
     }
 
     //The main difference with the code above is that the instructions will be cleaned after execution
-    //We first convert from UTF-16 into UTF-8
-    //JavaScript strings are in UTF-16
-    string cde;
-    s_utf16_to_utf8(cde, str_as_int, sz);
-
+    u_ustring code;
+    s_utf16_to_unicode(code, str_as_int , sz);
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->execute_code(cde);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
-            u_ustring code = ((Element*)e)->asUString(lisp);
+            code = ((Element*)e)->asUString(lisp);
             display_error(code);
             ((Element*)e)->release();
             //We clean our result
@@ -261,20 +258,17 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t idx,  int32_t* str_as_i
     }
         
     //The main difference with the code above is that the instructions will be cleaned after execution
-    //We first convert from UTF-16 into UTF-8
-    //JavaScript strings are in UTF-16
-    string cde;
-    s_utf16_to_utf8(cde, str_as_int, sz);
-
+    u_ustring code;
+    s_utf16_to_unicode(code, str_as_int , sz);
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->execute_code(cde);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
-            u_ustring code = ((Element*)e)->asUString(lisp);
+            code = ((Element*)e)->asUString(lisp);
             display_error(code);
             ((Element*)e)->release();
             //We clean our result
@@ -363,15 +357,12 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t idx,  int32_t* str_a
     }
         
     //The main difference with the code above is that the instructions will be cleaned after execution
-    //We first convert from UTF-16 into UTF-8
-    //JavaScript strings are in UTF-16
-    string cde;
-    s_utf16_to_utf8(cde, str_as_int, sz);
-
+    s_utf16_to_unicode(code, str_as_int , sz);
+    //We call _eval in that case
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->execute_code(cde);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
@@ -479,20 +470,18 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_int_lispe(int32_t idx,  int32_t* str_as_int
     }
         
     //The main difference with the code above is that the instructions will be cleaned after execution
-    //We first convert from UTF-16 into UTF-8
-    //JavaScript strings are in UTF-16
-    string cde;
-    s_utf16_to_utf8(cde, str_as_int, sz);
-
+    u_ustring code;
+    s_utf16_to_unicode(code, str_as_int , sz);
+    //We call _eval in that case
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->execute_code(cde);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
-            u_ustring code = ((Element*)e)->asUString(lisp);
+            code = ((Element*)e)->asUString(lisp);
             display_error(code);
             ((Element*)e)->release();
             //We clean our result
@@ -542,20 +531,18 @@ EMSCRIPTEN_KEEPALIVE double eval_to_float_lispe(int32_t idx,  int32_t* str_as_in
     }
         
     //The main difference with the code above is that the instructions will be cleaned after execution
-    //We first convert from UTF-16 into UTF-8
-    //JavaScript strings are in UTF-16
-    string cde;
-    s_utf16_to_utf8(cde, str_as_int, sz);
-
+    u_ustring code;
+    s_utf16_to_unicode(code, str_as_int , sz);
+    //We call _eval in that case
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->execute_code(cde);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
         if (((Element*)e)->type == t_error) {
-            u_ustring code = ((Element*)e)->asUString(lisp);
+            code = ((Element*)e)->asUString(lisp);
             display_error(code);
             ((Element*)e)->release();
             //We clean our result
@@ -605,15 +592,12 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_string_lispe(int32_t idx,  int32_t* str_as
         return value_as_int;
     }
     
-    //We first convert from UTF-16 into UTF-8
-    //JavaScript strings are in UTF-16
-    string cde;
-    s_utf16_to_utf8(cde, str_as_int, sz);
-
+    s_utf16_to_unicode(code, str_as_int , sz);
+    //We call _eval in that case
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->execute_code(cde);
+        executed_code = lisp->eval(code);
     }
     catch(void* e) {
         wstring result = L"error";
