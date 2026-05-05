@@ -1,5 +1,4 @@
-#!/usr/local/bin/lispe
-
+minizork = `
 ; build the key string
 (defmacro keystr(p) (join p ":"))
 ; Actions on data structures
@@ -268,7 +267,7 @@
    (print "Your order sire? ")
    ; We read the input from the keyboard
    ; Note that on GUI version, we display a small window
-   (setq dialog (input@))
+   (setq dialog (evaljs "input_dialog();"))
    (check (eq dialog "end")
          (println "Ok... Bye...")
          (break)
@@ -308,5 +307,4 @@
 
 (print "The end")
 
-
-
+`;

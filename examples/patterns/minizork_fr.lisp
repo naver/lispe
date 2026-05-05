@@ -285,7 +285,7 @@
 )
 
 ; these are the valid moves from one position to another
-(setq moving (key))
+(setq moving (key@))
 
 (update_direction "1:1" "1:0")
 (update_direction "1:1" "1:2")
@@ -372,6 +372,7 @@
 )
 
 (println "Fin")
+
 
 
 

@@ -136,6 +136,8 @@
             <option value="normal_distribution">Normal Distribution</option>
             <option value="gradient_descent">Gradient Descent</option>
             <option value="cosine_distance">Cosine Distance</option>
+            <option value="segmentation">Segmentation</option>
+            <option value="minizork">Mini Zork</option>
             <option value="python_factorial">Python Factorial</option>
         </select>
     </div>
@@ -207,6 +209,7 @@
     <script type="text/javascript" src="lispe_functions.js"></script>
     <script type="text/javascript" src="basic_string.js"></script>
     <script type="text/javascript" src="transpiler_string.js"></script>
+    <script type="text/javascript" src="minizork.js"></script>
 
     <script type="text/javascript">
 
@@ -337,7 +340,13 @@
         return x*fact(x-1)
 
 print(fact(7))
-`
+`,
+
+            minizork: minizork,
+
+            segmentation: `; You can return your result as a JavaScript string array
+; segment splits a string into tokens
+(segment "LispE WebAssembly (Lisp Elémentaire) proposes a different approach. A single binary of approximately 3.5 MB (3.3 MB for the WASM core plus the supporting JavaScript files lispe.js and lispe_functions.js) provides more than 450 native functions covering text processing, statistical computation, pattern matching, regular expressions, linear algebra, date manipulation, and much more. One file. One author. One coherent design. No transitive dependencies. LispE는 한국어 형태소 분석 방법도 제공합니다.")`
         };
 
         // ------------------------------------------------------------------
@@ -369,6 +378,14 @@ print(fact(7))
                 }
             } else if (selected === "python_factorial") {
                 run_python();
+            } else if (selected === "segmentation") {
+                try {
+                    var strings = callEvalLispEToStrings(0, code_text.value);
+                    var numbered = strings.map(function(s, i) { return (i + 1) + ": " + s; });
+                    appendOutput(numbered.join("\n"));
+                } catch (e) {
+                    appendOutput("Error: " + e);
+                }
             } else {
                 run_code();
             }
@@ -622,6 +639,20 @@ print(fact(7))
 
         // Initial highlight
         update_highlight();
+
+        // ------------------------------------------------------------------
+        // Input dialog for interactive programs (replaces input@)
+        // ------------------------------------------------------------------
+        function input_dialog() {
+            var element = document.getElementById('display_evaluation');
+            var lines = element.value.split("\n");
+            var context = lines.slice(-6).join("\n");
+            var result = prompt(context + "\n\nYour order sire?");
+            if (result === null || result === "") {
+                return "end";
+            }
+            return result;
+        }
 
     </script>
 </body>
