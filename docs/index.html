@@ -39,7 +39,7 @@
             min-height: 0;
         }
 
-        .textAreaCode span {
+        .textAreaCode > span {
             display: block;
             text-align: center;
             flex-shrink: 0;
@@ -52,6 +52,52 @@
             resize: none;
             box-sizing: border-box;
         }
+
+        .code-editor {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .code-editor pre {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            margin: 0;
+            padding: 2px;
+            border: 1px solid #767676;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: auto;
+            background: white;
+            pointer-events: none;
+        }
+
+        .code-editor textarea {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 2px;
+            border: 1px solid #767676;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: transparent;
+            color: transparent;
+            caret-color: black;
+            resize: none;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+
+        .highlight-comment { color: #6a9955; }
+        .highlight-string { color: #d32f2f; }
+        .highlight-keyword { color: #0000ff;  }
 
         .textAreaColumn {
             flex: 1;
@@ -95,7 +141,9 @@
     <div class="codeRow">
         <div class="textAreaCode">
             <span>Code</span>
-            <textarea name="code" id="get_code">; You can call a function in the pattern definition of the function
+            <div class="code-editor">
+                <pre id="code_highlight"></pre>
+                <textarea name="code" id="get_code" oninput="update_highlight()" onscroll="sync_scroll()">; You can call a function in the pattern definition of the function
 (defun checking (x y) (eq 0 (% y x)))
 
 ; the argument should be an integer, whose value is a multiple of 15
@@ -106,6 +154,7 @@
 (defpat fizzbuzz (x) x)
 (println _version)
 (mapcar 'fizzbuzz (range 1 100 1))</textarea>
+            </div>
         </div>
         <div class="textAreaCode">
             <span>Transpilation</span>
@@ -267,8 +316,8 @@
    (\u221A (\u2211 (* v v)))
 )
 
-; cosine distance: (v1 . v2) / \u220F(norm(v1) norm(v2))
-(defun cosine(v1 v2)
+; cosine_distance distance: (v1 . v2) / \u220F(norm(v1) norm(v2))
+(defun cosine_distance(v1 v2)
    (maybe
       (/
          (dot v1 v2)
@@ -279,7 +328,7 @@
 )
 
 
-(cosine '(1 2 3) '(4 5 6))`,
+(cosine_distance '(1 2 3) '(4 5 6))`,
 
             python_factorial: `def fact(x):
     if x == 1:
@@ -299,6 +348,7 @@ print(fact(7))
             var selected = selector.value;
             var code_text = document.getElementById('get_code');
             code_text.value = examples[selected];
+            update_highlight();
             document.getElementById('display_evaluation').value = "";
             document.getElementById('display_transpilation').value = "";
             try {
@@ -398,6 +448,7 @@ print(fact(7))
             var code_text = document.getElementById('get_code');
             try {
                 code_text.value = callIndent(code_text.value);
+                update_highlight();
             } catch (e) {
                 appendOutput("Indentation error: " + e);
             }
@@ -491,6 +542,86 @@ print(fact(7))
                 appendOutput("Error: " + e);
             }
         }
+
+        // ------------------------------------------------------------------
+        // Syntax highlighting
+        // ------------------------------------------------------------------
+        function highlight_code(code) {
+            var result = "";
+            var i = 0;
+            while (i < code.length) {
+                // Comment: semicolon to end of line
+                if (code[i] === ';') {
+                    var end = code.indexOf('\n', i);
+                    if (end === -1) end = code.length;
+                    result += '<span class="highlight-comment">' + escapeHtml(code.substring(i, end)) + '</span>';
+                    i = end;
+                }
+                // String literal
+                else if (code[i] === '"') {
+                    var j = i + 1;
+                    while (j < code.length && code[j] !== '"') {
+                        if (code[j] === '\\') j++;
+                        j++;
+                    }
+                    j = Math.min(j + 1, code.length);
+                    result += '<span class="highlight-string">' + escapeHtml(code.substring(i, j)) + '</span>';
+                    i = j;
+                }
+                // Keyword after opening parenthesis
+                else if (code[i] === '(') {
+                    result += '(';
+                    i++;
+                    // skip spaces
+                    while (i < code.length && code[i] === ' ') {
+                        result += ' ';
+                        i++;
+                    }
+                    // capture keyword
+                    var kw = "";
+                    while (i < code.length && code[i] !== ' ' && code[i] !== ')' && code[i] !== '(' && code[i] !== '\n' && code[i] !== '\t') {
+                        kw += code[i];
+                        i++;
+                    }
+                    if (kw.length > 0) {
+                        result += '<span class="highlight-keyword">' + escapeHtml(kw) + '</span>';
+                    }
+                }
+                // Unicode string delimiters « »
+                else if (code[i] === '\u00AB') {
+                    var j = code.indexOf('\u00BB', i);
+                    if (j === -1) j = code.length - 1;
+                    j++;
+                    result += '<span class="highlight-string">' + escapeHtml(code.substring(i, j)) + '</span>';
+                    i = j;
+                }
+                else {
+                    result += escapeHtml(code[i]);
+                    i++;
+                }
+            }
+            // Add trailing newline so pre matches textarea height
+            return result + "\n";
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function update_highlight() {
+            var code = document.getElementById('get_code').value;
+            document.getElementById('code_highlight').innerHTML = highlight_code(code);
+        }
+
+        function sync_scroll() {
+            var ta = document.getElementById('get_code');
+            var pre = document.getElementById('code_highlight');
+            pre.scrollTop = ta.scrollTop;
+            pre.scrollLeft = ta.scrollLeft;
+        }
+
+        // Initial highlight
+        update_highlight();
 
     </script>
 </body>
