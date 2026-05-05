@@ -215,11 +215,12 @@ public:
     Element* record_or_replace(Element* e, int16_t label) {
         Element* ret = variables.search(label);
         if (ret != NULL) {
+            status.push_back(ret->status);
+            
             if (ret == e)
                 return e;
             
             //we keep track of the current status...
-            status.push_back(ret->status);
             ret->increment();
             
             e->increment();

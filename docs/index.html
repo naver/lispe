@@ -84,6 +84,13 @@
         <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
         <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
         <input type="button" value="Python" OnClick="run_python()" id="button_python" />
+        <select id="example_selector" onchange="load_example()">
+            <option value="fizzbuzz">Fizzbuzz</option>
+            <option value="normal_distribution">Normal Distribution</option>
+            <option value="gradient_descent">Gradient Descent</option>
+            <option value="cosine_distance">Cosine Distance</option>
+            <option value="python_factorial">Python Factorial</option>
+        </select>
     </div>
     <div class="codeRow">
         <div class="textAreaCode">
@@ -97,6 +104,7 @@
 (defpat fizzbuzz ((integer_ (checking 3 x))) 'fizz)
 (defpat fizzbuzz ((integer_ (checking 5 x))) 'buzz)
 (defpat fizzbuzz (x) x)
+(println _version)
 (mapcar 'fizzbuzz (range 1 100 1))</textarea>
         </div>
         <div class="textAreaCode">
@@ -186,6 +194,135 @@
         document.getElementById('button_python').style.fontSize = buttonFont;
         document.getElementById('button_python').style.fontWeight = "bolder";
         document.getElementById('button_python').style.color = "blue";
+
+        document.getElementById('example_selector').style.height = buttonHeight;
+        document.getElementById('example_selector').style.fontSize = buttonFont;
+
+        // ------------------------------------------------------------------
+        // Examples
+        // ------------------------------------------------------------------
+        var examples = {
+            fizzbuzz: `; You can call a function in the pattern definition of the function
+(defun checking (x y) (eq 0 (% y x)))
+
+; the argument should be an integer, whose value is a multiple of 15
+; The argument is stored in x
+(defpat fizzbuzz ((integer_ (checking 15 x))) 'fizzbuzz)
+(defpat fizzbuzz ((integer_ (checking 3 x))) 'fizz)
+(defpat fizzbuzz ((integer_ (checking 5 x))) 'buzz)
+(defpat fizzbuzz (x) x)
+(println _version)
+(mapcar 'fizzbuzz (range 1 100 1))`,
+
+            normal_distribution: `(normal_distribution 100)`,
+
+            gradient_descent: `(setq X (rho 20 3 (numbers 1 0.72 0.32 1 0.75 0.12 1 0.53 0.65 1 0.27 0.82 1 0.49 0.15 1 0.02 0.19 1 0.35 0.87 1 0.99 0.71 1 0.98 0.92 1 0.73 0.19 1 0.72 0.32 1 0.75 0.12 1 0.53 0.65 1 0.27 0.82 1 0.49 0.15 1 0.02 0.19 1 0.35 0.87 1 0.99 0.71 1 0.98 0.92 1 0.73 0.19)))
+(setq Y (numbers 6.93 5.99 1.46 1.44 4.51 1.25 2.53 6.88 6.25 6.36 6.93 5.99 1.46 1.44 4.51 1.25 2.53 6.88 6.25 6.36))
+
+
+(setq \u03B7 0.5)
+
+(defun descent(a loss)
+   (lloop (x y) X Y
+      (setq v (\u2022 y - (sum (\u2022 a * x))))
+      (setq deriv (maplist (\u03BB(xx) (\u2022 (sign xx) * v)) x))
+      (setq a (- a (* deriv \u03B7)))
+      (setq Loss (sum (zipwith (\u03BB(x y) (\u2022 (\u2022 y - (sum (\u2022  a * x))) ^^ 2)) X Y)))
+      (if (< Loss loss)
+         (return (list a Loss))
+      )
+   )
+)
+
+(setq a (numbers 0.1 0.1 0.1))
+(setq loss (sum (zipwith (\u03BB(x y) (\u2022 (\u2022 y - (sum (\u2022 a * x))) ^^ 2)) X Y)))
+(setq r (list a loss))
+(setq tm
+   (elapse
+      (loop iter (range 0 1000 1)
+         (setq v (descent (@ r 0) (@ r 1)))
+         (if (nullp v)
+            (break)
+            (setq r v)
+         )
+      )
+   )
+)
+
+(println "Weight Loss Iterations" (@ r 0) (@ r 1) iter)
+(println "Time:" tm)`,
+
+            cosine_distance: `(link "\u2211" 'sum)
+(link "\u221A" 'sqrt)
+(defmacro \u220F(v vv) (zipwith '* v vv))
+
+; dot product: sum of the product of two vectors
+; note that zipwith will apply * to each element of v1 with v2
+(defun dot(v1 v2)
+   (\u2211 (* v1 v2))
+)
+
+; norm: \u221A\u2211(x\u00B2)
+(defun norm(v)
+   (\u221A (\u2211 (* v v)))
+)
+
+; cosine distance: (v1 . v2) / \u220F(norm(v1) norm(v2))
+(defun cosine(v1 v2)
+   (maybe
+      (/
+         (dot v1 v2)
+         (* (norm v1) (norm v2))
+      )
+      0
+   )
+)
+
+
+(cosine '(1 2 3) '(4 5 6))`,
+
+            python_factorial: `def fact(x):
+    if x == 1:
+        return 1
+    else:
+        return x*fact(x-1)
+
+print(fact(7))
+`
+        };
+
+        // ------------------------------------------------------------------
+        // Load selected example into the editor
+        // ------------------------------------------------------------------
+        function load_example() {
+            var selector = document.getElementById('example_selector');
+            var selected = selector.value;
+            var code_text = document.getElementById('get_code');
+            code_text.value = examples[selected];
+            document.getElementById('display_evaluation').value = "";
+            document.getElementById('display_transpilation').value = "";
+            try {
+                callResetLispE(0);
+            } catch (e) {
+                appendOutput("Reset error: " + e);
+                return;
+            }
+            lastposition = 0;
+
+            // For normal_distribution, use callEvalLispEToFloats
+            if (selected === "normal_distribution") {
+                try {
+                    var floats = callEvalLispEToFloats(0, code_text.value);
+                    appendOutput(floats.join(" "));
+                } catch (e) {
+                    appendOutput("Error: " + e);
+                }
+            } else if (selected === "python_factorial") {
+                run_python();
+            } else {
+                run_code();
+            }
+        }
 
         // ------------------------------------------------------------------
         // State

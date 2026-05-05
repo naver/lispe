@@ -13,11 +13,497 @@
 
 #include "lispe.h"
 #include <mlx/mlx.h>
+#include <chrono>
 #include <cstring>
 #include <cassert>
+#include <optional>
 
 using namespace std;
 namespace mx = mlx::core;
+
+struct KVNativeCache {
+    int B, H, D;
+    int capacity;
+    bool sliding;
+    int current_length;
+    int write_offset;
+    bool initialized;
+    mx::Dtype dtype;
+    mx::array keys;
+    mx::array values;
+
+    static constexpr int step = 256;  // Match Python KVCache step size
+
+    KVNativeCache(int b, int h, int d, int cap, bool is_sliding)
+        : B(b), H(h), D(d), capacity(cap), sliding(is_sliding),
+                    current_length(0), write_offset(0), initialized(false), dtype(mx::float16),
+                    keys(mx::zeros({1}, mx::float16)), values(mx::zeros({1}, mx::float16)) {
+        if (capacity <= 0) {
+            throw Error("KVNativeCache: capacity must be > 0");
+        }
+    }
+
+    void ensure_initialized_sliding(mx::Dtype dt) {
+        if (initialized) return;
+        dtype = dt;
+        keys = mx::zeros({B, H, capacity, D}, dtype);
+        values = mx::zeros({B, H, capacity, D}, dtype);
+        mx::eval({keys, values});
+        initialized = true;
+    }
+
+    void validate_shape(const mx::array& arr, const char* name) const {
+        auto shape = arr.shape();
+        if (shape.size() != 4) {
+            throw Error(std::string("KVNativeCache: ") + name + " must have shape [B, H, L, D]");
+        }
+        if (shape[0] != B || shape[1] != H || shape[3] != D) {
+            throw Error(std::string("KVNativeCache: ") + name + " shape mismatch with cache");
+        }
+    }
+
+    void append(const mx::array& new_keys_in, const mx::array& new_values_in) {
+        validate_shape(new_keys_in, "keys");
+        validate_shape(new_values_in, "values");
+
+        auto key_shape = new_keys_in.shape();
+        auto value_shape = new_values_in.shape();
+        if (key_shape[2] != value_shape[2]) {
+            throw Error("KVNativeCache: keys and values must have the same sequence length");
+        }
+
+        int L = key_shape[2];
+
+        if (!sliding) {
+            // Step-based allocation matching Python KVCache:
+            // Allocate in chunks of 'step', grow with concatenate when needed.
+            // slice_update to write, slice to read active region.
+            int prev = current_length;
+            if (!initialized || (prev + L) > keys.shape()[2]) {
+                dtype = new_keys_in.dtype();
+                int n_steps = (step + L - 1) / step;
+                mx::array new_k = mx::zeros({B, H, n_steps * step, D}, dtype);
+                mx::array new_v = mx::zeros({B, H, n_steps * step, D}, dtype);
+                if (initialized) {
+                    if (prev % step != 0) {
+                        keys = mx::slice(keys, {0, 0, 0, 0}, {B, H, prev, D});
+                        values = mx::slice(values, {0, 0, 0, 0}, {B, H, prev, D});
+                    }
+                    keys = mx::concatenate({keys, new_k}, 2);
+                    values = mx::concatenate({values, new_v}, 2);
+                } else {
+                    keys = new_k;
+                    values = new_v;
+                    initialized = true;
+                }
+                mx::eval({keys, values});
+            }
+            mx::array new_keys = (new_keys_in.dtype() == dtype) ? new_keys_in : mx::astype(new_keys_in, dtype);
+            mx::array new_values = (new_values_in.dtype() == dtype) ? new_values_in : mx::astype(new_values_in, dtype);
+            keys = mx::slice_update(keys, new_keys, {0, 0, prev, 0}, {B, H, prev + L, D});
+            values = mx::slice_update(values, new_values, {0, 0, prev, 0}, {B, H, prev + L, D});
+            current_length += L;
+        } else {
+            ensure_initialized_sliding(new_keys_in.dtype());
+            mx::array new_keys = (new_keys_in.dtype() == dtype) ? new_keys_in : mx::astype(new_keys_in, dtype);
+            mx::array new_values = (new_values_in.dtype() == dtype) ? new_values_in : mx::astype(new_values_in, dtype);
+
+            int remaining = L;
+            int src_offset = 0;
+            int cursor = write_offset;
+
+            while (remaining > 0) {
+                int chunk = std::min(remaining, capacity - cursor);
+
+                mx::array key_chunk = (src_offset == 0 && chunk == L)
+                    ? new_keys
+                    : mx::slice(new_keys, {0, 0, src_offset, 0}, {B, H, src_offset + chunk, D});
+                mx::array value_chunk = (src_offset == 0 && chunk == L)
+                    ? new_values
+                    : mx::slice(new_values, {0, 0, src_offset, 0}, {B, H, src_offset + chunk, D});
+
+                keys = mx::slice_update(keys, key_chunk, {0, 0, cursor, 0}, {B, H, cursor + chunk, D});
+                values = mx::slice_update(values, value_chunk, {0, 0, cursor, 0}, {B, H, cursor + chunk, D});
+
+                cursor = (cursor + chunk) % capacity;
+                src_offset += chunk;
+                remaining -= chunk;
+            }
+
+            write_offset = cursor;
+            current_length = std::min(capacity, current_length + L);
+        }
+
+    }
+
+    mx::array active_view(const mx::array& storage) const {
+        if (!initialized || current_length == 0) {
+            return mx::zeros({B, H, 0, D}, dtype);
+        }
+
+        if (!sliding) {
+            // Step-based: need to slice to actual content
+            if (current_length == storage.shape()[2]) {
+                return storage;  // Buffer is exactly full
+            }
+            return mx::slice(storage, {0, 0, 0, 0}, {B, H, current_length, D});
+        }
+
+        if (current_length < capacity) {
+            return mx::slice(storage, {0, 0, 0, 0}, {B, H, current_length, D});
+        }
+
+        if (write_offset == 0) {
+            return storage;
+        }
+
+        mx::array part1 = mx::slice(storage, {0, 0, write_offset, 0}, {B, H, capacity, D});
+        mx::array part2 = mx::slice(storage, {0, 0, 0, 0}, {B, H, write_offset, D});
+        return mx::concatenate({part1, part2}, 2);
+    }
+
+    // Combined update_and_attend: append KV then immediately compute attention
+    // This matches Python KVCache.update_and_fetch + SDPA pattern
+    mx::array update_and_attend(const mx::array& new_keys_in, const mx::array& new_values_in,
+                                 const mx::array& queries, float scale, const std::string& mask_mode,
+                                 const std::optional<mx::array>& sinks) {
+        // First, append
+        append(new_keys_in, new_values_in);
+        
+        // Then attend using the same arrays (no separate active_view call)
+        auto query_shape = queries.shape();
+        bool single_token_decode = query_shape.size() == 4 && query_shape[2] == 1;
+        bool use_physical_storage = sliding && single_token_decode && current_length == capacity;
+
+        mx::array active_keys = use_physical_storage ? keys : active_view(keys);
+        mx::array active_values = use_physical_storage ? values : active_view(values);
+        return mx::fast::scaled_dot_product_attention(queries, active_keys, active_values, scale,
+                                                      mask_mode, std::nullopt, sinks);
+    }
+
+    mx::array attention(const mx::array& queries, float scale, const std::string& mask_mode,
+                        const std::optional<mx::array>& sinks) const {
+        if (!initialized || current_length == 0) {
+            throw Error("KVNativeCache: cannot run attention on an empty cache");
+        }
+
+        auto query_shape = queries.shape();
+        bool single_token_decode = query_shape.size() == 4 && query_shape[2] == 1;
+
+        // For sliding-window decode at full capacity, the physical circular order
+        // does not matter when the single query can attend to the whole window.
+        // Avoid materializing a concatenated temporal view on every token.
+        bool use_physical_storage = sliding && single_token_decode && current_length == capacity;
+
+        mx::array active_keys = use_physical_storage ? keys : active_view(keys);
+        mx::array active_values = use_physical_storage ? values : active_view(values);
+        return mx::fast::scaled_dot_product_attention(queries, active_keys, active_values, scale,
+                                                      mask_mode, std::nullopt, sinks);
+    }
+
+    void reset() {
+        current_length = 0;
+        write_offset = 0;
+        initialized = false;
+        keys = mx::zeros({1}, mx::float16);
+        values = mx::zeros({1}, mx::float16);
+    }
+};
+
+static std::unordered_map<long, KVNativeCache*> kv_native_caches;
+static long kv_native_cache_next_id = 1;
+
+static long kv_register_native_cache(KVNativeCache* cache) {
+    long id = kv_native_cache_next_id++;
+    kv_native_caches[id] = cache;
+    return id;
+}
+
+static KVNativeCache* kv_get_native_cache(long id) {
+    auto it = kv_native_caches.find(id);
+    if (it == kv_native_caches.end()) {
+        return nullptr;
+    }
+    return it->second;
+}
+
+struct NativeDecodeLayer {
+    mx::array input_norm;
+    mx::array q_weight;
+    std::optional<mx::array> q_scales;
+    std::optional<mx::array> q_qbiases;
+    std::optional<mx::array> q_bias;
+    mx::array k_weight;
+    std::optional<mx::array> k_scales;
+    std::optional<mx::array> k_qbiases;
+    std::optional<mx::array> k_bias;
+    mx::array v_weight;
+    std::optional<mx::array> v_scales;
+    std::optional<mx::array> v_qbiases;
+    std::optional<mx::array> v_bias;
+    mx::array o_weight;
+    std::optional<mx::array> o_scales;
+    std::optional<mx::array> o_qbiases;
+    std::optional<mx::array> o_bias;
+    std::optional<mx::array> sinks;
+    mx::array post_attn_norm;
+    mx::array router_t;
+    std::optional<mx::array> router_bias;
+    mx::array gate_weight;
+    std::optional<mx::array> gate_scales;
+    std::optional<mx::array> gate_qbiases;
+    std::optional<mx::array> gate_bias;
+    mx::array up_weight;
+    std::optional<mx::array> up_scales;
+    std::optional<mx::array> up_qbiases;
+    std::optional<mx::array> up_bias;
+    mx::array down_weight;
+    std::optional<mx::array> down_scales;
+    std::optional<mx::array> down_qbiases;
+    std::optional<mx::array> down_bias;
+};
+
+struct NativeDecodeLayerProfile {
+    long calls = 0;
+    double input_qkv_ms = 0.0;
+    double rope_ms = 0.0;
+    double attention_ms = 0.0;
+    double out_proj_ms = 0.0;
+    double post_attn_norm_ms = 0.0;
+    double moe_ms = 0.0;
+    double total_ms = 0.0;
+};
+
+struct NativeDecodeProfile {
+    bool enabled = false;
+    long decode_steps = 0;
+    double embedding_ms = 0.0;
+    double final_norm_ms = 0.0;
+    double lm_head_ms = 0.0;
+    double total_ms = 0.0;
+    std::vector<NativeDecodeLayerProfile> layers;
+};
+
+struct NativeDecodeModel {
+    std::string layout;
+    mx::array cached_embeddings;
+    mx::array rope_freqs;
+    float yarn_mscale;
+    int n_heads;
+    int n_kv_heads;
+    int head_dim;
+    float scale;
+    float eps;
+    int hidden_out;
+    int hidden_size;
+    int experts_per_tok;
+    mx::array final_norm;
+    mx::array lm_head_weight;
+    std::optional<mx::array> lm_head_scales;
+    std::optional<mx::array> lm_head_qbiases;
+    std::vector<NativeDecodeLayer> layers;
+    NativeDecodeProfile profile;
+
+    // Pre-evaluated GPU-resident constants for SwiGLU (avoid re-creating mx::array each step)
+    mx::array swiglu_alpha;
+    mx::array swiglu_limit;
+    mx::array swiglu_neg_limit;
+    mx::array swiglu_one;
+
+    // Diagnostic flag: eval after every layer
+    bool eval_per_layer = false;
+};
+
+static void native_decode_profile_reset(NativeDecodeModel* model) {
+    model->profile.enabled = true;
+    model->profile.decode_steps = 0;
+    model->profile.embedding_ms = 0.0;
+    model->profile.final_norm_ms = 0.0;
+    model->profile.lm_head_ms = 0.0;
+    model->profile.total_ms = 0.0;
+    model->profile.layers.assign(model->layers.size(), NativeDecodeLayerProfile{});
+}
+
+static double native_decode_elapsed_ms(const std::chrono::steady_clock::time_point& start,
+                                       const std::chrono::steady_clock::time_point& end) {
+    return std::chrono::duration<double, std::milli>(end - start).count();
+}
+
+// Compiled SwiGLU activation for GPT-OSS – mirrors Python's
+// @partial(mx.compile, shapeless=True) def swiglu(x_linear, x_glu, alpha=1.702, limit=7.0)
+// Fuses clip+multiply+sigmoid+add into a single Metal kernel via mx::compile.
+// Constants (alpha, limit, 1.0, -limit) are created inside the traced function
+// so they become graph constants (like Python's default float arguments).
+
+static std::function<std::vector<mx::array>(const std::vector<mx::array>&)> _compiled_swiglu_fn;
+static bool _compiled_swiglu_ready = false;
+
+static mx::array compiled_swiglu_gpt_oss(const mx::array& gate_out, const mx::array& up_out,
+                                          const mx::array& alpha, const mx::array& limit,
+                                          const mx::array& neg_limit, const mx::array& one) {
+    if (!_compiled_swiglu_ready) {
+        _compiled_swiglu_fn = mx::compile(
+            [](const std::vector<mx::array>& inputs) -> std::vector<mx::array> {
+                const auto& x_glu = inputs[0];
+                const auto& x_linear = inputs[1];
+                const auto& c_alpha = inputs[2];
+                const auto& c_limit = inputs[3];
+                const auto& c_neg_limit = inputs[4];
+                const auto& c_one = inputs[5];
+                auto glu_clamped = mx::minimum(x_glu, c_limit);
+                auto lin_clamped = mx::maximum(mx::minimum(x_linear, c_limit), c_neg_limit);
+                auto glu_scaled = mx::multiply(c_alpha, glu_clamped);
+                auto sig = mx::sigmoid(glu_scaled);
+                auto out_glu = mx::multiply(glu_clamped, sig);
+                return {mx::multiply(out_glu, mx::add(lin_clamped, c_one))};
+            },
+            true  // shapeless
+        );
+        _compiled_swiglu_ready = true;
+    }
+    return _compiled_swiglu_fn({gate_out, up_out, alpha, limit, neg_limit, one})[0];
+}
+
+static mx::array fused_moe_router_decode_impl(const mx::array& x,
+                                              const mx::array& router_t,
+                                              const std::optional<mx::array>& router_lb,
+                                              const mx::array& gate_w,
+                                              const mx::array& gate_s,
+                                              const std::optional<mx::array>& gate_qb,
+                                              const std::optional<mx::array>& gate_lb,
+                                              const mx::array& up_w,
+                                              const mx::array& up_s,
+                                              const std::optional<mx::array>& up_qb,
+                                              const std::optional<mx::array>& up_lb,
+                                              const mx::array& down_w,
+                                              const mx::array& down_s,
+                                              const std::optional<mx::array>& down_qb,
+                                              const std::optional<mx::array>& down_lb,
+                                              int experts_per_tok,
+                                              int group_size,
+                                              int bits,
+                                              const std::string& activation,
+                                              float alpha,
+                                              float limit,
+                                              const mx::array* swiglu_alpha_arr = nullptr,
+                                              const mx::array* swiglu_limit_arr = nullptr,
+                                              const mx::array* swiglu_neg_limit_arr = nullptr,
+                                              const mx::array* swiglu_one_arr = nullptr) {
+    auto x_shape = x.shape();
+    int B = x_shape[0];
+    int L = x_shape[1];
+    if (B != 1 || L != 1) {
+        throw Error("fused_moe_router_decode_impl: Only B=1, L=1 supported.");
+    }
+
+    int num_experts = router_t.shape()[1];
+    mx::array router_logits = mx::matmul(x, router_t);
+    if (router_lb.has_value()) {
+        router_logits = mx::add(router_logits, *router_lb);
+    }
+
+    mx::array partitioned_indices = mx::argpartition(router_logits, -experts_per_tok, -1);
+    int start_idx = num_experts - experts_per_tok;
+    mx::array expert_indices = mx::slice(partitioned_indices, {0, 0, start_idx}, {B, L, num_experts});
+    // Note: do NOT sort for B=1,L=1 decode (matches Python SwitchGLU where indices.size < 64)
+    mx::array expert_logits = mx::take_along_axis(router_logits, expert_indices, -1);
+    mx::array expert_weights = mx::softmax(expert_logits, -1);
+
+    mx::array grouped_x = mx::expand_dims(x, {-2, -3});
+
+    mx::array gate_out = mx::gather_qmm(
+        grouped_x,
+        gate_w,
+        gate_s,
+        gate_qb,
+        std::nullopt,
+        expert_indices,
+        true,
+        group_size,
+        bits,
+        "affine",
+        false
+    );
+    if (gate_lb.has_value()) {
+        mx::array gathered_gate_bias = mx::take(*gate_lb, expert_indices, 0);
+        gate_out = mx::add(gate_out, mx::expand_dims(gathered_gate_bias, -2));
+    }
+
+    mx::array up_out = mx::gather_qmm(
+        grouped_x,
+        up_w,
+        up_s,
+        up_qb,
+        std::nullopt,
+        expert_indices,
+        true,
+        group_size,
+        bits,
+        "affine",
+        false
+    );
+    if (up_lb.has_value()) {
+        mx::array gathered_up_bias = mx::take(*up_lb, expert_indices, 0);
+        up_out = mx::add(up_out, mx::expand_dims(gathered_up_bias, -2));
+    }
+
+    mx::array hidden = [&]() -> mx::array {
+        if (activation == "swiglu") {
+            if (swiglu_alpha_arr && swiglu_limit_arr && swiglu_neg_limit_arr && swiglu_one_arr) {
+                return compiled_swiglu_gpt_oss(gate_out, up_out,
+                    *swiglu_alpha_arr, *swiglu_limit_arr, *swiglu_neg_limit_arr, *swiglu_one_arr);
+            }
+            // Fallback: create temporaries (non-model path)
+            return compiled_swiglu_gpt_oss(gate_out, up_out,
+                mx::array(1.702f), mx::array(7.0f), mx::array(-7.0f), mx::array(1.0f));
+        }
+        const float sqrt2_inv = 0.7071067811865476f;
+        mx::array gate_gelu = mx::multiply(
+            mx::multiply(mx::array(0.5f), gate_out),
+            mx::add(mx::array(1.0f), mx::erf(mx::multiply(gate_out, mx::array(sqrt2_inv))))
+        );
+        return mx::multiply(gate_gelu, up_out);
+    }();
+
+    mx::array expert_out = mx::gather_qmm(
+        hidden,
+        down_w,
+        down_s,
+        down_qb,
+        std::nullopt,
+        expert_indices,
+        true,
+        group_size,
+        bits,
+        "affine",
+        false
+    );
+    if (down_lb.has_value()) {
+        mx::array gathered_down_bias = mx::take(*down_lb, expert_indices, 0);
+        expert_out = mx::add(expert_out, mx::expand_dims(gathered_down_bias, -2));
+    }
+
+    expert_out = mx::squeeze(expert_out, -2);
+    mx::array weighted_out = mx::multiply(expert_out, mx::expand_dims(expert_weights, -1));
+    return mx::sum(weighted_out, -2);
+}
+
+static std::unordered_map<long, NativeDecodeModel*> native_decode_models;
+static long native_decode_model_next_id = 1;
+
+static long native_decode_model_register(NativeDecodeModel* model) {
+    long id = native_decode_model_next_id++;
+    native_decode_models[id] = model;
+    return id;
+}
+
+static NativeDecodeModel* native_decode_model_get(long id) {
+    auto it = native_decode_models.find(id);
+    if (it == native_decode_models.end()) {
+        return nullptr;
+    }
+    return it->second;
+}
 
  // ============================================================================
  // KV-Cache XOR Delta Compression
@@ -454,6 +940,7 @@ enum mlx_method_actions {
     mlx_method_cumprod,
     mlx_method_topk,
     mlx_method_partition,
+    mlx_method_argpartition,
     // Group 17: FFT (Fourier Transforms)
     mlx_method_fft,
     mlx_method_ifft,
@@ -552,13 +1039,27 @@ enum mlx_method_actions {
     mlx_method_imag,
     // Group 29: Fused operations for LLM
     mlx_method_fused_mlp,
+    mlx_method_fused_moe_router,
     mlx_method_fused_moe,
     mlx_method_fused_moe_batch,
+    mlx_method_decode_model_create,
+    mlx_method_decode_model_free,
+    mlx_method_decode_model_profile_start,
+    mlx_method_decode_model_profile_report,
+    mlx_method_forward_decode_step_model,
+    mlx_method_generate_loop,
+    mlx_method_generate_loop_v2,
+    mlx_method_forward_decode_step,
     // Group 30: Explicit evaluation (lazy evaluation)
+    mlx_method_async_eval,
     mlx_method_eval,
     // Group 31: Conversion to LispE
     mlx_method_tolist,
     // Group 32: KV-Cache XOR delta compression
+    mlx_method_kv_native_cache_create,
+    mlx_method_kv_native_cache_append,
+    mlx_method_kv_native_cache_attention,
+    mlx_method_kv_native_cache_reset,
     mlx_method_kv_cache_push,
     mlx_method_kv_streaming_scores,
     mlx_method_kv_decompress,
@@ -1317,6 +1818,7 @@ public:
     Element* method_cumprod(LispE* lisp);
     Element* method_topk(LispE* lisp);
     Element* method_partition(LispE* lisp);
+    Element* method_argpartition(LispE* lisp);
     // Group 17: FFT (Fourier Transforms)
     Element* method_fft(LispE* lisp);
     Element* method_ifft(LispE* lisp);
@@ -1415,13 +1917,27 @@ public:
     Element* method_imag(LispE* lisp);
     // Group 29: Fused operations for LLM
     Element* method_fused_mlp(LispE* lisp);
+    Element* method_fused_moe_router(LispE* lisp);
     Element* method_fused_moe(LispE* lisp);
     Element* method_fused_moe_batch(LispE* lisp);
+    Element* method_decode_model_create(LispE* lisp);
+    Element* method_decode_model_free(LispE* lisp);
+    Element* method_decode_model_profile_start(LispE* lisp);
+    Element* method_decode_model_profile_report(LispE* lisp);
+    Element* method_forward_decode_step_model(LispE* lisp);
+    Element* method_generate_loop(LispE* lisp);
+    Element* method_generate_loop_v2(LispE* lisp);
+    Element* method_forward_decode_step(LispE* lisp);
     // Group 30: Explicit evaluation (lazy evaluation)
+    Element* method_async_eval(LispE* lisp);
     Element* method_eval(LispE* lisp);
     // Group 31: Conversion to LispE
     Element* method_tolist(LispE* lisp);
     // Group 32: KV-Cache XOR delta compression
+    Element* method_kv_native_cache_create(LispE* lisp);
+    Element* method_kv_native_cache_append(LispE* lisp);
+    Element* method_kv_native_cache_attention(LispE* lisp);
+    Element* method_kv_native_cache_reset(LispE* lisp);
     Element* method_kv_cache_push(LispE* lisp);
     Element* method_kv_streaming_scores(LispE* lisp);
     Element* method_kv_decompress(LispE* lisp);
@@ -1746,6 +2262,8 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_topk(lisp);
         case mlx_method_partition:
             return method_partition(lisp);
+        case mlx_method_argpartition:
+            return method_argpartition(lisp);
         // Group 17: FFT
         case mlx_method_fft:
             return method_fft(lisp);
@@ -1929,17 +2447,45 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
         // Group 29: Fused operations for LLM
         case mlx_method_fused_mlp:
             return method_fused_mlp(lisp);
+        case mlx_method_fused_moe_router:
+            return method_fused_moe_router(lisp);
         case mlx_method_fused_moe:
             return method_fused_moe(lisp);
         case mlx_method_fused_moe_batch:
             return method_fused_moe_batch(lisp);
+        case mlx_method_decode_model_create:
+            return method_decode_model_create(lisp);
+        case mlx_method_decode_model_free:
+            return method_decode_model_free(lisp);
+        case mlx_method_decode_model_profile_start:
+            return method_decode_model_profile_start(lisp);
+        case mlx_method_decode_model_profile_report:
+            return method_decode_model_profile_report(lisp);
+        case mlx_method_forward_decode_step_model:
+            return method_forward_decode_step_model(lisp);
+        case mlx_method_generate_loop:
+            return method_generate_loop(lisp);
+        case mlx_method_generate_loop_v2:
+            return method_generate_loop_v2(lisp);
+        case mlx_method_forward_decode_step:
+            return method_forward_decode_step(lisp);
         // Group 30: Explicit evaluation (lazy evaluation)
+        case mlx_method_async_eval:
+            return method_async_eval(lisp);
         case mlx_method_eval:
             return method_eval(lisp);
         // Group 31: Conversion to LispE
         case mlx_method_tolist:
             return method_tolist(lisp);
         // Group 32: KV-Cache XOR delta compression
+        case mlx_method_kv_native_cache_create:
+            return method_kv_native_cache_create(lisp);
+        case mlx_method_kv_native_cache_append:
+            return method_kv_native_cache_append(lisp);
+        case mlx_method_kv_native_cache_attention:
+            return method_kv_native_cache_attention(lisp);
+        case mlx_method_kv_native_cache_reset:
+            return method_kv_native_cache_reset(lisp);
         case mlx_method_kv_cache_push:
             return method_kv_cache_push(lisp);
         case mlx_method_kv_streaming_scores:
@@ -2267,6 +2813,8 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Get top-k values";
         case mlx_method_partition:
             return L"Partition array around kth element";
+        case mlx_method_argpartition:
+            return L"Return indices that partition the array around the k-th element";
         // Group 17: FFT
         case mlx_method_fft:
             return L"Compute 1D Fast Fourier Transform";
@@ -2447,10 +2995,38 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Extract the real part of a complex array";
         case mlx_method_imag:
             return L"Extract the imaginary part of a complex array";
+        case mlx_method_fused_moe_router:
+            return L"Fused GPT-OSS decode router and MoE execution for L=1";
+        case mlx_method_decode_model_create:
+            return L"Create a native decoder-only decode model handle";
+        case mlx_method_decode_model_free:
+            return L"Free a native decoder-only decode model handle";
+        case mlx_method_decode_model_profile_start:
+            return L"Reset and enable aggregated profiling for a native decode model handle";
+        case mlx_method_decode_model_profile_report:
+            return L"Return an aggregated decode profiling report for a native decode model handle";
+        case mlx_method_forward_decode_step_model:
+            return L"Run one decoder-only decode step using a native model handle";
+        case mlx_method_generate_loop:
+            return L"Run complete generation loop in C++ with async pipelining";
+        case mlx_method_generate_loop_v2:
+            return L"Run V2 generation loop rewritten from scratch following Python pattern";
+        case mlx_method_forward_decode_step:
+            return L"Run one decoder-only decode step natively (layout-specific, currently gpt_oss_moe)";
+        case mlx_method_async_eval:
+            return L"Launch asynchronous evaluation of an MLX array";
         // Group 31: Conversion to LispE
         case mlx_method_tolist:
             return L"Convert MLX array to LispE list (floats, integers, or numbers)";
         // Group 32: KV-Cache XOR delta compression
+        case mlx_method_kv_native_cache_create:
+            return L"Create a native MLX KV cache and return its handle";
+        case mlx_method_kv_native_cache_append:
+            return L"Append key/value tensors into a native MLX KV cache";
+        case mlx_method_kv_native_cache_attention:
+            return L"Run scaled dot-product attention directly from a native MLX KV cache";
+        case mlx_method_kv_native_cache_reset:
+            return L"Reset a native MLX KV cache without freeing its buffers";
         case mlx_method_kv_cache_push:
             return L"Push a new KV line into XOR delta compressed cache, returns cache_id";
         case mlx_method_kv_streaming_scores:
@@ -6024,6 +6600,30 @@ Element* Lispe_mlx_methods::method_partition(LispE* lisp) {
     }
 }
 
+ // mx::argpartition - Return indices that partition the array around the k-th element
+ // Signature: deflib mlx_argpartition(array kth (axis))
+Element* Lispe_mlx_methods::method_argpartition(LispE* lisp) {
+    Element* arr_elem = lisp->get_variable("array");
+    Element* kth_elem = lisp->get_variable("kth");
+    Element* axis_elem = lisp->get_variable("axis");
+
+    try {
+        mx::array arr = element_to_array(lisp, arr_elem);
+        int kth = kth_elem->asInteger();
+
+        if (axis_elem != null_ && axis_elem->type != v_emptyatom) {
+            int axis = axis_elem->asInteger();
+            mx::array result = mx::argpartition(arr, kth, axis);
+            return new MLXArray(std::move(result));
+        } else {
+            mx::array result = mx::argpartition(arr, kth);
+            return new MLXArray(std::move(result));
+        }
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_argpartition: " + std::string(e.what()));
+    }
+}
+
  // ============================================================================
  // Group 17: FFT (Fourier Transforms)
  // ============================================================================
@@ -8257,6 +8857,110 @@ Element* Lispe_mlx_methods::method_fused_mlp(LispE* lisp) {
 }
 
  // ============================================================================
+ // mlx_fused_moe_router - Fused decode router + MoE for GPT-OSS
+ // ============================================================================
+ // Signature: deflib mlx_fused_moe_router(x router_t (router_lb)
+ //                                        gate_w gate_s gate_qb gate_lb
+ //                                        up_w up_s up_qb up_lb
+ //                                        down_w down_s down_qb down_lb
+ //                                        num_experts experts_per_tok (group_size 64) (bits 8) (activation `swiglu`) (alpha 1.702) (limit 7.0))
+Element* Lispe_mlx_methods::method_fused_moe_router(LispE* lisp) {
+    Element* x_elem = lisp->get_variable("x");
+    Element* router_t_elem = lisp->get_variable("router_t");
+    Element* router_lb_elem = lisp->get_variable("router_lb");
+    Element* gate_w_elem = lisp->get_variable("gate_w");
+    Element* gate_s_elem = lisp->get_variable("gate_s");
+    Element* gate_qb_elem = lisp->get_variable("gate_qb");
+    Element* gate_lb_elem = lisp->get_variable("gate_lb");
+    Element* up_w_elem = lisp->get_variable("up_w");
+    Element* up_s_elem = lisp->get_variable("up_s");
+    Element* up_qb_elem = lisp->get_variable("up_qb");
+    Element* up_lb_elem = lisp->get_variable("up_lb");
+    Element* down_w_elem = lisp->get_variable("down_w");
+    Element* down_s_elem = lisp->get_variable("down_s");
+    Element* down_qb_elem = lisp->get_variable("down_qb");
+    Element* down_lb_elem = lisp->get_variable("down_lb");
+    Element* num_experts_elem = lisp->get_variable("num_experts");
+    Element* experts_per_tok_elem = lisp->get_variable("experts_per_tok");
+    Element* group_size_elem = lisp->get_variable("group_size");
+    Element* bits_elem = lisp->get_variable("bits");
+    Element* activation_elem = lisp->get_variable("activation");
+    Element* alpha_elem = lisp->get_variable("alpha");
+    Element* limit_elem = lisp->get_variable("limit");
+
+    try {
+        mx::array x = element_to_array(lisp, x_elem);
+        mx::array router_t = element_to_array(lisp, router_t_elem);
+        std::optional<mx::array> router_lb = std::nullopt;
+        if (router_lb_elem != null_ && router_lb_elem->type != v_emptyatom) {
+            router_lb = element_to_array(lisp, router_lb_elem);
+        }
+
+        mx::array gate_w = element_to_array(lisp, gate_w_elem);
+        mx::array gate_s = element_to_array(lisp, gate_s_elem);
+        std::optional<mx::array> gate_qb = std::nullopt;
+        if (gate_qb_elem != null_) gate_qb = element_to_array(lisp, gate_qb_elem);
+        std::optional<mx::array> gate_lb = std::nullopt;
+        if (gate_lb_elem != null_) gate_lb = element_to_array(lisp, gate_lb_elem);
+
+        mx::array up_w = element_to_array(lisp, up_w_elem);
+        mx::array up_s = element_to_array(lisp, up_s_elem);
+        std::optional<mx::array> up_qb = std::nullopt;
+        if (up_qb_elem != null_) up_qb = element_to_array(lisp, up_qb_elem);
+        std::optional<mx::array> up_lb = std::nullopt;
+        if (up_lb_elem != null_) up_lb = element_to_array(lisp, up_lb_elem);
+
+        mx::array down_w = element_to_array(lisp, down_w_elem);
+        mx::array down_s = element_to_array(lisp, down_s_elem);
+        std::optional<mx::array> down_qb = std::nullopt;
+        if (down_qb_elem != null_) down_qb = element_to_array(lisp, down_qb_elem);
+        std::optional<mx::array> down_lb = std::nullopt;
+        if (down_lb_elem != null_) down_lb = element_to_array(lisp, down_lb_elem);
+
+        int num_experts = num_experts_elem->asInteger();
+        int experts_per_tok = experts_per_tok_elem->asInteger();
+        int group_size = group_size_elem->asInteger();
+        int bits = bits_elem->asInteger();
+        wstring ws = activation_elem->asString(lisp);
+        std::string activation = std::string(ws.begin(), ws.end());
+        float alpha = alpha_elem->asFloat();
+        float limit = limit_elem->asFloat();
+
+        if (num_experts != router_t.shape()[1]) {
+            throw new Error("mlx_fused_moe_router: num_experts mismatch with router_t");
+        }
+
+        mx::array output = fused_moe_router_decode_impl(
+            x,
+            router_t,
+            router_lb,
+            gate_w,
+            gate_s,
+            gate_qb,
+            gate_lb,
+            up_w,
+            up_s,
+            up_qb,
+            up_lb,
+            down_w,
+            down_s,
+            down_qb,
+            down_lb,
+            experts_per_tok,
+            group_size,
+            bits,
+            activation,
+            alpha,
+            limit
+        );
+
+        return new MLXArray(std::move(output));
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_fused_moe_router: " + std::string(e.what()));
+    }
+}
+
+ // ============================================================================
  // mlx_fused_moe - Fused MoE for GPT-OSS and similar models
  // ============================================================================
  // Signature: deflib mlx_fused_moe(x expert_indices expert_weights
@@ -8574,19 +9278,21 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
         int B = x_shape[0];
         int L = x_shape[1];
         int hidden_size = x_shape[2];
-        
-        // This optimized function only supports L=1, B=1 (token-by-token generation)
-        if (L != 1 || B != 1) {
-            throw new Error("mlx_fused_moe_batch: Only B=1, L=1 supported. Use LispE implementation for prefill.");
-        }
-        
-        int k = experts_per_tok;  // nombre d'experts actifs (généralement 4)
-        
-        // expert_indices: [1, 1, k] -> flat_indices: [k]
-        mx::array flat_indices = mx::reshape(expert_indices, {k});
-        
-        // expert_weights: [1, 1, k] -> weights: [k, 1, 1] for broadcasting
-        mx::array weights = mx::reshape(expert_weights, {k, 1, 1});
+
+        int k = experts_per_tok;
+        int tokens = B * L;
+
+        // Flatten tokens so each token/expert pair becomes one batch row.
+        mx::array x_flat = mx::reshape(x, {tokens, hidden_size});
+        mx::array x_expanded = mx::expand_dims(x_flat, 1);
+        mx::array x_repeated = mx::broadcast_to(x_expanded, {tokens, k, hidden_size});
+        mx::array x_batch = mx::reshape(x_repeated, {tokens * k, 1, hidden_size});
+
+        // expert_indices: [B, L, k] -> flat_indices: [tokens * k]
+        mx::array flat_indices = mx::reshape(expert_indices, {tokens * k});
+
+        // expert_weights: [B, L, k] -> [tokens * k, 1, 1] for broadcasting
+        mx::array weights = mx::reshape(expert_weights, {tokens * k, 1, 1});
         
         // === Extract k experts in batch ===
         // gate_w: [num_experts, out, in_packed] -> batch_gate_w: [k, out, in_packed]
@@ -8629,13 +9335,8 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
         mx::array batch_up_full = mx::dequantize(batch_up_w, batch_up_s, batch_up_qb, group_size, bits);
         mx::array batch_down_full = mx::dequantize(batch_down_w, batch_down_s, batch_down_qb, group_size, bits);
         
-        // === Prepare x for the batch ===
-        // x: [1, 1, hidden] -> x_batch: [k, 1, hidden]
-        mx::array x_squeezed = mx::squeeze(x, 0);  // [1, hidden]
-        mx::array x_batch = mx::broadcast_to(x_squeezed, {k, 1, hidden_size});
-        
         // === Batched matmul ===
-        // gate_proj: x_batch [k, 1, hidden] @ batch_gate_full^T [k, hidden, out] -> [k, 1, intermediate]
+        // gate_proj: x_batch [tokens*k, 1, hidden] @ batch_gate_full^T -> [tokens*k, 1, intermediate]
         // With transpose=true on the last dim of batch_gate_full: [k, out, in] -> [k, in, out]
         mx::array batch_gate_t = mx::transpose(batch_gate_full, {0, 2, 1});  // [k, in, out]
         mx::array gate_out = mx::matmul(x_batch, batch_gate_t);  // [k, 1, intermediate]
@@ -8683,19 +9384,1274 @@ Element* Lispe_mlx_methods::method_fused_moe_batch(LispE* lisp) {
             expert_out = mx::add(expert_out, lb_expanded);
         }
         
-        // === Weighting and sum ===
-        // expert_out: [k, 1, hidden], weights: [k, 1, 1]
-        mx::array weighted = mx::multiply(expert_out, weights);  // [k, 1, hidden]
-        
-        // Sum along k dimension: [k, 1, hidden] -> [1, hidden]
-        mx::array summed = mx::sum(weighted, 0, false);  // [1, hidden]
-        
-        // Reshape to [B, L, hidden] = [1, 1, hidden]
-        mx::array output = mx::reshape(summed, {1, 1, hidden_size});
+        // === Weighting and sum per token ===
+        // expert_out: [tokens*k, 1, hidden], weights: [tokens*k, 1, 1]
+        mx::array weighted = mx::multiply(expert_out, weights);
+        mx::array weighted_tokens = mx::reshape(weighted, {tokens, k, hidden_size});
+        mx::array summed = mx::sum(weighted_tokens, 1, false);  // [tokens, hidden]
+
+        // Reshape back to [B, L, hidden]
+        mx::array output = mx::reshape(summed, {B, L, hidden_size});
         
         return new MLXArray(std::move(output));
     } catch (const std::exception& e) {
         throw new Error("Error in mlx_fused_moe_batch: " + std::string(e.what()));
+    }
+}
+
+// ============================================================================
+// mlx_decode_model_create - Build a native decoder-only decode handle
+// ============================================================================
+Element* Lispe_mlx_methods::method_decode_model_create(LispE* lisp) {
+    Element* cached_embeddings_elem = lisp->get_variable("cached_embeddings");
+    Element* rope_freqs_elem = lisp->get_variable("rope_freqs");
+    Element* yarn_mscale_elem = lisp->get_variable("yarn_mscale");
+    Element* layer_tensors_elem = lisp->get_variable("layer_tensors");
+    Element* global_tensors_elem = lisp->get_variable("global_tensors");
+    Element* attn_params_elem = lisp->get_variable("attn_params");
+    Element* cached_routers_elem = lisp->get_variable("cached_routers");
+    Element* experts_per_tok_elem = lisp->get_variable("experts_per_tok");
+    Element* layout_elem = lisp->get_variable("layout");
+
+    try {
+        constexpr long L_INPUT_NORM = 0;
+        constexpr long L_Q_WEIGHT = 1;
+        constexpr long L_Q_SCALES = 2;
+        constexpr long L_Q_QBIASES = 3;
+        constexpr long L_Q_BIAS = 4;
+        constexpr long L_K_WEIGHT = 5;
+        constexpr long L_K_SCALES = 6;
+        constexpr long L_K_QBIASES = 7;
+        constexpr long L_K_BIAS = 8;
+        constexpr long L_V_WEIGHT = 9;
+        constexpr long L_V_SCALES = 10;
+        constexpr long L_V_QBIASES = 11;
+        constexpr long L_V_BIAS = 12;
+        constexpr long L_O_WEIGHT = 13;
+        constexpr long L_O_SCALES = 14;
+        constexpr long L_O_QBIASES = 15;
+        constexpr long L_O_BIAS = 16;
+        constexpr long L_SINKS = 17;
+        constexpr long L_POST_ATTN_NORM = 18;
+        constexpr long L_ROUTER_BIAS = 22;
+        constexpr long L_GATE_WEIGHT = 23;
+        constexpr long L_GATE_SCALES = 24;
+        constexpr long L_GATE_QBIASES = 25;
+        constexpr long L_GATE_BIAS = 26;
+        constexpr long L_UP_WEIGHT = 27;
+        constexpr long L_UP_SCALES = 28;
+        constexpr long L_UP_QBIASES = 29;
+        constexpr long L_UP_BIAS = 30;
+        constexpr long L_DOWN_WEIGHT = 31;
+        constexpr long L_DOWN_SCALES = 32;
+        constexpr long L_DOWN_QBIASES = 33;
+        constexpr long L_DOWN_BIAS = 34;
+
+        constexpr long G_FINAL_NORM = 3;
+        constexpr long G_LM_HEAD_WEIGHT = 4;
+        constexpr long G_LM_HEAD_SCALES = 5;
+        constexpr long G_LM_HEAD_BIASES = 6;
+
+        auto has_value = [&](Element* elem) -> bool {
+            return elem != null_ && elem->type != v_emptyatom;
+        };
+
+        auto list_value = [&](Element* list_elem, long idx, const char* name) -> Element* {
+            if (!list_elem->isList()) {
+                throw new Error(std::string("mlx_decode_model_create: ") + name + " must be a list");
+            }
+            if (idx < 0 || idx >= list_elem->size()) {
+                throw new Error(std::string("mlx_decode_model_create: index out of bounds in ") + name);
+            }
+            return list_elem->index(idx);
+        };
+
+        auto required_array = [&](Element* list_elem, long idx, const char* name) -> mx::array {
+            Element* elem = list_value(list_elem, idx, name);
+            if (!has_value(elem)) {
+                throw new Error(std::string("mlx_decode_model_create: missing tensor in ") + name);
+            }
+            return element_to_array(lisp, elem);
+        };
+
+        auto optional_array = [&](Element* list_elem, long idx, const char* name) -> std::optional<mx::array> {
+            Element* elem = list_value(list_elem, idx, name);
+            if (!has_value(elem)) {
+                return std::nullopt;
+            }
+            return element_to_array(lisp, elem);
+        };
+
+        std::string layout = "gpt_oss_moe";
+        if (has_value(layout_elem)) {
+            std::wstring ws = layout_elem->asString(lisp);
+            layout = std::string(ws.begin(), ws.end());
+        }
+        if (layout != "gpt_oss_moe") {
+            throw new Error("mlx_decode_model_create: unsupported layout '" + layout + "'");
+        }
+
+        if (!layer_tensors_elem->isList() || !global_tensors_elem->isList() || !cached_routers_elem->isList()) {
+            throw new Error("mlx_decode_model_create: tensors and routers must be lists");
+        }
+
+        mx::array cached_embeddings = element_to_array(lisp, cached_embeddings_elem);
+        mx::array rope_freqs = element_to_array(lisp, rope_freqs_elem);
+        float yarn_mscale = yarn_mscale_elem->asFloat();
+        int n_heads = attn_params_elem->index(0)->asInteger();
+        int n_kv_heads = attn_params_elem->index(1)->asInteger();
+        int head_dim = attn_params_elem->index(2)->asInteger();
+        float scale = attn_params_elem->index(3)->asFloat();
+        float eps = attn_params_elem->index(4)->asFloat();
+        int hidden_out = attn_params_elem->index(6)->asInteger();
+        int experts_per_tok = experts_per_tok_elem->asInteger();
+        int hidden_size = cached_embeddings.shape()[1];
+        mx::array final_norm = required_array(global_tensors_elem, G_FINAL_NORM, "global tensors");
+        mx::array lm_head_weight = required_array(global_tensors_elem, G_LM_HEAD_WEIGHT, "global tensors");
+        std::optional<mx::array> lm_head_scales = optional_array(global_tensors_elem, G_LM_HEAD_SCALES, "global tensors");
+        std::optional<mx::array> lm_head_qbiases = optional_array(global_tensors_elem, G_LM_HEAD_BIASES, "global tensors");
+
+        auto* model = new NativeDecodeModel{
+            layout,
+            cached_embeddings,
+            rope_freqs,
+            yarn_mscale,
+            n_heads,
+            n_kv_heads,
+            head_dim,
+            scale,
+            eps,
+            hidden_out,
+            hidden_size,
+            experts_per_tok,
+            final_norm,
+            lm_head_weight,
+            lm_head_scales,
+            lm_head_qbiases,
+            {},
+            {},
+            mx::array(1.702f),   // swiglu_alpha
+            mx::array(7.0f),     // swiglu_limit
+            mx::array(-7.0f),    // swiglu_neg_limit
+            mx::array(1.0f)      // swiglu_one
+        };
+
+        // Pre-evaluate SwiGLU constants so they are GPU-resident
+        mx::eval({model->swiglu_alpha, model->swiglu_limit,
+                  model->swiglu_neg_limit, model->swiglu_one});
+
+        long num_layers = layer_tensors_elem->size();
+        if (cached_routers_elem->size() != num_layers) {
+            delete model;
+            throw new Error("mlx_decode_model_create: inconsistent layer metadata sizes");
+        }
+
+        model->layers.reserve(num_layers);
+        for (long layer_idx = 0; layer_idx < num_layers; layer_idx++) {
+            Element* layer_elem = layer_tensors_elem->index(layer_idx);
+            NativeDecodeLayer layer{
+                required_array(layer_elem, L_INPUT_NORM, "layer tuple"),
+                required_array(layer_elem, L_Q_WEIGHT, "layer tuple"),
+                optional_array(layer_elem, L_Q_SCALES, "layer tuple"),
+                optional_array(layer_elem, L_Q_QBIASES, "layer tuple"),
+                optional_array(layer_elem, L_Q_BIAS, "layer tuple"),
+                required_array(layer_elem, L_K_WEIGHT, "layer tuple"),
+                optional_array(layer_elem, L_K_SCALES, "layer tuple"),
+                optional_array(layer_elem, L_K_QBIASES, "layer tuple"),
+                optional_array(layer_elem, L_K_BIAS, "layer tuple"),
+                required_array(layer_elem, L_V_WEIGHT, "layer tuple"),
+                optional_array(layer_elem, L_V_SCALES, "layer tuple"),
+                optional_array(layer_elem, L_V_QBIASES, "layer tuple"),
+                optional_array(layer_elem, L_V_BIAS, "layer tuple"),
+                required_array(layer_elem, L_O_WEIGHT, "layer tuple"),
+                optional_array(layer_elem, L_O_SCALES, "layer tuple"),
+                optional_array(layer_elem, L_O_QBIASES, "layer tuple"),
+                optional_array(layer_elem, L_O_BIAS, "layer tuple"),
+                optional_array(layer_elem, L_SINKS, "layer tuple"),
+                required_array(layer_elem, L_POST_ATTN_NORM, "layer tuple"),
+                element_to_array(lisp, cached_routers_elem->index(layer_idx)),
+                optional_array(layer_elem, L_ROUTER_BIAS, "layer tuple"),
+                required_array(layer_elem, L_GATE_WEIGHT, "layer tuple"),
+                optional_array(layer_elem, L_GATE_SCALES, "layer tuple"),
+                optional_array(layer_elem, L_GATE_QBIASES, "layer tuple"),
+                optional_array(layer_elem, L_GATE_BIAS, "layer tuple"),
+                required_array(layer_elem, L_UP_WEIGHT, "layer tuple"),
+                optional_array(layer_elem, L_UP_SCALES, "layer tuple"),
+                optional_array(layer_elem, L_UP_QBIASES, "layer tuple"),
+                optional_array(layer_elem, L_UP_BIAS, "layer tuple"),
+                required_array(layer_elem, L_DOWN_WEIGHT, "layer tuple"),
+                optional_array(layer_elem, L_DOWN_SCALES, "layer tuple"),
+                optional_array(layer_elem, L_DOWN_QBIASES, "layer tuple"),
+                optional_array(layer_elem, L_DOWN_BIAS, "layer tuple")
+            };
+            model->layers.push_back(std::move(layer));
+        }
+
+        // Pre-evaluate all potentially lazy arrays so every tensor
+        // is GPU-resident before the first decode step.
+        // Without this, lazy sub-graphs (dequantize+transpose for routers,
+        // arithmetic chain for rope_freqs, dequantize for embeddings)
+        // could bloat every decode graph.
+        {
+            std::vector<mx::array> to_eval;
+            to_eval.push_back(model->cached_embeddings);
+            to_eval.push_back(model->rope_freqs);
+            to_eval.push_back(model->final_norm);
+            to_eval.push_back(model->lm_head_weight);
+            if (model->lm_head_scales.has_value()) to_eval.push_back(*model->lm_head_scales);
+            if (model->lm_head_qbiases.has_value()) to_eval.push_back(*model->lm_head_qbiases);
+            for (auto& layer : model->layers) {
+                to_eval.push_back(layer.router_t);
+                to_eval.push_back(layer.input_norm);
+                to_eval.push_back(layer.post_attn_norm);
+                to_eval.push_back(layer.q_weight);
+                if (layer.q_scales.has_value()) to_eval.push_back(*layer.q_scales);
+                if (layer.q_qbiases.has_value()) to_eval.push_back(*layer.q_qbiases);
+                if (layer.q_bias.has_value()) to_eval.push_back(*layer.q_bias);
+                to_eval.push_back(layer.k_weight);
+                if (layer.k_scales.has_value()) to_eval.push_back(*layer.k_scales);
+                if (layer.k_qbiases.has_value()) to_eval.push_back(*layer.k_qbiases);
+                if (layer.k_bias.has_value()) to_eval.push_back(*layer.k_bias);
+                to_eval.push_back(layer.v_weight);
+                if (layer.v_scales.has_value()) to_eval.push_back(*layer.v_scales);
+                if (layer.v_qbiases.has_value()) to_eval.push_back(*layer.v_qbiases);
+                if (layer.v_bias.has_value()) to_eval.push_back(*layer.v_bias);
+                to_eval.push_back(layer.o_weight);
+                if (layer.o_scales.has_value()) to_eval.push_back(*layer.o_scales);
+                if (layer.o_qbiases.has_value()) to_eval.push_back(*layer.o_qbiases);
+                if (layer.o_bias.has_value()) to_eval.push_back(*layer.o_bias);
+                if (layer.sinks.has_value()) to_eval.push_back(*layer.sinks);
+                if (layer.router_bias.has_value()) to_eval.push_back(*layer.router_bias);
+                to_eval.push_back(layer.gate_weight);
+                if (layer.gate_scales.has_value()) to_eval.push_back(*layer.gate_scales);
+                if (layer.gate_qbiases.has_value()) to_eval.push_back(*layer.gate_qbiases);
+                if (layer.gate_bias.has_value()) to_eval.push_back(*layer.gate_bias);
+                to_eval.push_back(layer.up_weight);
+                if (layer.up_scales.has_value()) to_eval.push_back(*layer.up_scales);
+                if (layer.up_qbiases.has_value()) to_eval.push_back(*layer.up_qbiases);
+                if (layer.up_bias.has_value()) to_eval.push_back(*layer.up_bias);
+                to_eval.push_back(layer.down_weight);
+                if (layer.down_scales.has_value()) to_eval.push_back(*layer.down_scales);
+                if (layer.down_qbiases.has_value()) to_eval.push_back(*layer.down_qbiases);
+                if (layer.down_bias.has_value()) to_eval.push_back(*layer.down_bias);
+            }
+            fprintf(stderr, "[mlx_decode_model_create] Pre-evaluating %zu arrays...\n", to_eval.size());
+            mx::eval(to_eval);
+            fprintf(stderr, "[mlx_decode_model_create] All model tensors are now GPU-resident.\n");
+        }
+
+        return lisp->provideInteger(native_decode_model_register(model));
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_decode_model_create: " + std::string(e.what()));
+    }
+}
+
+Element* Lispe_mlx_methods::method_decode_model_free(LispE* lisp) {
+    long model_id = lisp->get_variable("model_handle")->asInteger();
+    auto it = native_decode_models.find(model_id);
+    if (it == native_decode_models.end()) {
+        return null_;
+    }
+    delete it->second;
+    native_decode_models.erase(it);
+    return true_;
+}
+
+Element* Lispe_mlx_methods::method_decode_model_profile_start(LispE* lisp) {
+    NativeDecodeModel* model = native_decode_model_get(lisp->get_variable("model_handle")->asInteger());
+    if (!model) {
+        throw new Error("mlx_decode_model_profile_start: invalid model handle");
+    }
+    native_decode_profile_reset(model);
+    return true_;
+}
+
+Element* Lispe_mlx_methods::method_decode_model_profile_report(LispE* lisp) {
+    NativeDecodeModel* model = native_decode_model_get(lisp->get_variable("model_handle")->asInteger());
+    if (!model) {
+        throw new Error("mlx_decode_model_profile_report: invalid model handle");
+    }
+
+    std::string summary_label = "summary";
+    std::string layer_label = "layer";
+
+    List* report = lisp->provideList();
+
+    List* summary = lisp->provideList();
+    summary->append(lisp->provideString(summary_label));
+    summary->append(lisp->provideInteger(model->profile.decode_steps));
+    summary->append(lisp->provideFloat(model->profile.total_ms));
+    summary->append(lisp->provideFloat(model->profile.decode_steps ? model->profile.total_ms / model->profile.decode_steps : 0.0));
+    summary->append(lisp->provideFloat(model->profile.embedding_ms));
+    summary->append(lisp->provideFloat(model->profile.final_norm_ms));
+    summary->append(lisp->provideFloat(model->profile.lm_head_ms));
+    report->append(summary);
+
+    for (long layer_idx = 0; layer_idx < model->profile.layers.size(); layer_idx++) {
+        const NativeDecodeLayerProfile& profile = model->profile.layers[layer_idx];
+        List* layer_entry = lisp->provideList();
+        layer_entry->append(lisp->provideString(layer_label));
+        layer_entry->append(lisp->provideInteger(layer_idx));
+        layer_entry->append(lisp->provideInteger(profile.calls));
+        layer_entry->append(lisp->provideFloat(profile.total_ms));
+        layer_entry->append(lisp->provideFloat(profile.calls ? profile.total_ms / profile.calls : 0.0));
+        layer_entry->append(lisp->provideFloat(profile.input_qkv_ms));
+        layer_entry->append(lisp->provideFloat(profile.rope_ms));
+        layer_entry->append(lisp->provideFloat(profile.attention_ms));
+        layer_entry->append(lisp->provideFloat(profile.out_proj_ms));
+        layer_entry->append(lisp->provideFloat(profile.post_attn_norm_ms));
+        layer_entry->append(lisp->provideFloat(profile.moe_ms));
+        report->append(layer_entry);
+    }
+
+    return report;
+}
+
+static mx::array native_decode_model_forward_logits(NativeDecodeModel* model,
+                                                    Element* kv_caches_elem,
+                                                    const mx::array& input_ids,
+                                                    int offset,
+                                                    const char* caller_name) {
+    using clock = std::chrono::steady_clock;
+
+    if (!model) {
+        throw new Error(std::string(caller_name) + ": invalid model handle");
+    }
+    if (!kv_caches_elem->isList() || kv_caches_elem->size() != model->layers.size()) {
+        throw new Error(std::string(caller_name) + ": invalid kv cache list");
+    }
+
+    auto input_shape = input_ids.shape();
+    if (input_shape.size() != 2 || input_shape[0] != 1 || input_shape[1] != 1) {
+        throw new Error(std::string(caller_name) + ": only B=1, L=1 is supported");
+    }
+
+    auto linear = [&](const mx::array& x,
+                      const mx::array& weight,
+                      const std::optional<mx::array>& scales,
+                      const std::optional<mx::array>& qbiases,
+                      const std::optional<mx::array>& bias) -> mx::array {
+        mx::array out = scales.has_value()
+            ? mx::quantized_matmul(x, weight, *scales, qbiases, true, 64, 8)
+            : mx::matmul(x, mx::transpose(weight));
+        if (bias.has_value()) {
+            out = mx::add(out, *bias);
+        }
+        return out;
+    };
+
+    auto apply_rope = [&](mx::array x) -> mx::array {
+        // mscale is now folded into the attention scale factor (mscale^2)
+        return mx::fast::rope(x, model->head_dim, false, std::nullopt, 1.0f, offset, model->rope_freqs);
+    };
+
+    auto fused_moe_decode = [&](const mx::array& x, const NativeDecodeLayer& layer) -> mx::array {
+        if (!layer.gate_scales.has_value() || !layer.up_scales.has_value() || !layer.down_scales.has_value()) {
+            throw new Error(std::string(caller_name) + ": expected quantized MoE expert scales");
+        }
+        return fused_moe_router_decode_impl(
+            x,
+            layer.router_t,
+            layer.router_bias,
+            layer.gate_weight,
+            *layer.gate_scales,
+            layer.gate_qbiases,
+            layer.gate_bias,
+            layer.up_weight,
+            *layer.up_scales,
+            layer.up_qbiases,
+            layer.up_bias,
+            layer.down_weight,
+            *layer.down_scales,
+            layer.down_qbiases,
+            layer.down_bias,
+            model->experts_per_tok,
+            64,
+            8,
+            "swiglu",
+            1.702f,
+            7.0f,
+            &model->swiglu_alpha,
+            &model->swiglu_limit,
+            &model->swiglu_neg_limit,
+            &model->swiglu_one
+        );
+    };
+
+    // Pre-fetch all KV cache pointers once (avoid repeated LispE list + hashmap lookups)
+    long n_layers = model->layers.size();
+    std::vector<KVNativeCache*> caches(n_layers);
+    for (long i = 0; i < n_layers; i++) {
+        caches[i] = kv_get_native_cache(kv_caches_elem->index(i)->asInteger());
+        if (!caches[i]) {
+            throw new Error(std::string(caller_name) + ": invalid kv cache handle");
+        }
+    }
+
+    bool profiling = model->profile.enabled;
+    static double _fwd_attn_ns = 0, _fwd_moe_ns = 0, _fwd_other_ns = 0;
+    static int _fwd_calls = 0;
+    auto step_start = clock::now();
+    mx::array flat_ids = mx::reshape(input_ids, {1});
+    mx::array embeddings_flat = mx::take(model->cached_embeddings, flat_ids, 0);
+    mx::array hidden_states = mx::reshape(embeddings_flat, {1, 1, model->hidden_size});
+
+    // Dtype diagnostic — print once
+    static bool dtype_reported = false;
+    if (!dtype_reported) {
+        auto dt_name = [](mx::Dtype dt) -> const char* {
+            if (dt == mx::float32) return "float32";
+            if (dt == mx::float16) return "float16";
+            if (dt == mx::bfloat16) return "bfloat16";
+            if (dt == mx::int32) return "int32";
+            if (dt == mx::uint32) return "uint32";
+            return "other";
+        };
+        fprintf(stderr, "[dtype_diag] cached_embeddings=%s, hidden_states=%s, input_norm=%s, q_weight=%s",
+                dt_name(model->cached_embeddings.dtype()),
+                dt_name(hidden_states.dtype()),
+                dt_name(model->layers[0].input_norm.dtype()),
+                dt_name(model->layers[0].q_weight.dtype()));
+        if (model->layers[0].q_scales.has_value())
+            fprintf(stderr, ", q_scales=%s", dt_name(model->layers[0].q_scales->dtype()));
+        fprintf(stderr, ", rope_freqs=%s", dt_name(model->rope_freqs.dtype()));
+        fprintf(stderr, ", final_norm=%s, lm_head=%s\n",
+                dt_name(model->final_norm.dtype()),
+                dt_name(model->lm_head_weight.dtype()));
+        dtype_reported = true;
+    }
+
+    if (profiling) {
+        auto t0 = clock::now();
+        mx::eval(hidden_states);
+        auto t1 = clock::now();
+        model->profile.embedding_ms += native_decode_elapsed_ms(t0, t1);
+    }
+
+    for (long layer_idx = 0; layer_idx < n_layers; layer_idx++) {
+        const NativeDecodeLayer& layer = model->layers[layer_idx];
+        NativeDecodeLayerProfile* layer_profile = profiling ? &model->profile.layers[layer_idx] : nullptr;
+        auto layer_start = profiling ? clock::now() : clock::time_point{};
+        KVNativeCache* cache = caches[layer_idx];
+
+        auto _attn_t0 = clock::now();
+        mx::array normed_x = mx::fast::rms_norm(hidden_states, layer.input_norm, model->eps);
+        mx::array queries = linear(normed_x, layer.q_weight, layer.q_scales, layer.q_qbiases, layer.q_bias);
+        mx::array keys = linear(normed_x, layer.k_weight, layer.k_scales, layer.k_qbiases, layer.k_bias);
+        mx::array values = linear(normed_x, layer.v_weight, layer.v_scales, layer.v_qbiases, layer.v_bias);
+
+        // Dtype diagnostic for intermediate results — print once on layer 0
+        if (!dtype_reported) {  // reuse flag but already set; use a new one
+        }
+        static bool inter_dtype_reported = false;
+        if (!inter_dtype_reported && layer_idx == 0) {
+            auto dt_name = [](mx::Dtype dt) -> const char* {
+                if (dt == mx::float32) return "float32";
+                if (dt == mx::float16) return "float16";
+                if (dt == mx::bfloat16) return "bfloat16";
+                return "other";
+            };
+            fprintf(stderr, "[dtype_diag] normed_x=%s, queries=%s, keys=%s, values=%s\n",
+                    dt_name(normed_x.dtype()),
+                    dt_name(queries.dtype()),
+                    dt_name(keys.dtype()),
+                    dt_name(values.dtype()));
+            inter_dtype_reported = true;
+        }
+
+        if (profiling) {
+            auto t0 = clock::now();
+            mx::eval({queries, keys, values});
+            auto t1 = clock::now();
+            layer_profile->input_qkv_ms += native_decode_elapsed_ms(t0, t1);
+        }
+
+        queries = mx::transpose(mx::reshape(queries, {1, 1, model->n_heads, model->head_dim}), {0, 2, 1, 3});
+        keys = mx::transpose(mx::reshape(keys, {1, 1, model->n_kv_heads, model->head_dim}), {0, 2, 1, 3});
+        values = mx::transpose(mx::reshape(values, {1, 1, model->n_kv_heads, model->head_dim}), {0, 2, 1, 3});
+
+        queries = apply_rope(queries);
+        keys = apply_rope(keys);
+        if (profiling) {
+            auto t0 = clock::now();
+            mx::eval({queries, keys});
+            auto t1 = clock::now();
+            layer_profile->rope_ms += native_decode_elapsed_ms(t0, t1);
+        }
+
+        cache->append(keys, values);
+        mx::array attention_output = cache->attention(queries, model->scale, "", layer.sinks);
+        if (profiling) {
+            auto t0 = clock::now();
+            mx::eval(attention_output);
+            auto t1 = clock::now();
+            layer_profile->attention_ms += native_decode_elapsed_ms(t0, t1);
+        }
+        attention_output = mx::reshape(mx::transpose(attention_output, {0, 2, 1, 3}), {1, 1, model->hidden_out});
+        attention_output = linear(attention_output, layer.o_weight, layer.o_scales, layer.o_qbiases, layer.o_bias);
+        if (profiling) {
+            auto t0 = clock::now();
+            mx::eval(attention_output);
+            auto t1 = clock::now();
+            layer_profile->out_proj_ms += native_decode_elapsed_ms(t0, t1);
+        }
+
+        mx::array h = mx::add(hidden_states, attention_output);
+        mx::array normed_h = mx::fast::rms_norm(h, layer.post_attn_norm, model->eps);
+        auto _attn_t1 = clock::now();
+        _fwd_attn_ns += std::chrono::duration<double, std::nano>(_attn_t1 - _attn_t0).count();
+        if (profiling) {
+            auto t0 = clock::now();
+            mx::eval(normed_h);
+            auto t1 = clock::now();
+            layer_profile->post_attn_norm_ms += native_decode_elapsed_ms(t0, t1);
+        }
+        auto _moe_t0 = clock::now();
+        mx::array mlp_output = fused_moe_decode(normed_h, layer);
+        auto _moe_t1 = clock::now();
+        _fwd_moe_ns += std::chrono::duration<double, std::nano>(_moe_t1 - _moe_t0).count();
+        if (profiling) {
+            auto t0 = clock::now();
+            mx::eval(mlp_output);
+            auto t1 = clock::now();
+            layer_profile->moe_ms += native_decode_elapsed_ms(t0, t1);
+        }
+        hidden_states = mx::add(h, mlp_output);
+        if (profiling) {
+            auto t0 = clock::now();
+            mx::eval(hidden_states);
+            auto t1 = clock::now();
+            layer_profile->total_ms += native_decode_elapsed_ms(layer_start, t1);
+            layer_profile->calls += 1;
+        }
+        // DIAGNOSTIC: eval after every layer to test graph-size impact
+        if (model->eval_per_layer) {
+            mx::eval(hidden_states);
+        }
+    }
+
+    hidden_states = mx::fast::rms_norm(hidden_states, model->final_norm, model->eps);
+    if (profiling) {
+        auto t0 = clock::now();
+        mx::eval(hidden_states);
+        auto t1 = clock::now();
+        model->profile.final_norm_ms += native_decode_elapsed_ms(t0, t1);
+    }
+    mx::array last_hidden = mx::reshape(hidden_states, {1, model->hidden_size});
+    mx::array logits = model->lm_head_scales.has_value()
+        ? mx::quantized_matmul(last_hidden, model->lm_head_weight, *model->lm_head_scales, model->lm_head_qbiases, true, 64, 8)
+        : mx::matmul(last_hidden, mx::transpose(model->lm_head_weight));
+    if (profiling) {
+        auto t0 = clock::now();
+        mx::eval(logits);
+        auto t1 = clock::now();
+        model->profile.lm_head_ms += native_decode_elapsed_ms(t0, t1);
+        model->profile.decode_steps += 1;
+        model->profile.total_ms += native_decode_elapsed_ms(step_start, t1);
+    }
+
+    _fwd_calls++;
+    if (_fwd_calls % 500 == 0) {
+        double total_attn_ms = _fwd_attn_ns / 1e6;
+        double total_moe_ms = _fwd_moe_ns / 1e6;
+        double total_other_ms = _fwd_other_ns / 1e6;
+        fprintf(stderr, "[fwd_breakdown] %d calls: attn=%.1f ms (%.3f/step/layer), moe=%.1f ms (%.3f/step/layer)\n",
+                _fwd_calls, total_attn_ms, total_attn_ms/_fwd_calls/n_layers,
+                total_moe_ms, total_moe_ms/_fwd_calls/n_layers);
+    }
+
+    return logits;
+}
+
+static mx::array native_decode_sample_token(const mx::array& logits, float temperature, const mx::array& temp_arr) {
+    if (temperature < 0.01f) {
+        return mx::argmax(logits, -1);
+    }
+
+    mx::array scaled_logits = mx::divide(logits, temp_arr);
+    if (scaled_logits.ndim() == 1) {
+        auto shape = scaled_logits.shape();
+        scaled_logits = mx::reshape(scaled_logits, {1, shape[0]});
+    }
+    return mx::random::categorical(scaled_logits, -1);
+}
+
+Element* Lispe_mlx_methods::method_forward_decode_step_model(LispE* lisp) {
+    Element* model_handle_elem = lisp->get_variable("model_handle");
+    Element* input_ids_elem = lisp->get_variable("input_ids");
+    Element* offset_elem = lisp->get_variable("offset");
+    Element* kv_caches_elem = lisp->get_variable("kv_caches");
+
+    try {
+        NativeDecodeModel* model = native_decode_model_get(model_handle_elem->asInteger());
+        mx::array input_ids = element_to_array(lisp, input_ids_elem);
+        mx::array logits = native_decode_model_forward_logits(model, kv_caches_elem, input_ids, offset_elem->asInteger(), "mlx_forward_decode_step_model");
+        return new MLXArray(std::move(logits));
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_forward_decode_step_model: " + std::string(e.what()));
+    }
+}
+
+// ============================================================================
+// mlx_generate_loop - Decode-only generation loop in C++ with async pipelining
+// ============================================================================
+// Runs N decode steps entirely in C++ to eliminate LispE interpreter overhead.
+// Uses double-buffer async pipelining like Python mlx_lm: launch step N+1
+// on GPU while consuming step N result on CPU.
+// Prefill must be done before calling this (kv_caches already populated).
+// input_ids must be [1,1] containing the first token to decode from.
+//
+// Returns: (token_ids prefill_ms decode_ms)
+//   token_ids  = list of generated token IDs (integers)
+//   prefill_ms = 0.0 (prefill done externally)
+//   decode_ms  = decode time in milliseconds (float)
+//
+// Signature: deflib mlx_generate_loop(model_handle input_ids offset kv_caches
+//                                     max_tokens temperature eos_token)
+Element* Lispe_mlx_methods::method_generate_loop(LispE* lisp) {
+    Element* model_handle_elem = lisp->get_variable("model_handle");
+    Element* input_ids_elem = lisp->get_variable("input_ids");
+    Element* offset_elem = lisp->get_variable("offset");
+    Element* kv_caches_elem = lisp->get_variable("kv_caches");
+    Element* max_tokens_elem = lisp->get_variable("max_tokens");
+    Element* temperature_elem = lisp->get_variable("temperature");
+    Element* eos_token_elem = lisp->get_variable("eos_token");
+
+    try {
+        using clock = std::chrono::steady_clock;
+
+        NativeDecodeModel* model = native_decode_model_get(model_handle_elem->asInteger());
+        if (!model) {
+            throw Error("mlx_generate_loop: invalid model handle");
+        }
+
+        mx::array input_ids = element_to_array(lisp, input_ids_elem);
+        int offset = offset_elem->asInteger();
+        int max_tokens = max_tokens_elem->asInteger();
+        float temperature = temperature_elem->asFloat();
+        int eos_token = eos_token_elem->asInteger();
+
+        // Disable profiling for the tight loop
+        bool was_profiling = model->profile.enabled;
+        model->profile.enabled = false;
+
+        // DIAGNOSTIC: enable eval_per_layer via env var
+        model->eval_per_layer = (getenv("MLX_EVAL_PER_LAYER") != nullptr);
+
+        std::vector<int> generated_tokens;
+        generated_tokens.reserve(max_tokens);
+
+        // Pre-evaluate temperature as GPU-resident array
+        mx::array temp_arr = mx::array(temperature);
+        mx::eval(temp_arr);
+
+        // Diagnostic: report and maximize Metal buffer cache
+        {
+            size_t prev_limit = mx::set_cache_limit(0);
+            mx::set_cache_limit(prev_limit);
+            size_t cache_mem = mx::get_cache_memory();
+            size_t active_mem = mx::get_active_memory();
+            size_t peak_mem = mx::get_peak_memory();
+            fprintf(stderr, "[generate_loop] Metal cache: limit=%.2f GB, cached=%.1f MB, active=%.1f MB, peak=%.1f MB\n",
+                    prev_limit / (1024.0*1024.0*1024.0),
+                    cache_mem / (1024.0*1024.0),
+                    active_mem / (1024.0*1024.0),
+                    peak_mem / (1024.0*1024.0));
+        }
+
+        auto decode_start = clock::now();
+        double total_graph_ns = 0, total_eval_ns = 0, total_item_ns = 0;
+
+        // Use async_eval + eval pattern
+        // Eval mode — check KV cache availability
+        mx::array current_input = input_ids;
+        long n_layers = (long)model->layers.size();
+
+        // Pre-fetch KV cache pointers for diagnostic
+        std::vector<KVNativeCache*> loop_caches(n_layers);
+        for (long ci = 0; ci < n_layers; ci++) {
+            loop_caches[ci] = kv_get_native_cache(kv_caches_elem->index(ci)->asInteger());
+        }
+
+        for (int i = 0; i < max_tokens; i++) {
+            auto t_graph0 = clock::now();
+            mx::array logits = native_decode_model_forward_logits(model, kv_caches_elem, current_input, offset, "mlx_generate_loop");
+            mx::array y = native_decode_sample_token(logits, temperature, temp_arr);
+            auto t_graph1 = clock::now();
+            total_graph_ns += std::chrono::duration<double, std::nano>(t_graph1 - t_graph0).count();
+
+            auto t_eval0 = clock::now();
+            mx::eval(y);
+            auto t_eval1 = clock::now();
+            total_eval_ns += std::chrono::duration<double, std::nano>(t_eval1 - t_eval0).count();
+
+            // Check if KV caches are evaluated after mx::eval(y) — sample first 3 steps
+            if (i < 3) {
+                int not_avail = 0;
+                for (long ci = 0; ci < n_layers; ci++) {
+                    KVNativeCache* c = loop_caches[ci];
+                    if (!c->keys.is_available()) not_avail++;
+                    if (!c->values.is_available()) not_avail++;
+                }
+                fprintf(stderr, "[generate_loop] step %d: KV cache arrays NOT available = %d / %ld\n",
+                        i, not_avail, n_layers * 2);
+            }
+
+            auto t_item0 = clock::now();
+            int token_id = y.item<int>();
+            auto t_item1 = clock::now();
+            total_item_ns += std::chrono::duration<double, std::nano>(t_item1 - t_item0).count();
+
+            generated_tokens.push_back(token_id);
+            offset++;
+            if (token_id == eos_token) break;
+            current_input = mx::reshape(mx::array(token_id), {1, 1});
+        }
+
+        auto decode_end = clock::now();
+        double decode_ms = std::chrono::duration<double, std::milli>(decode_end - decode_start).count();
+
+        int n_steps = generated_tokens.size();
+        fprintf(stderr, "[generate_loop] %d steps: total=%.1f ms (%.2f ms/step, %.1f t/s)\n",
+                n_steps, decode_ms, decode_ms/n_steps, n_steps*1000.0/decode_ms);
+        fprintf(stderr, "[generate_loop] breakdown: graph=%.1f ms (%.2f/step), eval=%.1f ms (%.2f/step), item=%.1f ms (%.2f/step)\n",
+                total_graph_ns/1e6, total_graph_ns/1e6/n_steps,
+                total_eval_ns/1e6, total_eval_ns/1e6/n_steps,
+                total_item_ns/1e6, total_item_ns/1e6/n_steps);
+
+        model->profile.enabled = was_profiling;
+
+        // Build result: (token_ids 0.0 decode_ms)
+        List* result = new List();
+        List* token_list = new List();
+        for (int t : generated_tokens) token_list->append(lisp->provideInteger(t));
+        result->append(token_list);
+        result->append(lisp->provideFloat(0.0));
+        result->append(lisp->provideFloat(decode_ms));
+        return result;
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_generate_loop: " + std::string(e.what()));
+    }
+}
+
+// ============================================================================
+// V2: Ground-up rewrite of forward + generate following Python pattern exactly
+// ============================================================================
+// Key differences from V1:
+// - mx::clip in compiled swiglu (single op vs minimum+maximum = 2 ops)
+// - MoE fully inlined in forward (no separate function call with 15+ params)
+// - Zero profiling/diagnostics in hot path
+// - Token kept as mx::array in generate loop (avoids int→array reconstruction)
+
+static std::function<std::vector<mx::array>(const std::vector<mx::array>&)> _compiled_swiglu_v2_fn;
+static bool _compiled_swiglu_v2_ready = false;
+
+static mx::array compiled_swiglu_v2(const mx::array& gate_out, const mx::array& up_out,
+                                     const mx::array& alpha, const mx::array& limit,
+                                     const mx::array& neg_limit, const mx::array& one) {
+    if (!_compiled_swiglu_v2_ready) {
+        _compiled_swiglu_v2_fn = mx::compile(
+            [](const std::vector<mx::array>& inputs) -> std::vector<mx::array> {
+                const auto& x_glu = inputs[0];
+                const auto& x_linear = inputs[1];
+                const auto& c_alpha = inputs[2];
+                const auto& c_limit = inputs[3];
+                const auto& c_neg_limit = inputs[4];
+                const auto& c_one = inputs[5];
+                // mx::clip matches Python mx.clip exactly (single fused op)
+                auto glu_clamped = mx::clip(x_glu, std::nullopt, c_limit);
+                auto lin_clamped = mx::clip(x_linear, c_neg_limit, c_limit);
+                auto glu_scaled = mx::multiply(c_alpha, glu_clamped);
+                auto sig = mx::sigmoid(glu_scaled);
+                auto out_glu = mx::multiply(glu_clamped, sig);
+                return {mx::multiply(out_glu, mx::add(lin_clamped, c_one))};
+            },
+            true  // shapeless
+        );
+        _compiled_swiglu_v2_ready = true;
+    }
+    return _compiled_swiglu_v2_fn({gate_out, up_out, alpha, limit, neg_limit, one})[0];
+}
+
+static mx::array native_forward_v2(NativeDecodeModel* model,
+                                    std::vector<KVNativeCache*>& caches,
+                                    const mx::array& token_1x1,
+                                    int offset) {
+    int n_layers = (int)model->layers.size();
+
+    // Embedding lookup — exactly like Python: take(cached_emb, flat_ids, 0).reshape(1,1,H)
+    mx::array h = mx::reshape(
+        mx::take(model->cached_embeddings, mx::reshape(token_1x1, {1}), 0),
+        {1, 1, model->hidden_size}
+    );
+
+    for (int i = 0; i < n_layers; i++) {
+        const NativeDecodeLayer& L = model->layers[i];
+        KVNativeCache* cache = caches[i];
+
+        // RMS norm
+        mx::array normed = mx::fast::rms_norm(h, L.input_norm, model->eps);
+
+        // Q/K/V projections — inline quantized_matmul (no lambda)
+        mx::array q = mx::quantized_matmul(normed, L.q_weight, *L.q_scales, L.q_qbiases, true, 64, 8);
+        if (L.q_bias.has_value()) q = mx::add(q, *L.q_bias);
+        mx::array k = mx::quantized_matmul(normed, L.k_weight, *L.k_scales, L.k_qbiases, true, 64, 8);
+        if (L.k_bias.has_value()) k = mx::add(k, *L.k_bias);
+        mx::array v = mx::quantized_matmul(normed, L.v_weight, *L.v_scales, L.v_qbiases, true, 64, 8);
+        if (L.v_bias.has_value()) v = mx::add(v, *L.v_bias);
+
+        // Reshape [1,1,H] → [1,n_heads,1,head_dim] + transpose
+        q = mx::transpose(mx::reshape(q, {1, 1, model->n_heads, model->head_dim}), {0, 2, 1, 3});
+        k = mx::transpose(mx::reshape(k, {1, 1, model->n_kv_heads, model->head_dim}), {0, 2, 1, 3});
+        v = mx::transpose(mx::reshape(v, {1, 1, model->n_kv_heads, model->head_dim}), {0, 2, 1, 3});
+
+        // RoPE — exactly like Python
+        q = mx::fast::rope(q, model->head_dim, false, std::nullopt, 1.0f, offset, model->rope_freqs);
+        k = mx::fast::rope(k, model->head_dim, false, std::nullopt, 1.0f, offset, model->rope_freqs);
+
+        // KV cache append + attention
+        cache->append(k, v);
+        mx::array attn = cache->attention(q, model->scale, "", L.sinks);
+
+        // Output projection
+        attn = mx::reshape(mx::transpose(attn, {0, 2, 1, 3}), {1, 1, model->hidden_out});
+        attn = mx::quantized_matmul(attn, L.o_weight, *L.o_scales, L.o_qbiases, true, 64, 8);
+        if (L.o_bias.has_value()) attn = mx::add(attn, *L.o_bias);
+
+        // Residual + post-attention norm
+        mx::array h2 = mx::add(h, attn);
+        mx::array normed2 = mx::fast::rms_norm(h2, L.post_attn_norm, model->eps);
+
+        // === MoE — fully inlined, matches Python exactly ===
+        int num_experts = L.router_t.shape()[1];
+        mx::array router_logits = mx::matmul(normed2, L.router_t);
+        if (L.router_bias.has_value()) router_logits = mx::add(router_logits, *L.router_bias);
+
+        mx::array pi = mx::argpartition(router_logits, -(model->experts_per_tok), -1);
+        int start_idx = num_experts - model->experts_per_tok;
+        mx::array expert_indices = mx::slice(pi, {0, 0, start_idx}, {1, 1, num_experts});
+        mx::array expert_logits = mx::take_along_axis(router_logits, expert_indices, -1);
+        mx::array expert_weights = mx::softmax(expert_logits, -1);
+
+        mx::array grouped_x = mx::expand_dims(normed2, {-2, -3});
+
+        // gate_proj via gather_qmm
+        mx::array gate_out = mx::gather_qmm(
+            grouped_x, L.gate_weight, *L.gate_scales, L.gate_qbiases,
+            std::nullopt, expert_indices, true, 64, 8, "affine", false);
+        if (L.gate_bias.has_value())
+            gate_out = mx::add(gate_out, mx::expand_dims(mx::take(*L.gate_bias, expert_indices, 0), -2));
+
+        // up_proj via gather_qmm
+        mx::array up_out = mx::gather_qmm(
+            grouped_x, L.up_weight, *L.up_scales, L.up_qbiases,
+            std::nullopt, expert_indices, true, 64, 8, "affine", false);
+        if (L.up_bias.has_value())
+            up_out = mx::add(up_out, mx::expand_dims(mx::take(*L.up_bias, expert_indices, 0), -2));
+
+        // SwiGLU activation with mx::clip
+        mx::array activated = compiled_swiglu_v2(gate_out, up_out,
+            model->swiglu_alpha, model->swiglu_limit, model->swiglu_neg_limit, model->swiglu_one);
+
+        // down_proj via gather_qmm
+        mx::array down_out = mx::gather_qmm(
+            activated, L.down_weight, *L.down_scales, L.down_qbiases,
+            std::nullopt, expert_indices, true, 64, 8, "affine", false);
+        if (L.down_bias.has_value())
+            down_out = mx::add(down_out, mx::expand_dims(mx::take(*L.down_bias, expert_indices, 0), -2));
+
+        mx::array expert_out = mx::squeeze(down_out, -2);
+        mx::array moe_out = mx::sum(mx::multiply(expert_out, mx::expand_dims(expert_weights, -1)), -2);
+
+        h = mx::add(h2, moe_out);
+    }
+
+    // Final norm + LM head
+    h = mx::fast::rms_norm(h, model->final_norm, model->eps);
+    mx::array last_hidden = mx::reshape(h, {1, model->hidden_size});
+    return model->lm_head_scales.has_value()
+        ? mx::quantized_matmul(last_hidden, model->lm_head_weight, *model->lm_head_scales, model->lm_head_qbiases, true, 64, 8)
+        : mx::matmul(last_hidden, mx::transpose(model->lm_head_weight));
+}
+
+Element* Lispe_mlx_methods::method_generate_loop_v2(LispE* lisp) {
+    Element* model_handle_elem = lisp->get_variable("model_handle");
+    Element* input_ids_elem = lisp->get_variable("input_ids");
+    Element* offset_elem = lisp->get_variable("offset");
+    Element* kv_caches_elem = lisp->get_variable("kv_caches");
+    Element* max_tokens_elem = lisp->get_variable("max_tokens");
+    Element* temperature_elem = lisp->get_variable("temperature");
+    Element* eos_token_elem = lisp->get_variable("eos_token");
+
+    try {
+        using clock = std::chrono::steady_clock;
+
+        NativeDecodeModel* model = native_decode_model_get(model_handle_elem->asInteger());
+        if (!model) throw Error("mlx_generate_loop_v2: invalid model handle");
+
+        mx::array input_ids = element_to_array(lisp, input_ids_elem);
+        int offset = offset_elem->asInteger();
+        int max_tokens = max_tokens_elem->asInteger();
+        float temperature = temperature_elem->asFloat();
+        int eos_token = eos_token_elem->asInteger();
+
+        long n_layers = (long)model->layers.size();
+
+        // Pre-fetch KV cache pointers
+        std::vector<KVNativeCache*> caches(n_layers);
+        for (long ci = 0; ci < n_layers; ci++) {
+            caches[ci] = kv_get_native_cache(kv_caches_elem->index(ci)->asInteger());
+            if (!caches[ci]) throw Error("mlx_generate_loop_v2: invalid kv cache handle");
+        }
+
+        std::vector<int> generated_tokens;
+        generated_tokens.reserve(max_tokens);
+
+        mx::array temp_arr = mx::array(temperature);
+        mx::eval(temp_arr);
+
+        mx::array current_token = input_ids;  // [1,1] — stays as mx::array
+        auto decode_start = clock::now();
+
+        for (int i = 0; i < max_tokens; i++) {
+            mx::array logits = native_forward_v2(model, caches, current_token, offset);
+
+            mx::array y = [&]() -> mx::array {
+                if (temperature < 0.01f) {
+                    return mx::argmax(logits, -1);
+                } else {
+                    mx::array scaled = mx::divide(logits, temp_arr);
+                    if (scaled.ndim() == 1) scaled = mx::reshape(scaled, {1, (int)scaled.shape()[0]});
+                    return mx::random::categorical(scaled, -1);
+                }
+            }();
+
+            mx::eval(y);
+            int token_id = y.item<int>();
+            generated_tokens.push_back(token_id);
+            offset++;
+            if (token_id == eos_token) break;
+            current_token = mx::reshape(y, {1, 1});
+        }
+
+        auto decode_end = clock::now();
+        double decode_ms = std::chrono::duration<double, std::milli>(decode_end - decode_start).count();
+        int n_steps = (int)generated_tokens.size();
+        fprintf(stderr, "[generate_loop_v2] %d steps: %.1f ms (%.2f ms/step, %.1f t/s)\n",
+                n_steps, decode_ms, decode_ms / n_steps, n_steps * 1000.0 / decode_ms);
+
+        List* result = new List();
+        List* token_list = new List();
+        for (int t : generated_tokens) token_list->append(lisp->provideInteger(t));
+        result->append(token_list);
+        result->append(lisp->provideFloat(0.0));
+        result->append(lisp->provideFloat(decode_ms));
+        return result;
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_generate_loop_v2: " + std::string(e.what()));
+    }
+}
+
+// ============================================================================
+// mlx_forward_decode_step - Native decoder-only decode step
+// ============================================================================
+// Signature: deflib mlx_forward_decode_step(input_ids offset cached_embeddings
+//                                           rope_freqs yarn_mscale layer_tensors
+//                                           global_tensors attn_params kv_caches
+//                                           layer_types cached_routers experts_per_tok
+//                                           (layout `gpt_oss_moe))
+Element* Lispe_mlx_methods::method_forward_decode_step(LispE* lisp) {
+    Element* input_ids_elem = lisp->get_variable("input_ids");
+    Element* offset_elem = lisp->get_variable("offset");
+    Element* cached_embeddings_elem = lisp->get_variable("cached_embeddings");
+    Element* rope_freqs_elem = lisp->get_variable("rope_freqs");
+    Element* yarn_mscale_elem = lisp->get_variable("yarn_mscale");
+    Element* layer_tensors_elem = lisp->get_variable("layer_tensors");
+    Element* global_tensors_elem = lisp->get_variable("global_tensors");
+    Element* attn_params_elem = lisp->get_variable("attn_params");
+    Element* kv_caches_elem = lisp->get_variable("kv_caches");
+    Element* layer_types_elem = lisp->get_variable("layer_types");
+    Element* cached_routers_elem = lisp->get_variable("cached_routers");
+    Element* experts_per_tok_elem = lisp->get_variable("experts_per_tok");
+    Element* layout_elem = lisp->get_variable("layout");
+
+    try {
+        constexpr long L_INPUT_NORM = 0;
+        constexpr long L_Q_WEIGHT = 1;
+        constexpr long L_Q_SCALES = 2;
+        constexpr long L_Q_QBIASES = 3;
+        constexpr long L_Q_BIAS = 4;
+        constexpr long L_K_WEIGHT = 5;
+        constexpr long L_K_SCALES = 6;
+        constexpr long L_K_QBIASES = 7;
+        constexpr long L_K_BIAS = 8;
+        constexpr long L_V_WEIGHT = 9;
+        constexpr long L_V_SCALES = 10;
+        constexpr long L_V_QBIASES = 11;
+        constexpr long L_V_BIAS = 12;
+        constexpr long L_O_WEIGHT = 13;
+        constexpr long L_O_SCALES = 14;
+        constexpr long L_O_QBIASES = 15;
+        constexpr long L_O_BIAS = 16;
+        constexpr long L_SINKS = 17;
+        constexpr long L_POST_ATTN_NORM = 18;
+        constexpr long L_ROUTER_BIAS = 22;
+        constexpr long L_GATE_WEIGHT = 23;
+        constexpr long L_GATE_SCALES = 24;
+        constexpr long L_GATE_QBIASES = 25;
+        constexpr long L_GATE_BIAS = 26;
+        constexpr long L_UP_WEIGHT = 27;
+        constexpr long L_UP_SCALES = 28;
+        constexpr long L_UP_QBIASES = 29;
+        constexpr long L_UP_BIAS = 30;
+        constexpr long L_DOWN_WEIGHT = 31;
+        constexpr long L_DOWN_SCALES = 32;
+        constexpr long L_DOWN_QBIASES = 33;
+        constexpr long L_DOWN_BIAS = 34;
+
+        constexpr long G_FINAL_NORM = 3;
+        constexpr long G_LM_HEAD_WEIGHT = 4;
+        constexpr long G_LM_HEAD_SCALES = 5;
+        constexpr long G_LM_HEAD_BIASES = 6;
+
+        auto has_value = [&](Element* elem) -> bool {
+            return elem != null_ && elem->type != v_emptyatom;
+        };
+
+        auto list_value = [&](Element* list_elem, long idx, const char* name) -> Element* {
+            if (!list_elem->isList()) {
+                throw new Error(std::string("mlx_forward_decode_step: ") + name + " must be a list");
+            }
+            if (idx < 0 || idx >= list_elem->size()) {
+                throw new Error(std::string("mlx_forward_decode_step: index out of bounds in ") + name);
+            }
+            return list_elem->index(idx);
+        };
+
+        auto required_array = [&](Element* list_elem, long idx, const char* name) -> mx::array {
+            Element* elem = list_value(list_elem, idx, name);
+            if (!has_value(elem)) {
+                throw new Error(std::string("mlx_forward_decode_step: missing tensor in ") + name);
+            }
+            return element_to_array(lisp, elem);
+        };
+
+        auto optional_array = [&](Element* list_elem, long idx, const char* name) -> std::optional<mx::array> {
+            Element* elem = list_value(list_elem, idx, name);
+            if (!has_value(elem)) {
+                return std::nullopt;
+            }
+            return element_to_array(lisp, elem);
+        };
+
+        auto linear = [&](const mx::array& x,
+                          Element* tuple_elem,
+                          long weight_idx,
+                          long scales_idx,
+                          long qb_idx,
+                          long bias_idx,
+                          bool with_bias) -> mx::array {
+            mx::array weight = required_array(tuple_elem, weight_idx, "layer tuple");
+            std::optional<mx::array> scales = optional_array(tuple_elem, scales_idx, "layer tuple");
+            std::optional<mx::array> quant_biases = optional_array(tuple_elem, qb_idx, "layer tuple");
+
+            mx::array out = scales.has_value()
+                ? mx::quantized_matmul(x, weight, *scales, quant_biases, true, 64, 8)
+                : mx::matmul(x, mx::transpose(weight));
+
+            if (with_bias) {
+                std::optional<mx::array> bias = optional_array(tuple_elem, bias_idx, "layer tuple");
+                if (bias.has_value()) {
+                    out = mx::add(out, *bias);
+                }
+            }
+            return out;
+        };
+
+        auto apply_rope = [&](mx::array x, const mx::array& freqs, int offset, int dims, float /*mscale*/) -> mx::array {
+            // mscale is now folded into the attention scale factor (mscale^2)
+            return mx::fast::rope(x, dims, false, std::nullopt, 1.0f, offset, freqs);
+        };
+
+        auto fused_moe_decode = [&](const mx::array& x,
+                                    Element* layer_elem,
+                                    const mx::array& router_t,
+                                    int experts_per_tok) -> mx::array {
+            int num_experts = router_t.shape()[1];
+            std::optional<mx::array> router_lb = optional_array(layer_elem, L_ROUTER_BIAS, "layer tuple");
+
+            mx::array gate_w = required_array(layer_elem, L_GATE_WEIGHT, "layer tuple");
+            mx::array gate_s = required_array(layer_elem, L_GATE_SCALES, "layer tuple");
+            std::optional<mx::array> gate_qb = optional_array(layer_elem, L_GATE_QBIASES, "layer tuple");
+            std::optional<mx::array> gate_lb = optional_array(layer_elem, L_GATE_BIAS, "layer tuple");
+
+            mx::array up_w = required_array(layer_elem, L_UP_WEIGHT, "layer tuple");
+            mx::array up_s = required_array(layer_elem, L_UP_SCALES, "layer tuple");
+            std::optional<mx::array> up_qb = optional_array(layer_elem, L_UP_QBIASES, "layer tuple");
+            std::optional<mx::array> up_lb = optional_array(layer_elem, L_UP_BIAS, "layer tuple");
+
+            mx::array down_w = required_array(layer_elem, L_DOWN_WEIGHT, "layer tuple");
+            mx::array down_s = required_array(layer_elem, L_DOWN_SCALES, "layer tuple");
+            std::optional<mx::array> down_qb = optional_array(layer_elem, L_DOWN_QBIASES, "layer tuple");
+            std::optional<mx::array> down_lb = optional_array(layer_elem, L_DOWN_BIAS, "layer tuple");
+
+            mx::array router_logits = mx::matmul(x, router_t);
+            if (router_lb.has_value()) {
+                router_logits = mx::add(router_logits, *router_lb);
+            }
+
+            mx::array partitioned_indices = mx::argpartition(router_logits, -experts_per_tok, -1);
+            int start_idx = num_experts - experts_per_tok;
+            mx::array expert_indices = mx::slice(partitioned_indices, {0, 0, start_idx}, {1, 1, num_experts});
+            mx::array expert_logits = mx::take_along_axis(router_logits, expert_indices, -1);
+            mx::array expert_weights = mx::softmax(expert_logits, -1);
+
+            mx::array grouped_x = mx::expand_dims(x, -2);
+            grouped_x = mx::expand_dims(grouped_x, -3);
+
+            mx::array gate_out = mx::gather_qmm(grouped_x, gate_w, gate_s, gate_qb, std::nullopt,
+                                                expert_indices, true, 64, 8, "affine", false);
+            if (gate_lb.has_value()) {
+                mx::array gathered_gate_bias = mx::take(*gate_lb, expert_indices, 0);
+                gate_out = mx::add(gate_out, mx::expand_dims(gathered_gate_bias, -2));
+            }
+
+            mx::array up_out = mx::gather_qmm(grouped_x, up_w, up_s, up_qb, std::nullopt,
+                                              expert_indices, true, 64, 8, "affine", false);
+            if (up_lb.has_value()) {
+                mx::array gathered_up_bias = mx::take(*up_lb, expert_indices, 0);
+                up_out = mx::add(up_out, mx::expand_dims(gathered_up_bias, -2));
+            }
+
+            mx::array hidden = compiled_swiglu_gpt_oss(gate_out, up_out,
+                mx::array(1.702f), mx::array(7.0f), mx::array(-7.0f), mx::array(1.0f));
+
+            mx::array expert_out = mx::gather_qmm(hidden, down_w, down_s, down_qb, std::nullopt,
+                                                  expert_indices, true, 64, 8, "affine", false);
+            if (down_lb.has_value()) {
+                mx::array gathered_down_bias = mx::take(*down_lb, expert_indices, 0);
+                expert_out = mx::add(expert_out, mx::expand_dims(gathered_down_bias, -2));
+            }
+
+            expert_out = mx::squeeze(expert_out, -2);
+            mx::array weighted_out = mx::multiply(expert_out, mx::expand_dims(expert_weights, -1));
+            return mx::sum(weighted_out, -2);
+        };
+
+        std::string layout = "gpt_oss_moe";
+        if (has_value(layout_elem)) {
+            std::wstring ws = layout_elem->asString(lisp);
+            layout = std::string(ws.begin(), ws.end());
+        }
+        if (layout != "gpt_oss_moe") {
+            throw new Error("mlx_forward_decode_step: unsupported layout '" + layout + "'");
+        }
+
+        mx::array input_ids = element_to_array(lisp, input_ids_elem);
+        auto input_shape = input_ids.shape();
+        if (input_shape.size() != 2 || input_shape[0] != 1 || input_shape[1] != 1) {
+            throw new Error("mlx_forward_decode_step: only B=1, L=1 is supported");
+        }
+
+        int offset = offset_elem->asInteger();
+        int experts_per_tok = experts_per_tok_elem->asInteger();
+        mx::array cached_embeddings = element_to_array(lisp, cached_embeddings_elem);
+        mx::array rope_freqs = element_to_array(lisp, rope_freqs_elem);
+        float yarn_mscale = yarn_mscale_elem->asFloat();
+
+        if (!layer_tensors_elem->isList() || !global_tensors_elem->isList() || !kv_caches_elem->isList() ||
+            !layer_types_elem->isList() || !cached_routers_elem->isList()) {
+            throw new Error("mlx_forward_decode_step: tensors, caches and layer metadata must be lists");
+        }
+
+        long num_layers = layer_tensors_elem->size();
+        if (kv_caches_elem->size() != num_layers || layer_types_elem->size() != num_layers ||
+            cached_routers_elem->size() != num_layers) {
+            throw new Error("mlx_forward_decode_step: inconsistent layer metadata sizes");
+        }
+
+        int n_heads = attn_params_elem->index(0)->asInteger();
+        int n_kv_heads = attn_params_elem->index(1)->asInteger();
+        int head_dim = attn_params_elem->index(2)->asInteger();
+        float scale = attn_params_elem->index(3)->asFloat();
+        float eps = attn_params_elem->index(4)->asFloat();
+        int hidden_out = attn_params_elem->index(6)->asInteger();
+        int hidden_size = cached_embeddings.shape()[1];
+
+        mx::array flat_ids = mx::reshape(input_ids, {1});
+        mx::array embeddings_flat = mx::take(cached_embeddings, flat_ids, 0);
+        mx::array hidden_states = mx::reshape(embeddings_flat, {1, 1, hidden_size});
+
+        for (long layer_idx = 0; layer_idx < num_layers; layer_idx++) {
+            Element* layer_elem = layer_tensors_elem->index(layer_idx);
+            long cache_id = kv_caches_elem->index(layer_idx)->asInteger();
+            KVNativeCache* cache = kv_get_native_cache(cache_id);
+            if (!cache) {
+                throw new Error("mlx_forward_decode_step: invalid kv cache handle");
+            }
+
+            mx::array input_norm = required_array(layer_elem, L_INPUT_NORM, "layer tuple");
+            mx::array normed_x = mx::fast::rms_norm(hidden_states, input_norm, eps);
+
+            mx::array queries = linear(normed_x, layer_elem, L_Q_WEIGHT, L_Q_SCALES, L_Q_QBIASES, L_Q_BIAS, true);
+            mx::array keys = linear(normed_x, layer_elem, L_K_WEIGHT, L_K_SCALES, L_K_QBIASES, L_K_BIAS, true);
+            mx::array values = linear(normed_x, layer_elem, L_V_WEIGHT, L_V_SCALES, L_V_QBIASES, L_V_BIAS, true);
+
+            queries = mx::transpose(mx::reshape(queries, {1, 1, n_heads, head_dim}), {0, 2, 1, 3});
+            keys = mx::transpose(mx::reshape(keys, {1, 1, n_kv_heads, head_dim}), {0, 2, 1, 3});
+            values = mx::transpose(mx::reshape(values, {1, 1, n_kv_heads, head_dim}), {0, 2, 1, 3});
+
+            queries = apply_rope(queries, rope_freqs, offset, head_dim, yarn_mscale);
+            keys = apply_rope(keys, rope_freqs, offset, head_dim, yarn_mscale);
+
+            std::optional<mx::array> sinks = optional_array(layer_elem, L_SINKS, "layer tuple");
+            cache->append(keys, values);
+            mx::array attention_output = cache->attention(queries, scale, "", sinks);
+            attention_output = mx::reshape(mx::transpose(attention_output, {0, 2, 1, 3}), {1, 1, hidden_out});
+            attention_output = linear(attention_output, layer_elem, L_O_WEIGHT, L_O_SCALES, L_O_QBIASES, L_O_BIAS, true);
+
+            mx::array h = mx::add(hidden_states, attention_output);
+            mx::array post_attn_norm = required_array(layer_elem, L_POST_ATTN_NORM, "layer tuple");
+            mx::array normed_h = mx::fast::rms_norm(h, post_attn_norm, eps);
+
+            mx::array router_t = element_to_array(lisp, cached_routers_elem->index(layer_idx));
+            mx::array mlp_output = fused_moe_decode(normed_h, layer_elem, router_t, experts_per_tok);
+            hidden_states = mx::add(h, mlp_output);
+        }
+
+        mx::array final_norm = required_array(global_tensors_elem, G_FINAL_NORM, "global tensors");
+        hidden_states = mx::fast::rms_norm(hidden_states, final_norm, eps);
+
+        mx::array lm_head_weight = required_array(global_tensors_elem, G_LM_HEAD_WEIGHT, "global tensors");
+        std::optional<mx::array> lm_head_scales = optional_array(global_tensors_elem, G_LM_HEAD_SCALES, "global tensors");
+        std::optional<mx::array> lm_head_qb = optional_array(global_tensors_elem, G_LM_HEAD_BIASES, "global tensors");
+        mx::array logits = lm_head_scales.has_value()
+            ? mx::quantized_matmul(hidden_states, lm_head_weight, *lm_head_scales, lm_head_qb, true, 64, 8)
+            : mx::matmul(hidden_states, mx::transpose(lm_head_weight));
+
+        return new MLXArray(std::move(logits));
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_forward_decode_step: " + std::string(e.what()));
+    }
+}
+
+ // ============================================================================
+// mlx_async_eval: Launch asynchronous evaluation of an MLX array
+// ============================================================================
+Element* Lispe_mlx_methods::method_async_eval(LispE* lisp) {
+    try {
+        Element* array_elem = lisp->get_variable(U"array");
+        if (array_elem->type != t_mlx_array) {
+            throw new Error("mlx_async_eval: Expected MLX array");
+        }
+
+        MLXArray* mlx_arr = static_cast<MLXArray*>(array_elem);
+        mx::array result = mlx_arr->array;
+        mx::async_eval(result);
+
+        return new MLXArray(std::move(result));
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_async_eval: " + std::string(e.what()));
     }
 }
 
@@ -8716,6 +10672,90 @@ Element* Lispe_mlx_methods::method_eval(LispE* lisp) {
         return new MLXArray(std::move(result));
     } catch (const std::exception& e) {
         throw new Error("Error in mlx_eval: " + std::string(e.what()));
+    }
+}
+
+// ============================================================================
+// Native MLX KV cache for incremental decode/prefill
+// ============================================================================
+// Signature: deflib mlx_kv_native_cache_create(batch_size num_heads head_dim max_size (sliding))
+Element* Lispe_mlx_methods::method_kv_native_cache_create(LispE* lisp) {
+    try {
+        int batch_size = lisp->get_variable(U"batch_size")->asInteger();
+        int num_heads = lisp->get_variable(U"num_heads")->asInteger();
+        int head_dim = lisp->get_variable(U"head_dim")->asInteger();
+        int max_size = lisp->get_variable(U"max_size")->asInteger();
+        Element* sliding_elem = lisp->get_variable(U"sliding");
+        bool sliding = (sliding_elem != null_ && sliding_elem->type != v_emptyatom) ? sliding_elem->Boolean() : false;
+
+        KVNativeCache* cache = new KVNativeCache(batch_size, num_heads, head_dim, max_size, sliding);
+        return lisp->provideInteger(kv_register_native_cache(cache));
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_native_cache_create: " + std::string(e.what()));
+    }
+}
+
+// Signature: deflib mlx_kv_native_cache_append(cache_id keys values)
+Element* Lispe_mlx_methods::method_kv_native_cache_append(LispE* lisp) {
+    try {
+        long cache_id = lisp->get_variable(U"cache_id")->asInteger();
+        KVNativeCache* cache = kv_get_native_cache(cache_id);
+        if (!cache) {
+            throw new Error("mlx_kv_native_cache_append: Invalid cache_id");
+        }
+
+        mx::array keys = element_to_array(lisp, lisp->get_variable(U"keys"));
+        mx::array values = element_to_array(lisp, lisp->get_variable(U"values"));
+        cache->append(keys, values);
+        return true_;
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_native_cache_append: " + std::string(e.what()));
+    }
+}
+
+// Signature: deflib mlx_kv_native_cache_attention(cache_id queries scale (mask_mode) (sinks))
+Element* Lispe_mlx_methods::method_kv_native_cache_attention(LispE* lisp) {
+    try {
+        long cache_id = lisp->get_variable(U"cache_id")->asInteger();
+        KVNativeCache* cache = kv_get_native_cache(cache_id);
+        if (!cache) {
+            throw new Error("mlx_kv_native_cache_attention: Invalid cache_id");
+        }
+
+        mx::array queries = element_to_array(lisp, lisp->get_variable(U"queries"));
+        float scale = lisp->get_variable(U"scale")->asNumber();
+
+        std::string mask_mode = "";
+        Element* mask_mode_elem = lisp->get_variable(U"mask_mode");
+        if (mask_mode_elem != null_ && mask_mode_elem->type != v_emptyatom) {
+            mask_mode = mask_mode_elem->toString(lisp);
+        }
+
+        std::optional<mx::array> sinks;
+        Element* sinks_elem = lisp->get_variable(U"sinks");
+        if (sinks_elem != null_ && sinks_elem->type != v_emptyatom) {
+            sinks = element_to_array(lisp, sinks_elem);
+        }
+
+        mx::array result = cache->attention(queries, scale, mask_mode, sinks);
+        return new MLXArray(std::move(result));
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_native_cache_attention: " + std::string(e.what()));
+    }
+}
+
+// Signature: deflib mlx_kv_native_cache_reset(cache_id)
+Element* Lispe_mlx_methods::method_kv_native_cache_reset(LispE* lisp) {
+    try {
+        long cache_id = lisp->get_variable(U"cache_id")->asInteger();
+        KVNativeCache* cache = kv_get_native_cache(cache_id);
+        if (!cache) {
+            throw new Error("mlx_kv_native_cache_reset: Invalid cache_id");
+        }
+        cache->reset();
+        return true_;
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_kv_native_cache_reset: " + std::string(e.what()));
     }
 }
 
@@ -9356,6 +11396,13 @@ Element* Lispe_mlx_methods::method_kv_cache_free(LispE* lisp) {
         Element* id_elem = lisp->get_variable(U"cache_id");
         long cache_id = id_elem->asInteger();
 
+        auto native_it = kv_native_caches.find(cache_id);
+        if (native_it != kv_native_caches.end()) {
+            delete native_it->second;
+            kv_native_caches.erase(native_it);
+            return true_;
+        }
+
         auto it = kv_compressed_caches.find(cache_id);
         if (it == kv_compressed_caches.end()) {
             return null_;
@@ -9896,6 +11943,9 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_partition(array kth (axis))",
                     new Lispe_mlx_methods(mlx_method_partition));
 
+    lisp->extension("deflib mlx_argpartition(array kth (axis))",
+                    new Lispe_mlx_methods(mlx_method_argpartition));
+
     // Group 17: FFT (Fourier Transforms)
     lisp->extension("deflib mlx_fft(array (n) (axis))",
                     new Lispe_mlx_methods(mlx_method_fft));
@@ -10164,13 +12214,43 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib mlx_fused_mlp(x gate_w gate_s gate_b up_w up_s up_b down_w down_s down_b (group_size 64) (bits 8))",
                     new Lispe_mlx_methods(mlx_method_fused_mlp));
 
+    lisp->extension("deflib mlx_fused_moe_router(x router_t (router_lb) gate_w gate_s gate_qb gate_lb up_w up_s up_qb up_lb down_w down_s down_qb down_lb num_experts experts_per_tok (group_size 64) (bits 8) (activation `swiglu`) (alpha 1.702) (limit 7.0))",
+                    new Lispe_mlx_methods(mlx_method_fused_moe_router));
+
     lisp->extension("deflib mlx_fused_moe(x expert_indices expert_weights gate_w gate_s gate_qb gate_lb up_w up_s up_qb up_lb down_w down_s down_qb down_lb num_experts experts_per_tok (group_size 64) (bits 8) (activation `swiglu`) (alpha 1.702) (limit 7.0))",
                     new Lispe_mlx_methods(mlx_method_fused_moe));
 
     lisp->extension("deflib mlx_fused_moe_batch(x expert_indices expert_weights gate_w gate_s gate_qb gate_lb up_w up_s up_qb up_lb down_w down_s down_qb down_lb num_experts experts_per_tok (group_size 64) (bits 8) (activation `swiglu`) (alpha 1.702) (limit 7.0))",
                     new Lispe_mlx_methods(mlx_method_fused_moe_batch));
 
+    lisp->extension("deflib mlx_decode_model_create(cached_embeddings rope_freqs yarn_mscale layer_tensors global_tensors attn_params cached_routers experts_per_tok (layout `gpt_oss_moe))",
+                    new Lispe_mlx_methods(mlx_method_decode_model_create));
+
+    lisp->extension("deflib mlx_decode_model_free(model_handle)",
+                    new Lispe_mlx_methods(mlx_method_decode_model_free));
+
+    lisp->extension("deflib mlx_decode_model_profile_start(model_handle)",
+                    new Lispe_mlx_methods(mlx_method_decode_model_profile_start));
+
+    lisp->extension("deflib mlx_decode_model_profile_report(model_handle)",
+                    new Lispe_mlx_methods(mlx_method_decode_model_profile_report));
+
+    lisp->extension("deflib mlx_forward_decode_step_model(model_handle input_ids offset kv_caches)",
+                    new Lispe_mlx_methods(mlx_method_forward_decode_step_model));
+
+    lisp->extension("deflib mlx_generate_loop(model_handle input_ids offset kv_caches max_tokens temperature eos_token)",
+                    new Lispe_mlx_methods(mlx_method_generate_loop));
+
+    lisp->extension("deflib mlx_generate_loop_v2(model_handle input_ids offset kv_caches max_tokens temperature eos_token)",
+                    new Lispe_mlx_methods(mlx_method_generate_loop_v2));
+
+    lisp->extension("deflib mlx_forward_decode_step(input_ids offset cached_embeddings rope_freqs yarn_mscale layer_tensors global_tensors attn_params kv_caches layer_types cached_routers experts_per_tok (layout `gpt_oss_moe))",
+                    new Lispe_mlx_methods(mlx_method_forward_decode_step));
+
     // Group 30: Explicit evaluation
+    lisp->extension("deflib mlx_async_eval(array)",
+                    new Lispe_mlx_methods(mlx_method_async_eval));
+
     lisp->extension("deflib mlx_eval(array)",
                     new Lispe_mlx_methods(mlx_method_eval));
 
@@ -10179,6 +12259,18 @@ Exporting bool InitialisationModule(LispE* lisp) {
                     new Lispe_mlx_methods(mlx_method_tolist));
 
     // Group 32: KV-Cache XOR delta compression
+    lisp->extension("deflib mlx_kv_native_cache_create(batch_size num_heads head_dim max_size (sliding))",
+                    new Lispe_mlx_methods(mlx_method_kv_native_cache_create));
+
+    lisp->extension("deflib mlx_kv_native_cache_append(cache_id keys values)",
+                    new Lispe_mlx_methods(mlx_method_kv_native_cache_append));
+
+    lisp->extension("deflib mlx_kv_native_cache_attention(cache_id queries scale (mask_mode) (sinks))",
+                    new Lispe_mlx_methods(mlx_method_kv_native_cache_attention));
+
+    lisp->extension("deflib mlx_kv_native_cache_reset(cache_id)",
+                    new Lispe_mlx_methods(mlx_method_kv_native_cache_reset));
+
     lisp->extension("deflib mlx_kv_cache_push(cache_id tensor is_keys)",
                     new Lispe_mlx_methods(mlx_method_kv_cache_push));
 

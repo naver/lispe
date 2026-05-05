@@ -31,7 +31,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.4.27.11.49";
+static std::string version = "1.2026.5.5.13.58";
 string LispVersion() {
     return version;
 }
@@ -1311,7 +1311,24 @@ void Delegation::initialisation(LispE* lisp) {
     number_types.push(t_tensor_float);
     number_types.push(t_seti);
     number_types.push(t_setn);
+
+#ifdef WIN32
+        u_ustring end_path = U"\\";
+#else
+        u_ustring end_path = U"/";
+#endif
+
+    w = U"_sep";
+    e = lisp->provideConststring(end_path);
+    lisp->storing_variable(e, encode(w));
+
+    w = U"_version";
+    end_path = U"";
+    for (long i = 0; i < version.size(); i++)
+        end_path += (u_uchar)version[i];
     
+    e = lisp->provideConststring(end_path);
+    lisp->storing_variable(e, encode(w));
 }
 
 void LispE::cleaning() {
@@ -3766,18 +3783,9 @@ void LispE::current_path() {
         execution_stack.back()->storing_variable(e, encode(nom));
         e->release();
         
-        nom = U"_sep";
-        e = provideString(end_path);
-        execution_stack.back()->storing_variable(e, encode(nom));
-        e->release();
     }
     
-    nom = U"_version";
-    spath = LispVersion();
-    e = provideString(spath);
-    execution_stack.back()->storing_variable(e, encode(nom));
-    e->release();
-	current_path_set = true;
+    current_path_set = true;
 }
 
 Element* LispE::size() {
@@ -3830,4 +3838,5 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
 

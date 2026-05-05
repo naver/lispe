@@ -5,82 +5,121 @@
     <meta charset="utf-8">
     <title>LispE</title>
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .buttons {
+            flex-shrink: 0;
+            padding: 5px 0;
+        }
+
+        .codeRow {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            min-height: 0;
+            gap: 10px;
+            padding: 5px 0;
+        }
+
         .textAreaCode {
-            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
 
-        .textAreaCode div {
-            width: 1500px;
-            height: 500px;
-        }
-
-        .textAreaCode div span {
+        .textAreaCode span {
             display: block;
             text-align: center;
+            flex-shrink: 0;
         }
 
-        .textAreaCode div textarea {
-            min-width: 1500px;
-            min-height: 450px;
+        .textAreaCode textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            resize: none;
+            box-sizing: border-box;
         }
 
         .textAreaColumn {
-            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding: 5px 0;
         }
 
-        .textAreaColumn div {
-            float: left;
-            padding: 10px;
-            height: 400px;
-            width: 734px;
-        }
-
-        .textAreaColumn div span {
+        .textAreaColumn span {
             display: block;
             text-align: center;
+            flex-shrink: 0;
         }
 
-        .textAreaColumn div textarea {
+        .textAreaColumn textarea {
+            flex: 1;
             width: 100%;
-            min-height: 400px;
+            min-height: 0;
+            resize: none;
+            box-sizing: border-box;
         }
     </style>
 </head>
 
 <body>
-    <div>
+    <div class="buttons">
         <input type="button" value="RESET/RUN" OnClick="reset_run_code()" id="button_reset_run" />
-        <input type="button" value="RESET" OnClick="reset_code()" id="button_reset" />
         <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
-        <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />        
-        <input type="file" id="file-selector" accept=".lisp">
+        <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
+        <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
+        <input type="button" value="Python" OnClick="run_python()" id="button_python" />
+        <select id="example_selector" onchange="load_example()">
+            <option value="fizzbuzz">Fizzbuzz</option>
+            <option value="normal_distribution">Normal Distribution</option>
+            <option value="gradient_descent">Gradient Descent</option>
+            <option value="cosine_distance">Cosine Distance</option>
+            <option value="python_factorial">Python Factorial</option>
+        </select>
     </div>
-    <div class="textAreaCode">
-        <div>
+    <div class="codeRow">
+        <div class="textAreaCode">
             <span>Code</span>
-            <textarea type="text" name="code" id="get_code"></textarea>
+            <textarea name="code" id="get_code">; You can call a function in the pattern definition of the function
+(defun checking (x y) (eq 0 (% y x)))
+
+; the argument should be an integer, whose value is a multiple of 15
+; The argument is stored in x
+(defpat fizzbuzz ((integer_ (checking 15 x))) 'fizzbuzz)
+(defpat fizzbuzz ((integer_ (checking 3 x))) 'fizz)
+(defpat fizzbuzz ((integer_ (checking 5 x))) 'buzz)
+(defpat fizzbuzz (x) x)
+(println _version)
+(mapcar 'fizzbuzz (range 1 100 1))</textarea>
         </div>
-    </div>
-    <div>
-        <input type="button" value="Clear Texts" OnClick="clear_code()" id="button_clear" />
-        <input type="button" value="As a list of strings" OnClick="run_code_to_strings()" id="button_run_string" />
-        <input type="button" value="As a list of integers" OnClick="run_code_to_ints()" id="button_run_int" />
-        <input type="button" value="As a list of floats" OnClick="run_code_to_floats()" id="button_run_float" />
+        <div class="textAreaCode">
+            <span>Transpilation</span>
+            <textarea name="transpilation" id="display_transpilation" readonly></textarea>
+        </div>
     </div>
     <div class="textAreaColumn">
-        <div>
-            <span>OUTPUT</span>
-            <textarea type="text" name="evaluated" id="display_evaluation"></textarea>
-        </div>
-        <div>
-            <span>DATA (Create a "DATA" variable with the content of the window below)</span>
-            <textarea type="text" name="data" id="set_data"></textarea>
-        </div>
-    </div>    
+        <span>OUTPUT</span>
+        <textarea name="evaluated" id="display_evaluation"></textarea>
+    </div>
     <!-- We load our WASM library -->
     <script type="text/javascript">
-        //The initialisation below makes it possible to catch the print and println in your LispE code
-        //It automatically stores in 'display_evaluation' textarea the values that printed
+        // The initialisation below makes it possible to catch the print and println in your LispE code.
+        // It automatically stores in 'display_evaluation' textarea the values that are printed.
         var Module = {
             preRun: [],
             postRun: [],
@@ -88,7 +127,7 @@
                 var element = document.getElementById('display_evaluation');
                 if (element) element.value = '';
                 return function (text) {
-                    if (arguments.length > 1) 
+                    if (arguments.length > 1)
                         text = Array.prototype.slice.call(arguments).join(' ');
                     if (element) {
                         element.value += text + "\n";
@@ -113,47 +152,23 @@
                     }
                 };
             })()
-        };</script>
-    <script async type="text/javascript" src="lispe.js"></script>
-    <script async type="text/javascript" src="lispe_functions.js"></script>
-
-    <script>        
-        const fileSelector = document.getElementById('file-selector');
-        fileSelector.addEventListener('change', (event) => {
-            const fileList = event.target.files;
-            var selectedFile = fileList[0];
-            var content = document.getElementById('get_code');
-            var reader = new FileReader();
-            reader.onload = function (event) { content.innerHTML = reader.result; };
-            reader.readAsText(selectedFile);
-        });
+        };
     </script>
+    <script type="text/javascript" src="lispe.js"></script>
+    <script type="text/javascript" src="lispe_functions.js"></script>
+    <script type="text/javascript" src="basic_string.js"></script>
+    <script type="text/javascript" src="transpiler_string.js"></script>
 
     <script type="text/javascript">
 
-        textFontSize = 14 + "px"
-        buttonHeight = 50 + "px";
-        buttonWidth = 130 + "px";
-        buttonFont = 12 + "px";
+        var textFontSize = 14 + "px";
+        var buttonHeight = 50 + "px";
+        var buttonWidth = 130 + "px";
+        var buttonFont = 12 + "px";
 
         document.getElementById('get_code').style.fontSize = textFontSize;
-        document.getElementById('set_data').style.fontSize = textFontSize;
+        document.getElementById('display_transpilation').style.fontSize = textFontSize;
         document.getElementById('display_evaluation').style.fontSize = textFontSize;
-
-        document.getElementById('button_run_string').style.height = buttonHeight;
-        document.getElementById('button_run_string').style.width = buttonWidth;
-        document.getElementById("button_run_string").style.fontWeight = "bolder";
-        document.getElementById('button_run_string').style.fontSize = buttonFont;
-
-        document.getElementById('button_run_int').style.height = buttonHeight;
-        document.getElementById('button_run_int').style.width = buttonWidth;
-        document.getElementById("button_run_int").style.fontWeight = "bolder";
-        document.getElementById('button_run_int').style.fontSize = buttonFont;
-
-        document.getElementById('button_run_float').style.height = buttonHeight;
-        document.getElementById('button_run_float').style.width = buttonWidth;
-        document.getElementById("button_run_float").style.fontWeight = "bolder";
-        document.getElementById('button_run_float').style.fontSize = buttonFont;
 
         document.getElementById('button_run').style.height = buttonHeight;
         document.getElementById('button_run').style.width = buttonWidth;
@@ -170,51 +185,180 @@
         document.getElementById('button_indent').style.width = buttonWidth;
         document.getElementById('button_indent').style.fontSize = buttonFont;
 
-        document.getElementById('button_reset').style.height = buttonHeight;
-        document.getElementById('button_reset').style.width = buttonWidth;
-        document.getElementById('button_reset').style.fontSize = buttonFont;
+        document.getElementById('button_clear_output').style.height = buttonHeight;
+        document.getElementById('button_clear_output').style.width = buttonWidth;
+        document.getElementById('button_clear_output').style.fontSize = buttonFont;
 
-        document.getElementById('button_clear').style.height = buttonHeight;
-        document.getElementById('button_clear').style.width = buttonWidth;
-        document.getElementById('button_clear').style.fontSize = buttonFont;
+        document.getElementById('button_python').style.height = buttonHeight;
+        document.getElementById('button_python').style.width = buttonWidth;
+        document.getElementById('button_python').style.fontSize = buttonFont;
+        document.getElementById('button_python').style.fontWeight = "bolder";
+        document.getElementById('button_python').style.color = "blue";
 
+        document.getElementById('example_selector').style.height = buttonHeight;
+        document.getElementById('example_selector').style.fontSize = buttonFont;
+
+        // ------------------------------------------------------------------
+        // Examples
+        // ------------------------------------------------------------------
+        var examples = {
+            fizzbuzz: `; You can call a function in the pattern definition of the function
+(defun checking (x y) (eq 0 (% y x)))
+
+; the argument should be an integer, whose value is a multiple of 15
+; The argument is stored in x
+(defpat fizzbuzz ((integer_ (checking 15 x))) 'fizzbuzz)
+(defpat fizzbuzz ((integer_ (checking 3 x))) 'fizz)
+(defpat fizzbuzz ((integer_ (checking 5 x))) 'buzz)
+(defpat fizzbuzz (x) x)
+(println _version)
+(mapcar 'fizzbuzz (range 1 100 1))`,
+
+            normal_distribution: `(normal_distribution 100)`,
+
+            gradient_descent: `(setq X (rho 20 3 (numbers 1 0.72 0.32 1 0.75 0.12 1 0.53 0.65 1 0.27 0.82 1 0.49 0.15 1 0.02 0.19 1 0.35 0.87 1 0.99 0.71 1 0.98 0.92 1 0.73 0.19 1 0.72 0.32 1 0.75 0.12 1 0.53 0.65 1 0.27 0.82 1 0.49 0.15 1 0.02 0.19 1 0.35 0.87 1 0.99 0.71 1 0.98 0.92 1 0.73 0.19)))
+(setq Y (numbers 6.93 5.99 1.46 1.44 4.51 1.25 2.53 6.88 6.25 6.36 6.93 5.99 1.46 1.44 4.51 1.25 2.53 6.88 6.25 6.36))
+
+
+(setq \u03B7 0.5)
+
+(defun descent(a loss)
+   (lloop (x y) X Y
+      (setq v (\u2022 y - (sum (\u2022 a * x))))
+      (setq deriv (maplist (\u03BB(xx) (\u2022 (sign xx) * v)) x))
+      (setq a (- a (* deriv \u03B7)))
+      (setq Loss (sum (zipwith (\u03BB(x y) (\u2022 (\u2022 y - (sum (\u2022  a * x))) ^^ 2)) X Y)))
+      (if (< Loss loss)
+         (return (list a Loss))
+      )
+   )
+)
+
+(setq a (numbers 0.1 0.1 0.1))
+(setq loss (sum (zipwith (\u03BB(x y) (\u2022 (\u2022 y - (sum (\u2022 a * x))) ^^ 2)) X Y)))
+(setq r (list a loss))
+(setq tm
+   (elapse
+      (loop iter (range 0 1000 1)
+         (setq v (descent (@ r 0) (@ r 1)))
+         (if (nullp v)
+            (break)
+            (setq r v)
+         )
+      )
+   )
+)
+
+(println "Weight Loss Iterations" (@ r 0) (@ r 1) iter)
+(println "Time:" tm)`,
+
+            cosine_distance: `(link "\u2211" 'sum)
+(link "\u221A" 'sqrt)
+(defmacro \u220F(v vv) (zipwith '* v vv))
+
+; dot product: sum of the product of two vectors
+; note that zipwith will apply * to each element of v1 with v2
+(defun dot(v1 v2)
+   (\u2211 (* v1 v2))
+)
+
+; norm: \u221A\u2211(x\u00B2)
+(defun norm(v)
+   (\u221A (\u2211 (* v v)))
+)
+
+; cosine distance: (v1 . v2) / \u220F(norm(v1) norm(v2))
+(defun cosine(v1 v2)
+   (maybe
+      (/
+         (dot v1 v2)
+         (* (norm v1) (norm v2))
+      )
+      0
+   )
+)
+
+
+(cosine '(1 2 3) '(4 5 6))`,
+
+            python_factorial: `def fact(x):
+    if x == 1:
+        return 1
+    else:
+        return x*fact(x-1)
+
+print(fact(7))
+`
+        };
+
+        // ------------------------------------------------------------------
+        // Load selected example into the editor
+        // ------------------------------------------------------------------
+        function load_example() {
+            var selector = document.getElementById('example_selector');
+            var selected = selector.value;
+            var code_text = document.getElementById('get_code');
+            code_text.value = examples[selected];
+            document.getElementById('display_evaluation').value = "";
+            document.getElementById('display_transpilation').value = "";
+            try {
+                callResetLispE(0);
+            } catch (e) {
+                appendOutput("Reset error: " + e);
+                return;
+            }
+            lastposition = 0;
+
+            // For normal_distribution, use callEvalLispEToFloats
+            if (selected === "normal_distribution") {
+                try {
+                    var floats = callEvalLispEToFloats(0, code_text.value);
+                    appendOutput(floats.join(" "));
+                } catch (e) {
+                    appendOutput("Error: " + e);
+                }
+            } else if (selected === "python_factorial") {
+                run_python();
+            } else {
+                run_code();
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // State
+        // ------------------------------------------------------------------
+        // Index of the secondary LispE interpreter dedicated to the Python
+        // transpiler. -1 until the runtime is initialised.
+        var pythonInterpreterIdx = -1;
         var lastposition = 0;
-        //The next two modules were found on: https://www.vishalon.net/blog/javascript-getting-and-setting-caret-position-in-textarea
 
+
+        // ------------------------------------------------------------------
+        // Caret helpers
+        // (from https://www.vishalon.net/blog/javascript-getting-and-setting-caret-position-in-textarea)
+        // ------------------------------------------------------------------
         function getCaretPosition(ctrl) {
-            // IE < 9 Support
+            // IE < 9
             if (document.selection) {
                 ctrl.focus();
                 var range = document.selection.createRange();
                 var rangelen = range.text.length;
                 range.moveStart('character', -ctrl.value.length);
                 var start = range.text.length - rangelen;
-                return {
-                    'start': start,
-                    'end': start + rangelen
-                };
-            } // IE >=9 and other browsers
-            else if (ctrl.selectionStart || ctrl.selectionStart == '0') {
-                return {
-                    'start': ctrl.selectionStart,
-                    'end': ctrl.selectionEnd
-                };
-            } else {
-                return {
-                    'start': 0,
-                    'end': 0
-                };
+                return { 'start': start, 'end': start + rangelen };
             }
+            // IE >= 9 and other browsers
+            else if (ctrl.selectionStart || ctrl.selectionStart == '0') {
+                return { 'start': ctrl.selectionStart, 'end': ctrl.selectionEnd };
+            }
+            return { 'start': 0, 'end': 0 };
         }
 
         function setCaretPosition(ctrl, start, end) {
-            // IE >= 9 and other browsers
             if (ctrl.setSelectionRange) {
                 ctrl.focus();
                 ctrl.setSelectionRange(start, end);
-            }
-            // IE < 9
-            else if (ctrl.createTextRange) {
+            } else if (ctrl.createTextRange) {
                 var range = ctrl.createTextRange();
                 range.collapse(true);
                 range.moveEnd('character', end);
@@ -223,41 +367,47 @@
             }
         }
 
-        //We create a DATA variable with the content of the set_data textarea
-        //This is equivalent to: (setq DATA ...)
-        //This method is systematically called before any execution to reset DATA with the right values
-        function set_data() {
-            var code_data = document.getElementById('set_data');
-            callSetqString(0, "DATA", code_data.value);
+        // ------------------------------------------------------------------
+        // Output helper
+        // ------------------------------------------------------------------
+        function appendOutput(text) {
+            var eval_output = document.getElementById('display_evaluation');
+            eval_output.value += text + "\n";
+            eval_output.scrollTop = eval_output.scrollHeight;
         }
 
-        //Execution of the code from the beginning of the window
+        // ------------------------------------------------------------------
+        // Run all the code in the editor.
+        // ------------------------------------------------------------------
         function run_code() {
             var code_text = document.getElementById('get_code');
             var res;
-            set_data();
             try {
                 res = callEvalLispE(0, code_text.value);
-            }
-            catch (e) {
+            } catch (e) {
                 res = e;
             }
-            lastposition = code_text.value.length
-            let eval_output = document.getElementById('display_evaluation')
-            eval_output.value += res + "\n";
-            eval_output.scrollTop = eval_output.scrollHeight;
-        };
-
-        function indentation_code() {
-            var code_text = document.getElementById('get_code');
-            var res = callIndent(code_text.value);
-            code_text.value = res;
+            lastposition = code_text.value.length;
+            appendOutput(res);
         }
 
-        //The code is executed from the cursor position
-        function run_code_from() {
-            //We execute our code
+        // ------------------------------------------------------------------
+        // Indent the code in the editor.
+        // ------------------------------------------------------------------
+        function indentation_code() {
+            var code_text = document.getElementById('get_code');
+            try {
+                code_text.value = callIndent(code_text.value);
+            } catch (e) {
+                appendOutput("Indentation error: " + e);
+            }
+        }
 
+        // ------------------------------------------------------------------
+        // Run only the code typed since the last evaluation, starting from
+        // the caret's previously remembered position.
+        // ------------------------------------------------------------------
+        function run_code_from() {
             var txt = document.getElementById('get_code');
 
             var carret = getCaretPosition(txt);
@@ -265,153 +415,82 @@
                 lastposition = carret["start"];
             setCaretPosition(txt, lastposition, txt.value.length);
 
-            var code = txt.value.substring(lastposition)
+            var code = txt.value.substring(lastposition);
             lastposition = txt.value.length;
+
             var res;
-            set_data();
             try {
                 res = callEvalLispE(0, code);
-            }
-            catch (e) {
+            } catch (e) {
                 res = e;
             }
+            appendOutput(res);
+        }
 
-            let eval_output = document.getElementById('display_evaluation')
-            eval_output.value += res + "\n";
-            eval_output.scrollTop = eval_output.scrollHeight;
-        };
-
-        //How to initialize a variable with an array of ints
-        function setq_ints() {
-
-            var ints = new Int32Array(10);
-            for (var i = 0; i < 10; i++) {
-                ints[i] = i * 2;
-            }
-            //We store our floats into the variable "myfloats"
-            var res;
-            set_data();
-            try {
-                res = callSetqInts(0, "myInts", ints, 10);
-            }
-            catch (e) {
-                res = e;
-            }
-            let eval_output = document.getElementById('display_evaluation')
-            eval_output.value += ints + "\nCreated 'myInts'\n";
-            eval_output.scrollTop = eval_output.scrollHeight;
-        };
-
-        //How to initialize a variable with an array of floats
-        function setq_floats() {
-            var floats = new Float64Array(10);
-            for (var i = 0; i < 10; i++) {
-                floats[i] = i + 1.21;
-            }
-
-            //We store our floats into the variable "myfloats"
-            var res;
-            set_data();
-            try {
-                res = callSetqFloats(0, "myFloats", floats, 10);
-            }
-            catch (e) {
-                res = e;
-            }
-            let eval_output = document.getElementById('display_evaluation')
-            eval_output.value += floats + "\nCreated 'myFloats'\n";
-            eval_output.scrollTop = eval_output.scrollHeight;
-        };
-
-        function run_code_to_strings() {
-            //We execute our code
-            var txt = document.getElementById('get_code');
-
-            var carret = getCaretPosition(txt);
-            if (carret["start"] < lastposition)
-                lastposition = carret["start"];
-            setCaretPosition(txt, lastposition, txt.value.length);
-
-            var code = txt.value.substring(lastposition)
-            lastposition = txt.value.length;
-            set_data();
-            var res = callEvalLispEToStrings(0, code);
-
-            let eval_output = document.getElementById('display_evaluation')
-            eval_output.value += res + "\n";
-            eval_output.scrollTop = eval_output.scrollHeight;
-        };
-
-        function run_code_to_ints() {
-            //We execute our code
-            var txt = document.getElementById('get_code');
-
-            var carret = getCaretPosition(txt);
-            if (carret["start"] < lastposition)
-                lastposition = carret["start"];
-            setCaretPosition(txt, lastposition, txt.value.length);
-
-            var code = txt.value.substring(lastposition)
-            lastposition = txt.value.length
-            var res;
-            set_data();
-            try {
-                res = callEvalLispEToInts(0, code);
-            }
-            catch (e) {
-                res = e;
-            }
-            let eval_output = document.getElementById('display_evaluation')
-            eval_output.value += res + "\n";
-            eval_output.scrollTop = eval_output.scrollHeight;
-        };
-
-        function run_code_to_floats() {
-            //We execute our code
-            var txt = document.getElementById('get_code');
-
-            var carret = getCaretPosition(txt);
-            if (carret["start"] < lastposition)
-                lastposition = carret["start"];
-            setCaretPosition(txt, lastposition, txt.value.length);
-
-            var code = txt.value.substring(lastposition)
-            lastposition = txt.value.length
-            var res;
-            set_data();
-            try {
-                res = callEvalLispEToFloats(0, code);
-            }
-            catch (e) {
-                res = e;
-            }
-
-            let eval_output = document.getElementById('display_evaluation')
-            eval_output.value += res + "\n";
-            eval_output.scrollTop = eval_output.scrollHeight;
-        };
-
+        // ------------------------------------------------------------------
+        // Reset the main interpreter and run the editor's code from scratch.
+        // ------------------------------------------------------------------
         function reset_run_code() {
-            //We reset our code
-            callResetLispE(0);
+            document.getElementById('display_evaluation').value = "";
+            try {
+                callResetLispE(0);
+            } catch (e) {
+                appendOutput("Reset error: " + e);
+                return;
+            }
             run_code();
-        };
+        }
 
-        function reset_code() {
-            //We reset our code
+        // ------------------------------------------------------------------
+        // Clear all editor and output panels.
+        // ------------------------------------------------------------------
+        function clear_output() {
+            document.getElementById('display_evaluation').value = "";
+            document.getElementById('display_transpilation').value = "";
+            document.getElementById('get_code').value = "";
+        }
 
-            var res = callResetLispE();
-            document.getElementById('display_evaluation').value = ""
-            lastposition = 0
-        };
+        // ------------------------------------------------------------------
+        // Transpile the editor's content (assumed Python) into LispE using
+        // the dedicated transpiler interpreter, then evaluate it in the main
+        // interpreter (idx=0).
+        // ------------------------------------------------------------------
+        function run_python() {
+            if (pythonInterpreterIdx < 0) {
+                try {
+                    pythonInterpreterIdx = callCreateLispE();
+                    callEvalLispE(pythonInterpreterIdx, basic_code);
+                    callEvalLispE(pythonInterpreterIdx, transpiler_code);
+                } catch (e) {
+                    console.error("Failed to initialise Python transpiler:", e);
+                    return;
+                }
+            }
 
-        function clear_code() {
-            //We reset our code
-            document.getElementById('get_code').value = ""
-            document.getElementById('display_evaluation').value = ""
-            document.getElementById('set_data').value = ""
-            lastposition = 0
-        };
+            var code_text = document.getElementById('get_code').value;
+            var transpilation_output = document.getElementById('display_transpilation');
+            var eval_output = document.getElementById('display_evaluation');
+            transpilation_output.value = "";
+            eval_output.value = "";
+
+            try {
+                var transpiled = callEvalLispE(
+                    pythonInterpreterIdx,
+                    '(compilepython «' + code_text + '»)'
+                );
+                transpilation_output.value = transpiled;
+
+                if (transpiled.indexOf('ERROR>>>') === -1) {
+                    callResetLispE(0);
+                    var res = callEvalLispE(0, transpiled);
+                    appendOutput(res);
+                } else {
+                    eval_output.value = "Transpilation error detected.\n" + transpiled;
+                }
+            } catch (e) {
+                appendOutput("Error: " + e);
+            }
+        }
 
     </script>
 </body>
