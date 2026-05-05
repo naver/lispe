@@ -137,6 +137,7 @@
             <option value="gradient_descent">Gradient Descent</option>
             <option value="cosine_distance">Cosine Distance</option>
             <option value="segmentation">Segmentation</option>
+            <option value="tokenizer">Tokenizer</option>
             <option value="minizork">Mini Zork</option>
             <option value="python_factorial">Python Factorial</option>
         </select>
@@ -346,7 +347,33 @@ print(fact(7))
 
             segmentation: `; You can return your result as a JavaScript string array
 ; segment splits a string into tokens
-(segment "LispE WebAssembly (Lisp Elémentaire) proposes a different approach. A single binary of approximately 3.5 MB (3.3 MB for the WASM core plus the supporting JavaScript files lispe.js and lispe_functions.js) provides more than 450 native functions covering text processing, statistical computation, pattern matching, regular expressions, linear algebra, date manipulation, and much more. One file. One author. One coherent design. No transitive dependencies. LispE는 한국어 형태소 분석 방법도 제공합니다.")`
+(segment "LispE WebAssembly (Lisp Elémentaire) proposes a different approach. A single binary of approximately 3.5 MB (3.3 MB for the WASM core plus the supporting JavaScript files lispe.js and lispe_functions.js) provides more than 450 native functions covering text processing, statistical computation, pattern matching, regular expressions, linear algebra, date manipulation, and much more. One file. One author. One coherent design. No transitive dependencies. LispE는 한국어 형태소 분석 방법도 제공합니다.")`,
+
+            tokenizer: `; We need first a rule tokenizer handler
+; which we apply to a string
+(tokenize (tokenizer) «(link "∑" 'sum)
+(link "√" 'sqrt)
+(defmacro ∏(v vv) (zipwith '* v vv))
+
+(defun dot(v1 v2)
+   (∑ (* v1 v2))
+)
+
+(defun norm(v)
+   (√ (∑ (* v v)))
+)
+
+(defun cosine_distance(v1 v2)
+   (maybe
+      (/
+         (dot v1 v2)
+         (* (norm v1) (norm v2))
+      )
+      0
+   )
+)
+
+(cosine_distance '(1 2 3) '(4 5 6))»)`
         };
 
         // ------------------------------------------------------------------
@@ -379,6 +406,14 @@ print(fact(7))
             } else if (selected === "python_factorial") {
                 run_python();
             } else if (selected === "segmentation") {
+                try {
+                    var strings = callEvalLispEToStrings(0, code_text.value);
+                    var numbered = strings.map(function(s, i) { return (i + 1) + ": " + s; });
+                    appendOutput(numbered.join("\n"));
+                } catch (e) {
+                    appendOutput("Error: " + e);
+                }
+            } else if (selected === "tokenizer") {
                 try {
                     var strings = callEvalLispEToStrings(0, code_text.value);
                     var numbered = strings.map(function(s, i) { return (i + 1) + ": " + s; });
@@ -515,7 +550,6 @@ print(fact(7))
         function clear_output() {
             document.getElementById('display_evaluation').value = "";
             document.getElementById('display_transpilation').value = "";
-            document.getElementById('get_code').value = "";
         }
 
         // ------------------------------------------------------------------
