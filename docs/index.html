@@ -130,6 +130,7 @@
         <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
         <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
         <input type="button" value="Python" OnClick="run_python()" id="button_python" />
+        <span style="color: red; font-style: italic; vertical-align: middle; margin-right: 10px;">Choose an example to try LispE:</span>
         <select id="example_selector" onchange="load_example()">
             <option value="fizzbuzz">Fizzbuzz</option>
             <option value="normal_distribution">Normal Distribution</option>
@@ -263,7 +264,8 @@
 (println _version)
 (mapcar 'fizzbuzz (range 1 100 1))`,
 
-            normal_distribution: `(normal_distribution 100)`,
+            normal_distribution: `; You can return your result as a JavaScript Float64Array
+(normal_distribution 100)`,
 
             gradient_descent: `(setq X (rho 20 3 (numbers 1 0.72 0.32 1 0.75 0.12 1 0.53 0.65 1 0.27 0.82 1 0.49 0.15 1 0.02 0.19 1 0.35 0.87 1 0.99 0.71 1 0.98 0.92 1 0.73 0.19 1 0.72 0.32 1 0.75 0.12 1 0.53 0.65 1 0.27 0.82 1 0.49 0.15 1 0.02 0.19 1 0.35 0.87 1 0.99 0.71 1 0.98 0.92 1 0.73 0.19)))
 (setq Y (numbers 6.93 5.99 1.46 1.44 4.51 1.25 2.53 6.88 6.25 6.36 6.93 5.99 1.46 1.44 4.51 1.25 2.53 6.88 6.25 6.36))
