@@ -127,10 +127,7 @@
     <div class="buttons">
         <input type="button" value="RESET/RUN" OnClick="reset_run_code()" id="button_reset_run" />
         <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
-        <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
-        <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
         <input type="button" value="Python" OnClick="run_python()" id="button_python" />
-        <span style="color: red; font-style: italic; vertical-align: middle; margin-right: 10px;">Choose an example to try LispE:</span>
         <select id="example_selector" onchange="load_example()">
             <option value="fizzbuzz">Fizzbuzz</option>
             <option value="normal_distribution">Normal Distribution</option>
@@ -158,10 +155,18 @@
 (defpat fizzbuzz (x) x)
 (mapcar 'fizzbuzz (range 1 100 1))</textarea>
             </div>
+            <div style="padding: 5px 0;">
+                <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
+                <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
+                <input type="button" value="Documentation" onclick="window.open('https://github.com/naver/lispe/wiki/Index-of-functions', '_blank')" id="button_documentation" />
+            </div>
         </div>
         <div class="textAreaCode">
             <span>Transpilation</span>
             <textarea name="transpilation" id="display_transpilation" readonly></textarea>
+            <div style="padding: 5px 0; visibility: hidden;">
+                <input type="button" value="Indent" style="height:30px;width:80px;" />
+            </div>
         </div>
     </div>
     <div class="textAreaColumn">
@@ -234,12 +239,12 @@
         document.getElementById("button_reset_run").style.color = "red";
         document.getElementById('button_reset_run').style.fontSize = buttonFont;
 
-        document.getElementById('button_indent').style.height = buttonHeight;
-        document.getElementById('button_indent').style.width = buttonWidth;
+        document.getElementById('button_indent').style.height = "30px";
+        document.getElementById('button_indent').style.width = "80px";
         document.getElementById('button_indent').style.fontSize = buttonFont;
 
-        document.getElementById('button_clear_output').style.height = buttonHeight;
-        document.getElementById('button_clear_output').style.width = buttonWidth;
+        document.getElementById('button_clear_output').style.height = "30px";
+        document.getElementById('button_clear_output').style.width = "80px";
         document.getElementById('button_clear_output').style.fontSize = buttonFont;
 
         document.getElementById('button_python').style.height = buttonHeight;
@@ -250,6 +255,19 @@
 
         document.getElementById('example_selector').style.height = buttonHeight;
         document.getElementById('example_selector').style.fontSize = buttonFont;
+        document.getElementById('example_selector').style.fontWeight = "bolder";
+        document.getElementById('example_selector').style.fontStyle = "italic"
+        document.getElementById('example_selector').style.color = "red";
+        document.getElementById('example_selector').style.boxShadow = "3px 3px 6px rgba(0,0,0,0.3)";
+        document.getElementById('example_selector').style.border = "2px solid #003366";
+        document.getElementById('example_selector').style.borderRadius = "5px";
+        document.getElementById('example_selector').style.padding = "5px 10px";
+        document.getElementById('example_selector').style.backgroundColor = "#e0e0e0";
+
+        document.getElementById('button_documentation').style.height = "30px";
+        document.getElementById('button_documentation').style.width = "110px";
+        document.getElementById('button_documentation').style.fontSize = buttonFont;
+        document.getElementById('button_documentation').style.color = "green";
 
         // ------------------------------------------------------------------
         // Examples

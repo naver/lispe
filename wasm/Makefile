@@ -15,8 +15,8 @@ INCLUDES = -I../include
 #-sIMPORTED_MEMORY -s SUPPORT_LONGJMP=0 -fexceptions
 #WASM = -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=47972352 -sSTACK_SIZE=20971520 -fexceptions -s EXPORT_ALL=1 -Oz -DLISPE_WASM -sASYNCIFY=1
 WASM = -O3 -sEXPORT_ALL=1 -sWASM=1 -fwasm-exceptions -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=47972352 -sSTACK_SIZE=20971520 -DNDEBUG -sASSERTIONS=0 -sEXPORTED_FUNCTIONS=[_malloc,_main,_free]
-LISPWASM = -DLISPE_WASM
-C++11Flag = -std=c++11 -c -w -DAPPLE -DPOSIXREGEX -DUNIX $(WASM) $(LISPWASM)
+LISPWASM = -DLISPE_WASM 
+C++11Flag = -std=c++11 -c -w -msimd128 -DAPPLE -DPOSIXREGEX -DUNIX $(WASM) $(LISPWASM)
 #------------------------------------------------------------
 objs/%.o: %.cxx
 	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
