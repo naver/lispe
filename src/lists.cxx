@@ -263,6 +263,21 @@ List_class_definition::List_class_definition(LispE* lisp, List* body) : Listinco
     }
 }
 
+bool check_nested(int16_t label, List* arguments, int first) {
+    Element* e;
+    for (long i = first; i < arguments->size(); i++) {
+        e = arguments->index(i);
+        if (e->isList()) {
+            if (e->size() && e->index(0)->label() == label)
+                return false;
+            else
+                if (!check_nested(label, (List*)e, 0))
+                    return false;
+        }
+    }
+    return true;
+}
+
 List_function_eval::List_function_eval(LispE* lisp, Listincode* l, List* b, int16_t s) : body(b), Listincode(l) {
     type = t_call;
     space = s;
@@ -272,6 +287,7 @@ List_function_eval::List_function_eval(LispE* lisp, Listincode* l, List* b, int1
     //we need our body to be the same number
     parameters = body->liste[2];
     defaultarguments = parameters->argumentsize(nbarguments);
+    check_terminal = check_nested(b->liste[1]->label(), l, 1);
     if (defaultarguments == -1) {
         wstring inside_class = L"Error: Wrong number of arguments in call to: '(";
         inside_class += body->liste[1]->asString(lisp);
@@ -294,6 +310,7 @@ List_function_eval::List_function_eval(LispE* lisp, List* b, int16_t nb) : body(
     //we need our body to be the same number
     parameters = body->liste[2];
     defaultarguments = parameters->argumentsize(nbarguments);
+    check_terminal = false;
     if (defaultarguments == -1) {
         wstring inside_class = L"Error: Wrong number of arguments in call to: '(";
         inside_class += body->liste[1]->asString(lisp);

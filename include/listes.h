@@ -584,7 +584,7 @@ public:
         return new Quoted(this);
     }
     
-    void setterminal(char v = 1) {
+    virtual void setterminal(char v = 1) {
         terminal |= v;
     }
     
@@ -4966,6 +4966,7 @@ public:
     Element* parameters;
     int16_t space, nbarguments, defaultarguments;
     bool same;
+    bool check_terminal;
     
     List_function_eval(LispE* lisp, Listincode* l, List* b, int16_t s);
     List_function_eval(LispE* lisp, List* b, int16_t nbarguments);
@@ -4979,6 +4980,10 @@ public:
     
     int16_t label() {
         return t_call;
+    }
+    
+    void setterminal(char v = 1) {
+        terminal |= v & check_terminal;
     }
     
     void check_body(LispE* lisp, Element** e);
