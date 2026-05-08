@@ -312,7 +312,7 @@
         }
 
         function new_program() {
-            var name = prompt("Nom du programme :");
+            var name = prompt("Program name:");
             if (name === null || name.trim() === "") return;
             currentProgramName = name.trim();
             document.getElementById('program_name').textContent = currentProgramName + " – ";
@@ -320,7 +320,7 @@
 
         function save_program() {
             if (currentProgramName === "") {
-                alert("Utilisez d'abord le bouton New pour donner un nom au programme.");
+                alert("Please use the New button first to name your program.");
                 return;
             }
             var code = document.getElementById('get_code').value;
