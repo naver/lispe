@@ -793,6 +793,10 @@ public:
         return eval(lisp);
     }
 
+    virtual bool check_nested(int16_t, int) {
+        return true;
+    }
+
     virtual Element* eval(LispE*) {
         return this;
     }
@@ -1379,7 +1383,7 @@ public:
     }
     
     Element* eval(LispE* lisp);
-    
+        
     int16_t label() {
         return atome;
     }

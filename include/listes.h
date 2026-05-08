@@ -768,6 +768,8 @@ public:
     void flatten(LispE*, Strings* l);
     void flatten(LispE*, Stringbytes* l);
     
+    bool check_nested(int16_t label, int first);
+    
     Element* execute_instance_function(LispE*, List_instance*);
     Element* create_class_instance(LispE*, List_class_definition*);
     //In the case of a container for push, key and keyn
@@ -4995,6 +4997,7 @@ public:
     Element* parameters;
     int16_t space, nbarguments, defaultarguments;
     bool same;
+    bool check_terminal;
     
     List_thread_eval(LispE* lisp, Listincode* l, List* b, int16_t s);
     List_thread_eval(LispE* lisp, List* b, int16_t nbarguments);
@@ -5008,7 +5011,11 @@ public:
     int16_t label() {
         return t_call;
     }
-    
+
+    void setterminal(char v = 1) {
+        terminal |= v & check_terminal;
+    }
+
     void check_body(LispE* lisp, Element** e);
 };
 
@@ -5016,11 +5023,13 @@ public:
 class List_pattern_eval : public Listincode {
 public:
     int16_t function_label, space;
-    
+    bool check_terminal;
+
     List_pattern_eval(Listincode* l, List* body, int16_t s) : Listincode(l) {
         type = t_call;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal = l->check_nested(function_label, 1);
         space = s;
     }
     
@@ -5029,6 +5038,7 @@ public:
         type = t_eval;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal = false;
         space = 0;
     }
 
@@ -5036,6 +5046,7 @@ public:
         type = t_call;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal = false;
         space = 0;
     }
 
@@ -5047,6 +5058,10 @@ public:
         return true;
     }
     
+    void setterminal(char v = 1) {
+        terminal |= v & check_terminal;
+    }
+
     int16_t label() {
         return t_call;
     }
@@ -5056,11 +5071,13 @@ public:
 class List_predicate_eval : public Listincode {
 public:
     int16_t function_label, space;
+    bool check_terminal;
     
     List_predicate_eval(Listincode* l, List* body, int16_t s) : Listincode(l) {
         type = t_call;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal = l->check_nested(function_label, 1);
         space = s;
     }
     
@@ -5069,6 +5086,7 @@ public:
         type = t_eval;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal = false;
         space = 0;
     }
 
@@ -5076,6 +5094,7 @@ public:
         type = t_call;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal = false;
         space = 0;
     }
 
@@ -5087,6 +5106,10 @@ public:
         return true;
     }
     
+    void setterminal(char v = 1) {
+        terminal |= v & check_terminal;
+    }
+
     int16_t label() {
         return t_call;
     }
@@ -5096,11 +5119,13 @@ public:
 class List_prolog_eval : public Listincode {
 public:
     int16_t space, function_label;
+    bool check_terminal;
     
     List_prolog_eval(Listincode* l, List* body, int16_t s) : Listincode(l) {
         type = t_call;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal = l->check_nested(function_label, 1);
         space = s;
     }
     
@@ -5109,6 +5134,7 @@ public:
         type = t_eval;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal =  false;
         space = 0;
     }
 
@@ -5116,6 +5142,7 @@ public:
         type = t_call;
         status = s_constant;
         function_label = body->liste[1]->label();
+        check_terminal =  false;
         space = 0;
     }
 
@@ -5127,6 +5154,10 @@ public:
         return true;
     }
     
+    void setterminal(char v = 1) {
+        terminal |= v & check_terminal;
+    }
+
     int16_t label() {
         return t_call;
     }
