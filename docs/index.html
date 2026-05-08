@@ -126,7 +126,7 @@
 <body>
     <div class="buttons">
         <input type="button" value="RESET/RUN" OnClick="reset_run_code()" id="button_reset_run" />
-        <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
+        <input type="button" value="RUN at Cursor" OnClick="run_code_from()" id="button_run" />
         <input type="button" value="Python" OnClick="run_python()" id="button_python" />
         <select id="example_selector" onchange="load_example()">
             <option value="fizzbuzz">Fizzbuzz</option>
@@ -141,7 +141,7 @@
     </div>
     <div class="codeRow">
         <div class="textAreaCode">
-            <span>Code</span>
+            <span><span id="program_name" style="color: red; font-weight: bold;"></span>Code</span>
             <div class="code-editor">
                 <pre id="code_highlight"></pre>
                 <textarea name="code" id="get_code" oninput="update_highlight()" onscroll="sync_scroll()">; You can call a function in the pattern definition of the function
@@ -158,6 +158,11 @@
             <div style="padding: 5px 0;">
                 <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />
                 <input type="button" value="Clear" OnClick="clear_output()" id="button_clear_output" />
+                <input type="button" value="New" OnClick="new_program()" id="button_new" />
+                <input type="button" value="Save" OnClick="save_program()" id="button_save" />
+                <select id="saved_selector" onchange="load_saved_program()">
+                    <option value="">-- My Programs --</option>
+                </select>
                 <input type="button" value="Documentation" onclick="window.open('https://github.com/naver/lispe/wiki/Index-of-functions', '_blank')" id="button_documentation" />
             </div>
         </div>
@@ -264,10 +269,84 @@
         document.getElementById('example_selector').style.padding = "5px 10px";
         document.getElementById('example_selector').style.backgroundColor = "#e0e0e0";
 
+        document.getElementById('button_new').style.height = "30px";
+        document.getElementById('button_new').style.width = "80px";
+        document.getElementById('button_new').style.fontSize = buttonFont;
+        document.getElementById('button_new').style.color = "blue";
+        document.getElementById('button_new').style.fontWeight = "bolder";
+
+        document.getElementById('button_save').style.height = "30px";
+        document.getElementById('button_save').style.width = "80px";
+        document.getElementById('button_save').style.fontSize = buttonFont;
+        document.getElementById('button_save').style.color = "red";
+        document.getElementById('button_save').style.fontWeight = "bolder";
+
+        document.getElementById('saved_selector').style.height = "30px";
+        document.getElementById('saved_selector').style.fontSize = buttonFont;
+
         document.getElementById('button_documentation').style.height = "30px";
         document.getElementById('button_documentation').style.width = "110px";
         document.getElementById('button_documentation').style.fontSize = buttonFont;
         document.getElementById('button_documentation').style.color = "green";
+
+        // ------------------------------------------------------------------
+        // Saved programs (localStorage)
+        // ------------------------------------------------------------------
+        var currentProgramName = "";
+
+        function get_saved_programs() {
+            var data = localStorage.getItem('lispe_saved_programs');
+            return data ? JSON.parse(data) : {};
+        }
+
+        function refresh_saved_selector() {
+            var selector = document.getElementById('saved_selector');
+            var programs = get_saved_programs();
+            selector.innerHTML = '<option value="">-- My Programs --</option>';
+            for (var name in programs) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                selector.appendChild(opt);
+            }
+        }
+
+        function new_program() {
+            var name = prompt("Nom du programme :");
+            if (name === null || name.trim() === "") return;
+            currentProgramName = name.trim();
+            document.getElementById('program_name').textContent = currentProgramName + " – ";
+        }
+
+        function save_program() {
+            if (currentProgramName === "") {
+                alert("Utilisez d'abord le bouton New pour donner un nom au programme.");
+                return;
+            }
+            var code = document.getElementById('get_code').value;
+            var programs = get_saved_programs();
+            programs[currentProgramName] = code;
+            localStorage.setItem('lispe_saved_programs', JSON.stringify(programs));
+            refresh_saved_selector();
+        }
+
+        function load_saved_program() {
+            var selector = document.getElementById('saved_selector');
+            var name = selector.value;
+            if (name === "") return;
+            var programs = get_saved_programs();
+            if (!(name in programs)) return;
+            clear_output();
+            try { callResetLispE(0); } catch(e) {}
+            lastposition = 0;
+            currentProgramName = name;
+            document.getElementById('program_name').textContent = currentProgramName + " – ";
+            document.getElementById('get_code').value = programs[name];
+            update_highlight();
+            selector.value = "";
+        }
+
+        refresh_saved_selector();
 
         // ------------------------------------------------------------------
         // Examples
