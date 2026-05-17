@@ -38,7 +38,11 @@ You can also use python:
 This file contains the minimum code to execute a LispE instruction from within a browser.
 The loading and initialisation of the *LispE* interpreter is done in *lispe_run.js*
 
-### lispe_run.js
+### lispe.js
+
+This is the code that creates the bridge between `lispe.wasm` and Javascript. This file has been automatically created at compiling time.
+
+### lispe_functions.js
 This is the encapsulation in JavaScript of the WASM libary loading.
 It exposes:
 ```JavaScript
@@ -49,6 +53,7 @@ function callResetLispE(); which resets the current Tamgu interpreter
 
 ### lispe.wasm
 This is the WASM library, which is loaded with tamgu_run.js.
+
 
 ## New Instructions:
 
