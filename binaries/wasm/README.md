@@ -27,6 +27,8 @@ All functions that take a `lispe_idx` parameter refer to an interpreter instance
 ### `callCreateLispE()`
 Creates a new LispE interpreter instance. Returns its index (integer).
 
+*Note that there is a default interpreter, which is created with the index `0`, which means that if you intend to use only one interpreter, you don't need to call this function.*
+
 ```JavaScript
 var idx = callCreateLispE();
 ```
