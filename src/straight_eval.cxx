@@ -3550,7 +3550,7 @@ Element* List_replaceall_eval::eval(LispE* lisp) {
 Element* List_select_eval::eval(LispE* lisp) {
     long listsize = liste.size();
     Element* second_element = null_;
-    for (long i = 1; i < listsize && !second_element->Boolean(); i++) {
+    for (long i = 1; i < listsize && second_element == null_; i++) {
         second_element = liste[i]->eval_terminal(lisp, terminal);
     }
     return second_element;
