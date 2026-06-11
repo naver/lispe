@@ -2602,7 +2602,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 e = search_element(lisp, e_from, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 from = e->asInteger();
                 firstisString = 0;
@@ -2612,7 +2612,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 e = search_element(lisp, e_from, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 firstisString = e->asInteger();
                 break;
@@ -2621,7 +2621,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 e = search_reverse(lisp, e_from, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 //We skip the first characters
                 from = e->asInteger() + 1;
@@ -2632,7 +2632,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 e = search_reverse(lisp, e_from, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 firstisString = e->asInteger();
                 break;
@@ -2711,7 +2711,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 e = search_element(lisp, e_upto, from + firstisString);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 upto = e->asInteger();
                 break;
@@ -2721,7 +2721,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 e = search_element(lisp, e_upto, from + firstisString);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 //All characters are integrated
                 upto = e->asInteger() + 1;
@@ -2731,7 +2731,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 e = search_reverse(lisp, e_upto, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 upto = e->asInteger();
                 break;
@@ -2740,7 +2740,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 e = search_reverse(lisp, e_upto, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 upto = e->asInteger() - 1;
                 break;
@@ -2851,7 +2851,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 e = search_element(lisp, e_from, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 from = e->asInteger();
                 firstisString = 0;
@@ -2861,7 +2861,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 e = search_element(lisp, e_from, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 firstisString = e->asInteger();
                 break;
@@ -2870,7 +2870,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 e = search_reverse(lisp, e_from, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 //We skip the first characters
                 from = e->asInteger() + 1;
@@ -2881,7 +2881,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 e = search_reverse(lisp, e_from, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 firstisString = e->asInteger();
                 break;
@@ -2960,7 +2960,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 e = search_element(lisp, e_upto, from + firstisString);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 upto = e->asInteger();
                 break;
@@ -2970,7 +2970,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 e = search_element(lisp, e_upto, from + firstisString);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 //All characters are integrated
                 upto = e->asInteger() + 1;
@@ -2980,7 +2980,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 e = search_reverse(lisp, e_upto, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 upto = e->asInteger();
                 break;
@@ -2989,7 +2989,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 e = search_reverse(lisp, e_upto, 0);
                 if (e == null_) {
                     last->release();
-                    return emptylist_;
+                    return this;
                 }
                 upto = e->asInteger() - 1;
                 break;
@@ -3924,13 +3924,13 @@ Element* Numbers::replace_in(LispE* lisp, List* l) {
     l->evalAsInteger(2, lisp, depuis);
     if (depuis >= 0) {
         if (depuis >= liste.size())
-            return emptylist_;
+            return this;
     }
     else {
         //We start from the end...
         depuis = liste.size() + depuis;
         if (depuis < 0)
-            return emptylist_;
+            return this;
     }
     if (l->size() == 4) {
         //On returns only one element
@@ -3948,10 +3948,10 @@ Element* Numbers::replace_in(LispE* lisp, List* l) {
         //We start from the end...
         upto = liste.size() + upto;
         if (upto < 0)
-            return emptylist_;
+            return this;
     }
     if (upto < depuis) {
-        return emptylist_;
+        return this;
     }
     
     Numbers* n = lisp->provideNumbers();
@@ -4587,13 +4587,13 @@ Element* Integers::replace_in(LispE* lisp, List* l) {
     l->evalAsInteger(2, lisp, depuis);
     if (depuis >= 0) {
         if (depuis >= liste.size())
-            return emptylist_;
+            return this;
     }
     else {
         //We start from the end...
         depuis = liste.size() + depuis;
         if (depuis < 0)
-            return emptylist_;
+            return this;
     }
     if (l->size() == 4) {
         //On returns only one element
@@ -4611,10 +4611,10 @@ Element* Integers::replace_in(LispE* lisp, List* l) {
         //We start from the end...
         upto = liste.size() + upto;
         if (upto < 0)
-            return emptylist_;
+            return this;
     }
     if (upto < depuis) {
-        return emptylist_;
+        return this;
     }
     
     Integers* n = lisp->provideIntegers();
@@ -5501,7 +5501,7 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
         case t_string: {
             e = search_element(lisp, e_from, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             from = e->asInteger();
             firstisString = 0;
             break;
@@ -5509,14 +5509,14 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
         case t_plus_string: {
             e = search_element(lisp, e_from, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             firstisString = e->asInteger();
             break;
         }
         case t_minus_string: {
             e = search_reverse(lisp, e_from, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             //We skip the first characters
             from = e->asInteger() + 1;
             firstisString = 0;
@@ -5525,7 +5525,7 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
         case t_minus_plus_string: {
             e = search_reverse(lisp, e_from, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             firstisString = e->asInteger();
             break;
         }
@@ -5603,7 +5603,7 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
             if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
-                return emptylist_;
+                return this;
             upto = e->asInteger();
             break;
         }
@@ -5611,7 +5611,7 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
             if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
-                return emptylist_;
+                return this;
             //All characters are integrated
             upto = e->asInteger() + 1;
             break;
@@ -5619,14 +5619,14 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
         case t_minus_string: {
             e = search_reverse(lisp, e_upto, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             upto = e->asInteger();
             break;
         }
         case t_minus_plus_string: {
             e = search_reverse(lisp, e_upto, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             upto = e->asInteger() - 1;
             break;
         }
@@ -5658,7 +5658,7 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
     e->release();
     e_upto->release();
     if (upto <= from)
-        return emptylist_;
+        return this;
     
     if (upto > size())
         upto = size();
@@ -6517,7 +6517,7 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
         case t_string: {
             e = search_element(lisp, e_from, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             from = e->asInteger();
             firstisString = 0;
             break;
@@ -6525,14 +6525,14 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
         case t_plus_string: {
             e = search_element(lisp, e_from, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             firstisString = e->asInteger();
             break;
         }
         case t_minus_string: {
             e = search_reverse(lisp, e_from, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             //We skip the first characters
             from = e->asInteger() + 1;
             firstisString = 0;
@@ -6541,7 +6541,7 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
         case t_minus_plus_string: {
             e = search_reverse(lisp, e_from, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             firstisString = e->asInteger();
             break;
         }
@@ -6619,7 +6619,7 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
             if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
-                return emptylist_;
+                return this;
             upto = e->asInteger();
             break;
         }
@@ -6627,7 +6627,7 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
             if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
-                return emptylist_;
+                return this;
             //All characters are integrated
             upto = e->asInteger() + 1;
             break;
@@ -6635,14 +6635,14 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
         case t_minus_string: {
             e = search_reverse(lisp, e_upto, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             upto = e->asInteger();
             break;
         }
         case t_minus_plus_string: {
             e = search_reverse(lisp, e_upto, 0);
             if (e == null_)
-                return emptylist_;
+                return this;
             upto = e->asInteger() - 1;
             break;
         }
@@ -6674,7 +6674,7 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
     e->release();
     e_upto->release();
     if (upto <= from)
-        return emptylist_;
+        return this;
     
     if (upto > size())
         upto = size();
@@ -7439,13 +7439,13 @@ Element* Shorts::replace_in(LispE* lisp, List* l) {
     l->evalAsInteger(2, lisp, depuis);
     if (depuis >= 0) {
         if (depuis >= liste.size())
-            return emptylist_;
+            return this;
     }
     else {
         //We start from the end...
         depuis = liste.size() + depuis;
         if (depuis < 0)
-            return emptylist_;
+            return this;
     }
     if (l->size() == 4) {
         //On returns only one element
@@ -7463,10 +7463,10 @@ Element* Shorts::replace_in(LispE* lisp, List* l) {
         //We start from the end...
         upto = liste.size() + upto;
         if (upto < 0)
-            return emptylist_;
+            return this;
     }
     if (upto < depuis) {
-        return emptylist_;
+        return this;
     }
     
     Shorts* n = new Shorts();
@@ -8119,13 +8119,13 @@ Element* Floats::replace_in(LispE* lisp, List* l) {
     l->evalAsInteger(2, lisp, depuis);
     if (depuis >= 0) {
         if (depuis >= liste.size())
-            return emptylist_;
+            return this;
     }
     else {
         //We start from the end...
         depuis = liste.size() + depuis;
         if (depuis < 0)
-            return emptylist_;
+            return this;
     }
     if (l->size() == 4) {
         //On returns only one element
@@ -8143,10 +8143,10 @@ Element* Floats::replace_in(LispE* lisp, List* l) {
         //We start from the end...
         upto = liste.size() + upto;
         if (upto < 0)
-            return emptylist_;
+            return this;
     }
     if (upto < depuis) {
-        return emptylist_;
+        return this;
     }
     
     Floats* n = lisp->provideFloats();

@@ -3320,7 +3320,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
 }
 //------------------------------------------------------------------------------------------
 Element* Element::replace_in(LispE* lisp, List* l) {
-    return null_;
+    return this;
 }
 
 Element* String::replace_in(LispE* lisp, List* liste) {
@@ -3374,7 +3374,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             u_ustring ch = e_from->asUString(lisp);
             from = content.find(ch);
             if (from == -1)
-                return emptystring_;
+                return this;
             from += ch.size();
             firstisString = 0;
             break;
@@ -3383,7 +3383,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             u_ustring ch = e_from->asUString(lisp);
             from = content.find(ch);
             if (from == -1)
-                return emptystring_;
+                return this;
             firstisString = ch.size();
             break;
         }
@@ -3391,7 +3391,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             u_ustring ch = e_from->asUString(lisp);
             from = content.rfind(ch, content.size());
             if (from == -1)
-                return emptystring_;
+                return this;
             //We skip the first characters
             from += ch.size();
             firstisString = 0;
@@ -3401,7 +3401,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             u_ustring ch = e_from->asUString(lisp);
             from = content.rfind(ch, content.size());
             if (from == -1)
-                return emptystring_;
+                return this;
             firstisString = ch.size();
             break;
         }
@@ -3478,7 +3478,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             u_ustring ch = e_upto->asUString(lisp);
             upto = content.find(ch, from + firstisString);
             if (upto == -1)
-                return emptystring_;
+                return this;
             break;
         }
         case t_plus_string: {
@@ -3486,7 +3486,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             u_ustring ch = e_upto->asUString(lisp);
             upto = content.find(ch, from + firstisString);
             if (upto == -1)
-                return emptystring_;
+                return this;
             //All characters are integrated
             upto += ch.size();
             break;
@@ -3495,14 +3495,14 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             u_ustring ch = e_upto->asUString(lisp);
             upto = content.rfind(ch, content.size());
             if (upto == -1)
-                return emptystring_;
+                return this;
             break;
         }
         case t_minus_plus_string: {
             u_ustring ch = e_upto->asUString(lisp);
             upto = content.rfind(ch, content.size());
             if (upto == -1)
-                return emptystring_;
+                return this;
             //All characters are integrated
             upto += ch.size();
             break;
@@ -3533,7 +3533,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     
     e_upto->release();
     if (upto <= from)
-        return emptystring_;
+        return this;
     
     if (upto > content.size())
         upto = content.size();
@@ -3594,7 +3594,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             string ch = e_from->toString(lisp);
             from = content.find(ch);
             if (from == -1)
-                return emptystring_;
+                return this;
             from += ch.size();
             firstisString = 0;
             break;
@@ -3603,7 +3603,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             string ch = e_from->toString(lisp);
             from = content.find(ch);
             if (from == -1)
-                return emptystring_;
+                return this;
             firstisString = ch.size();
             break;
         }
@@ -3611,7 +3611,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             string ch = e_from->toString(lisp);
             from = content.rfind(ch, content.size());
             if (from == -1)
-                return emptystring_;
+                return this;
             //We skip the first characters
             from += ch.size();
             firstisString = 0;
@@ -3621,7 +3621,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             string ch = e_from->toString(lisp);
             from = content.rfind(ch, content.size());
             if (from == -1)
-                return emptystring_;
+                return this;
             firstisString = ch.size();
             break;
         }
@@ -3698,7 +3698,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             string ch = e_upto->toString(lisp);
             upto = content.find(ch, from + firstisString);
             if (upto == -1)
-                return emptystring_;
+                return this;
             break;
         }
         case t_plus_string: {
@@ -3706,7 +3706,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             string ch = e_upto->toString(lisp);
             upto = content.find(ch, from + firstisString);
             if (upto == -1)
-                return emptystring_;
+                return this;
             //All characters are integrated
             upto += ch.size();
             break;
@@ -3715,14 +3715,14 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             string ch = e_upto->toString(lisp);
             upto = content.rfind(ch, content.size());
             if (upto == -1)
-                return emptystring_;
+                return this;
             break;
         }
         case t_minus_plus_string: {
             string ch = e_upto->toString(lisp);
             upto = content.rfind(ch, content.size());
             if (upto == -1)
-                return emptystring_;
+                return this;
             //All characters are integrated
             upto += ch.size();
             break;
@@ -3753,7 +3753,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
     
     e_upto->release();
     if (upto <= from)
-        return emptystring_;
+        return this;
     
     if (upto > content.size())
         upto = content.size();

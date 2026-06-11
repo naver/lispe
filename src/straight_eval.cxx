@@ -2799,7 +2799,8 @@ Element* List_set_range_eval::eval(LispE* lisp) {
         return lisp->check_error(this, err, idxinfo);
     }
 
-    element->release();
+    if (value != element)
+        element->release();
     lisp->resetStack();
     if (label > l_final)
         return lisp->recording_variable(value, label);
