@@ -35,44 +35,6 @@
 // UUID
 //---------------------------------------------------------
 
-uint32_t random32() {
-    static bool lisperestrandom = true;
-    static uint64_t x = 123456789;
-    static uint64_t y = 362436069;
-    static uint64_t z = 521288629;
-    static int64_t w = time(0);
-    if (lisperestrandom) {
-        w *= (int64_t)&x;
-        lisperestrandom = false;
-    }
-
-    unsigned long t;
-    
-    t = x ^ (x << 11);
-    x = y; y = z; z = w;
-    w = w ^ (w >> 19) ^ (t ^ (t >> 8));
-    return (uint32_t)w;
-}
-
-uint16_t random16() {
-    static bool lisperestrandom = true;
-    static uint64_t x = 123456789;
-    static uint64_t y = 362436069;
-    static uint64_t z = 521288629;
-    static int64_t w = time(0);
-    if (lisperestrandom) {
-        w *= (int64_t)&y;
-        lisperestrandom = false;
-    }
-
-    unsigned long t;
-    
-    t = x ^ (x << 11);
-    x = y; y = z; z = w;
-    w = w ^ (w >> 19) ^ (t ^ (t >> 8));
-    return (uint16_t)w;
-}
-
 struct UUID_base {
 public:
     uint32_t premier;
@@ -81,12 +43,12 @@ public:
     uint16_t quatrieme;
     uint32_t dernier;
     
-    UUID_base() {
-        premier = random32();
-        dernier = random32();
-        second = random16();
-        troisieme = random16();
-        quatrieme = random16();
+    UUID_base(uint32_t p, uint32_t d, uint16_t s, uint16_t t, uint16_t q) {
+        premier = p;
+        dernier = d;
+        second = s;
+        troisieme = t;
+        quatrieme = q;
     }
     
     string str() {
@@ -98,17 +60,8 @@ public:
     }
 };
 
-Element* Proc_UUID(LispE* lisp) {
-    UUID_base base;
-    string str = base.str();
-    u_ustring res(U"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx");
-    for (long i = 0; i < 32; i++)
-        res[i] = str[i];
-    return lisp->provideString(res);
-}
 
-
-typedef enum {rnd_random, rnd_shuffle, rnd_uuid, rnd_random_choice,rnd_uniform,rnd_bernoulli_distribution,rnd_binomial_distribution,rnd_negative_binomial_distribution,rnd_geometric_distribution,rnd_poisson_distribution,rnd_exponential_distribution,rnd_gamma_distribution,rnd_weibull_distribution,rnd_extreme_value_distribution,rnd_normal_distribution,rnd_lognormal_distribution,rnd_chi_squared_distribution,rnd_cauchy_distribution,rnd_fisher_distribution,rnd_student_distribution,rnd_discrete_distribution,rnd_piecewise_constant_distribution,rnd_piecewise_linear_distribution} aleatoire;
+typedef enum {rnd_random, rnd_shuffle, rnd_uuid, rnd_random_choice, rnd_random_seed,rnd_uniform,rnd_bernoulli_distribution,rnd_binomial_distribution,rnd_negative_binomial_distribution,rnd_geometric_distribution,rnd_poisson_distribution,rnd_exponential_distribution,rnd_gamma_distribution,rnd_weibull_distribution,rnd_extreme_value_distribution,rnd_normal_distribution,rnd_lognormal_distribution,rnd_chi_squared_distribution,rnd_cauchy_distribution,rnd_fisher_distribution,rnd_student_distribution,rnd_discrete_distribution,rnd_piecewise_constant_distribution,rnd_piecewise_linear_distribution} aleatoire;
 
 
 /*
@@ -123,30 +76,10 @@ long unaryfunc(double v) {
 }
 #endif
 
-double localrandom(long mx) {
-    static bool lisperestrandom = true;
-    
-    if (!mx)
-        mx = 1;
-    static unsigned long x = 123456789;
-    static unsigned long y = 362436069;
-    static unsigned long z = 521288629;
-    static long w = time(0);
-    if (lisperestrandom) {
-        w *= (int64_t)&z;
-        lisperestrandom = false;
-    }
-
-    unsigned long t;
-
-    t = x ^ (x << 11);
-    x = y; y = z; z = w;
-    w = w ^ (w >> 19) ^ (t ^ (t >> 8));
-    return abs(w%mx);
-}
-
 class Aleatoire : public Element {
 public:
+    std::mt19937 gen;
+    bool seeded;
     aleatoire rnd;
     int16_t v_nb;
     int16_t v_alpha;
@@ -156,6 +89,9 @@ public:
     int16_t v_inter;
     
     Aleatoire(LispE* lisp, aleatoire r) : rnd(r), Element(l_lib) {
+        std::random_device rd;
+        gen.seed(rd());
+        seeded = false;
         u_ustring nom(U"nb");
         v_nb = lisp->encode(nom);
         nom = U"alpha";
@@ -171,9 +107,37 @@ public:
 
     }
 
+    Element* Proc_random_seed(LispE* lisp) {
+        long graine = lisp->get_variable(v_nb)->asInteger();
+        gen.seed((std::mt19937::result_type)graine);
+        seeded = true;
+        return True_;
+    }
+
+    long localrandom(long mx) {
+        if (!mx)
+            mx = 1;
+        return abs((long)(gen() % mx));
+    }
+
+    uint32_t random32() {
+        return (uint32_t)gen();
+    }
+
+    uint16_t random16() {
+        return (uint16_t)gen();
+    }
+
+    Element* Proc_UUID(LispE* lisp) {
+        UUID_base base(random32(), random32(), random16(), random16(), random16());
+        string str = base.str();
+        u_ustring res(U"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx");
+        for (long i = 0; i < 32; i++)
+            res[i] = str[i];
+        return lisp->provideString(res);
+    }
+
     Element* Proc_random_choice(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         long initial = lisp->get_variable(v_initial)->asInteger();
@@ -190,7 +154,7 @@ public:
 #ifdef WIN32
         std::discrete_distribution<long> d(sz, 0, 100, unaryfunc);
 #else
-        double val = initial / sz;
+        double val = (double)initial / (double)sz;
         vector<double> vect;
         for (i = 0; i < sz; i++)
             vect.push_back(val);
@@ -259,8 +223,6 @@ public:
     }
     
     Element* Proc_uniform(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -280,8 +242,6 @@ public:
     }
     
     Element* Proc_bernoulli_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -310,8 +270,6 @@ public:
     }
     
     Element* Proc_binomial_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         long alpha = lisp->get_variable(v_alpha)->asInteger();
@@ -331,8 +289,6 @@ public:
     }
     
     Element* Proc_negative_binomial_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         
@@ -353,8 +309,6 @@ public:
     }
     
     Element* Proc_normal_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -373,8 +327,6 @@ public:
     }
     
     Element* Proc_discrete_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         Element* tvect = lisp->get_variable(v_liste);
@@ -422,8 +374,6 @@ public:
     
     
     Element* Proc_piecewise_constant_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         Element* tvect = lisp->get_variable(v_liste);
@@ -452,8 +402,6 @@ public:
     }
     
     Element* Proc_piecewise_linear_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         Element* tvect = lisp->get_variable(v_liste);
@@ -484,8 +432,6 @@ public:
     
     
     Element* Proc_lognormal_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -505,8 +451,6 @@ public:
     }
     
     Element* Proc_geometric_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -524,8 +468,6 @@ public:
     }
     
     Element* Proc_cauchy_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -545,8 +487,6 @@ public:
     }
     
     Element* Proc_fisher_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -565,8 +505,6 @@ public:
     }
     
     Element* Proc_student_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -584,8 +522,6 @@ public:
     }
     
     Element* Proc_extreme_value_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -605,8 +541,6 @@ public:
     
     
     Element* Proc_poisson_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -625,8 +559,6 @@ public:
     }
     
     Element* Proc_exponential_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -644,8 +576,6 @@ public:
     }
     
     Element* Proc_gamma_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -664,8 +594,6 @@ public:
     }
     
     Element* Proc_weibull_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -685,8 +613,6 @@ public:
     
     
     Element* Proc_chi_squared_distribution(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         long nb = lisp->get_variable(v_nb)->asInteger();
         double alpha = lisp->get_variable(v_alpha)->asNumber();
@@ -704,8 +630,6 @@ public:
     }
     
     Element* Proc_shuffle(LispE* lisp) {
-        static std::random_device rd;  //Will be used to obtain a seed for the random number engine
-        static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
         Element* l = lisp->get_variable(v_liste);
         if (!l->isList())
@@ -765,6 +689,8 @@ public:
                 return Proc_UUID(lisp);
             case rnd_random_choice:
                 return Proc_random_choice(lisp);
+            case rnd_random_seed:
+                return Proc_random_seed(lisp);
             case rnd_discrete_distribution:
                 return Proc_discrete_distribution(lisp);
             case rnd_piecewise_constant_distribution:
@@ -819,6 +745,8 @@ public:
                 return L"a Universally Unique Identifier";
             case rnd_random_choice:
                 return L"returns a list of nb random values among the elements in 'list', and (initial/size list) > 1";
+            case rnd_random_seed:
+                return L"Seeds the random number generator with an integer for reproducible results";
             case rnd_uniform:
                 return L"Uniform discrete distribution (alpha = 0 beta = 1) ";
             case rnd_bernoulli_distribution:
@@ -871,6 +799,7 @@ void moduleAleatoire(LispE* lisp) {
     lisp->extension("deflib shuffle (liste)", new Aleatoire(lisp, rnd_shuffle));
     lisp->extension("deflib uuid ()", new Aleatoire(lisp, rnd_uuid));
     lisp->extension("deflib random_choice (nb liste initial)", new Aleatoire(lisp, rnd_random_choice));
+    lisp->extension("deflib random_seed (nb)", new Aleatoire(lisp, rnd_random_seed));
     lisp->extension("deflib uniform_distribution (nb (alpha 0) (beta 1))", new Aleatoire(lisp, rnd_uniform));
     lisp->extension("deflib bernoulli_distribution (nb (alpha 0.5))", new Aleatoire(lisp, rnd_bernoulli_distribution));
     lisp->extension("deflib binomial_distribution (nb (alpha 1) (beta 0.5))", new Aleatoire(lisp, rnd_binomial_distribution));
