@@ -131,7 +131,7 @@ extern "C" {
     }
 }
 
-void eval_js_sync(LispE* lisp, string& code, List* recall) {
+void eval_js_async(LispE* lisp, string& code, List* recall) {
     char* resultStr = nullptr;
     bool error = false;
 

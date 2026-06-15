@@ -467,7 +467,7 @@ Element* Instruction::eval(LispE* lisp) {
 
 #ifdef LISPE_WASM
 string eval_js(string code, bool& error);
-void eval_js_sync(LispE* lisp, string& code, List* recall);
+void eval_js_async(LispE* lisp, string& code, List* recall);
 
 Element* List::evall_js(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -545,7 +545,7 @@ Element* List::evall_js_sync(LispE* lisp) {
         element = liste[i]->eval(lisp);
         recall->append(element->quoting());
     }
-    eval_js_sync(lisp, code, recall);
+    eval_js_async(lisp, code, recall);
     return true_;
 }
 
