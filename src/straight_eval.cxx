@@ -3278,7 +3278,7 @@ Element* List_zip_eval::eval(LispE* lisp) {
                 sub = new Stringbytes();
                 break;
             case t_shorts:
-                sub = new Shorts();
+                sub = lisp->provideShorts();
                 break;
             case t_integers:
                 sub = lisp->provideIntegers();
@@ -4806,10 +4806,10 @@ Element* List_shift_eval::eval(LispE* lisp) {
         Element* l2;
         switch (arguments->type) {
             case t_shorts:
-                l1 = new Shorts();
+                l1 = lisp->provideShorts();
                 for (i = 0; i < sz - nb; i++)
                     ((Shorts*)l1)->liste.push_back(((Shorts*)arguments)->liste[i]);
-                l2 = new Shorts((Shorts*)arguments, nb);
+                l2 = lisp->provideShorts((Shorts*)arguments, nb);
                 break;
             case t_integers:
                 l1 = lisp->provideIntegers();
@@ -4955,7 +4955,7 @@ Element* List_cyclicp_eval::eval(LispE* lisp) {
 
 Element* List_converttoshort_eval::eval(LispE* lisp) {
     Element* value = liste[1]->eval(lisp);
-    Element* element = new Short(value->asShort());
+    Element* element = lisp->provideShort(value->asShort());
     value->release();
     return element;
 }
@@ -5420,7 +5420,7 @@ Element* List_fwrite_eval::eval(LispE* lisp) {
 Element* List_shorts_eval::eval(LispE* lisp) {
     long listsz = size();
     if (listsz == 1)
-        return new Shorts();
+        return lisp->provideShorts();
     Shorts* n = NULL;
     Element* values;
     try {
@@ -5430,13 +5430,13 @@ Element* List_shorts_eval::eval(LispE* lisp) {
             if (values->type == t_shorts && !values->status)
                 n = (Shorts*)values;
             else {
-                n = new Shorts();
+                n = lisp->provideShorts();
                 values->flatten(lisp, n);
                 values->release();
             }
         }
         else {
-            n = new Shorts();
+            n = lisp->provideShorts();
             n->liste.reserve(listsz<<1);
             for (long e = 1; e < listsz; e++) {
                 values = liste[e]->eval(lisp);
@@ -6056,7 +6056,7 @@ Element* List_sum_eval::eval(LispE* lisp) {
         case t_shorts: {
             int16_t v = ((Shorts*)first_element)->liste.sum();
             first_element->release();
-            return v?new Short(v):zero_value;
+            return v?lisp->provideShort(v):zero_value;
         }
         case t_integers: {
             long v = ((Integers*)first_element)->liste.sum();
@@ -6130,7 +6130,7 @@ Element* List_product_eval::eval(LispE* lisp) {
         case t_shorts: {
             int16_t v = ((Shorts*)first_element)->liste.product();
             first_element->release();
-            return v?new Short(v):zero_value;
+            return v?lisp->provideShort(v):zero_value;
         }
         case t_integers: {
             long v = ((Integers*)first_element)->liste.product();

@@ -135,7 +135,7 @@ public:
             return res;
         List* l = lisp->provideList();
         l->append(res);
-        Shorts* ty = new Shorts();
+        Shorts* ty = lisp->provideShorts();
         ty->liste = tokres.stacktype;
         l->append(ty);
         return l;
@@ -149,7 +149,7 @@ public:
             return res;
         List* l = lisp->provideList();
         l->append(res);
-        Shorts* ty = new Shorts();
+        Shorts* ty = lisp->provideShorts();
         ty->liste = tokres.stacktype;
         l->append(ty);
         return l;
@@ -212,7 +212,7 @@ public:
             return res;
         List* l = lisp->provideList();
         l->append(res);
-        Shorts* ty = new Shorts();
+        Shorts* ty = lisp->provideShorts();
         ty->liste = tokres.stacktype;
         l->append(ty);
         return l;
@@ -226,7 +226,7 @@ public:
             return res;
         List* l = lisp->provideList();
         l->append(res);
-        Shorts* ty = new Shorts();
+        Shorts* ty = lisp->provideShorts();
         ty->liste = tokres.stacktype;
         l->append(ty);
         return l;

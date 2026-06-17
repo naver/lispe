@@ -108,7 +108,7 @@ Element* String::chargebin(LispE* lisp, string chemin) {
         throw new Error(erreur);
     }
 
-    Shorts* s = new Shorts();
+    Shorts* s = lisp->provideShorts();
     string ln;
     long i;
     while (!f.eof()) {
@@ -130,7 +130,7 @@ Element* Number::duplicate_constant(LispE* lisp) {
 }
 
 Element* Short::duplicate_constant(LispE* lisp) {
-    return status!=s_constant?this:new Short(content);
+    return status!=s_constant?this:lisp->provideShort(content);
 }
 
 Element* Complexe::duplicate_constant(LispE* lisp) {
@@ -734,11 +734,11 @@ Element* Constshort::fullcopy() {
 }
 
 Element* Constshort::copyatom(LispE* lsp, uint16_t s) {
-    return new Short(content);
+    return lsp->provideShort(content);
 }
 
 Element* Constshort::duplicate_constant(LispE* lisp) {
-    return new Short(content);
+    return lisp->provideShort(content);
 }
 
 Element* Constshort::copying(bool duplicate) {
@@ -1115,7 +1115,7 @@ Element* Short::invert_sign(LispE* lisp) {
         content *= -1;
         return this;
     }
-    return new Short(content * -1);
+    return lisp->provideShort(content * -1);
 }
 
 Element* Complexe::invert_sign(LispE* lisp) {
@@ -2185,7 +2185,7 @@ Element* Number::reverse(LispE* lisp, bool duplicate) {
 }
 
 Element* Short::reverse(LispE* lisp, bool duplicate) {
-    return new Short(content*-1);
+    return lisp->provideShort(content*-1);
 }
 
 Element* Complexe::reverse(LispE* lisp, bool duplicate) {
@@ -4025,7 +4025,7 @@ Element* Element::bytes(LispE* lisp) {
 
 Element* String::bytes(LispE* lisp) {
     uchar* s = (uchar*)content.c_str();
-    Shorts* lst = new Shorts();
+    Shorts* lst = lisp->provideShorts();
     
     long sz = content.size()*4;
     
@@ -4036,7 +4036,7 @@ Element* String::bytes(LispE* lisp) {
 
 Element* Stringbyte::bytes(LispE* lisp) {
     uchar* s = (uchar*)content.c_str();
-    Shorts* lst = new Shorts();
+    Shorts* lst = lisp->provideShorts();
     
     long sz = content.size();
     

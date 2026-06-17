@@ -63,7 +63,7 @@ Element* LispE::tensor_to_lispe(Element* e, vecte<long>& shape) {
             case t_shorts:
                 if (e->isEmpty()) {
                     e->release();
-                    e = new Shorts(1, 0);
+                    e = provideShorts(1, 0);
                 }
                 res = new Matrice_short(this, e, sz1, sz2);
                 break;
@@ -97,7 +97,7 @@ Element* LispE::tensor_to_lispe(Element* e, vecte<long>& shape) {
         case t_shorts:
             if (e->isEmpty()) {
                 e->release();
-                e = new Shorts(1, 0);
+                e = provideShorts(1, 0);
             }
             res = new Tenseur_short(this, e, shape);
             break;
@@ -537,7 +537,7 @@ template<> long Matrice_integer::asValue(Element* e) {
 }
 //------------------------------------------------------------
 template<> Element* Matrice_short::provideValue(LispE* lisp, short v) {
-    return new Short(v);
+    return lisp->provideShort(v);
 }
 
 template<> Element* Matrice_number::provideValue(LispE* lisp, double v) {
@@ -631,7 +631,7 @@ template<> Integers* Matrice_integer::provide(LispE* lisp) {
 }
 
 template<> Shorts* Matrice_short::provide(LispE* lisp) {
-    return new Shorts();
+    return lisp->provideShorts();
 }
 
 //------------------------------------------------------------
@@ -656,7 +656,7 @@ template<> Integers* Matrice_integer::provide(LispE* lisp, long nb, long v) {
 }
 
 template<> Shorts* Matrice_short::provide(LispE* lisp, long nb, short v) {
-    return new Shorts(nb, v);
+    return lisp->provideShorts(nb, v);
 }
 //----------------------------------------------------------------------------
 
@@ -674,7 +674,7 @@ template<> Integers* Matrice_integer::provide(LispE* lisp, Integers* n) {
 }
 
 template<> Shorts* Matrice_short::provide(LispE* lisp, Shorts* n) {
-    return new Shorts(n);
+    return lisp->provideShorts(n);
 }
 
 template<> Strings* Matrice_string::provide(LispE* lisp, Strings* n) {
@@ -1389,7 +1389,7 @@ template<> Floats* Tenseur_float::provide(LispE* lisp, long nb, float val) {
 }
 
 template<> Shorts* Tenseur_short::provide(LispE* lisp, long nb, short val) {
-    return new Shorts(nb, val);
+    return lisp->provideShorts(nb, val);
 }
 
 //----------------------------------------------------------------------------
@@ -1415,7 +1415,7 @@ template<> Integers* Tenseur_integer::provide(LispE* lisp) {
 }
 
 template<> Shorts* Tenseur_short::provide(LispE* lisp) {
-    return new Shorts();
+    return lisp->provideShorts();
 }
 
 //----------------------------------------------------------------------------
@@ -1434,7 +1434,7 @@ template<> Integers* Tenseur_integer::provide(LispE* lisp, Integers* n) {
 }
 
 template<> Shorts* Tenseur_short::provide(LispE* lisp, Shorts* n) {
-    return new Shorts(n);
+    return lisp->provideShorts(n);
 }
 
 template<> Strings* Tenseur_string::provide(LispE* lisp, Strings* n) {
@@ -1551,7 +1551,7 @@ template <> Element* Tenseur_short::newTensor(bool nb, LispE* lisp, List* l) {
     if (nb) {
         switch (shape.size()) {
             case 2:
-                return new Shorts();
+                return lisp->provideShorts();
             case 3:
                 return new Matrice_short();
             default:
@@ -1560,7 +1560,7 @@ template <> Element* Tenseur_short::newTensor(bool nb, LispE* lisp, List* l) {
     }
     switch (shape.size()) {
         case 2:
-            return new Shorts();
+            return lisp->provideShorts();
         case 3:
             return new Matrice_short(l);
         default:
@@ -4075,7 +4075,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 }
                 case t_matrix_short:
                 case t_tensor_short: {
-                    Shorts* l = new Shorts();
+                    Shorts* l = lisp->provideShorts();
                     first_element->flatten(lisp, l);
                     first_element->release();
                     lisp->reset_to_true(sb);
@@ -4715,7 +4715,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
         Element* val;
         switch (element_type) {
             case t_short: {
-                val = new Shorts();
+                val = lisp->provideShorts();
                 values->flatten(lisp, (Shorts*)val);
                 break;
             }
@@ -5175,7 +5175,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                 }
                 case t_shorts: {
                     listsize = e->size();
-                    res = new Shorts();
+                    res = lisp->provideShorts();
                     res->reserve(sz1);
                     if (listsize <= 1) {
                         int16_t v = 0;
@@ -5331,7 +5331,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                 case t_shorts:
                     if (e->isEmpty()) {
                         e->release();
-                        e = new Shorts(1, 0);
+                        e = lisp->provideShorts(1, 0);
                     }
                     res = new Matrice_short(lisp, e, sz1, sz2);
                     break;
@@ -5392,7 +5392,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
             case t_shorts:
                 if (e->isEmpty()) {
                     e->release();
-                    e = new Shorts(1, 0);
+                    e = lisp->provideShorts(1, 0);
                 }
                 res = new Tenseur_short(lisp, e, shape);
                 break;

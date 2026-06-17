@@ -1403,7 +1403,7 @@ Element* Short::plus(LispE* lisp, Element* e) {
         return this;
     }
     
-    return new Short(content+e->checkShort(lisp));
+    return lisp->provideShort(content+e->checkShort(lisp));
 }
 
 Element* Short::minus(LispE* lisp, Element* e) {
@@ -1416,7 +1416,7 @@ Element* Short::minus(LispE* lisp, Element* e) {
         content -= e->checkShort(lisp);
         return this;
     }
-    return new Short(content-e->checkShort(lisp));
+    return lisp->provideShort(content-e->checkShort(lisp));
 }
 
 Element* Short::multiply(LispE* lisp, Element* e) {
@@ -1430,7 +1430,7 @@ Element* Short::multiply(LispE* lisp, Element* e) {
         content *= e->asInteger();
         return this;
     }
-    return new Short(content*e->asInteger());
+    return lisp->provideShort(content*e->asInteger());
 }
 
 
@@ -1463,7 +1463,7 @@ Element* Short::mod(LispE* lisp, Element* e) {
         content %= v;
         return this;
     }
-    return new Short(content%v);
+    return lisp->provideShort(content%v);
 }
 
 Element* Short::power(LispE* lisp, Element* e) {
@@ -1482,7 +1482,7 @@ Element* Short::bit_not(LispE* lisp)  {
         return this;
     }
     release();
-    return new Short(~content);
+    return lisp->provideShort(~content);
 }
 
 
@@ -1497,7 +1497,7 @@ Element* Short::bit_and(LispE* lisp, Element* e)  {
         content &= e->checkShort(lisp);
         return this;
     }
-    return new Short(content&e->checkShort(lisp));
+    return lisp->provideShort(content&e->checkShort(lisp));
 }
 
 Element* Short::bit_and_not(LispE* lisp, Element* e)  {
@@ -1510,7 +1510,7 @@ Element* Short::bit_and_not(LispE* lisp, Element* e)  {
         content &= ~e->checkShort(lisp);
         return this;
     }
-    return new Short(content&~e->checkShort(lisp));
+    return lisp->provideShort(content&~e->checkShort(lisp));
 }
 
 Element* Short::bit_or(LispE* lisp, Element* e)  {
@@ -1524,7 +1524,7 @@ Element* Short::bit_or(LispE* lisp, Element* e)  {
         content |= e->checkShort(lisp);
         return this;
     }
-    return new Short(content|e->checkShort(lisp));
+    return lisp->provideShort(content|e->checkShort(lisp));
 }
 
 Element* Short::bit_xor(LispE* lisp, Element* e)  {
@@ -1538,7 +1538,7 @@ Element* Short::bit_xor(LispE* lisp, Element* e)  {
         content ^= e->checkShort(lisp);
         return this;
     }
-    return new Short(content^e->checkShort(lisp));
+    return lisp->provideShort(content^e->checkShort(lisp));
 }
 
 
@@ -1552,7 +1552,7 @@ Element* Short::leftshift(LispE* lisp, Element* e)  {
         content <<= e->checkShort(lisp);
         return this;
     }
-    return new Short(content<<e->checkShort(lisp));
+    return lisp->provideShort(content<<e->checkShort(lisp));
 }
 
 
@@ -1566,7 +1566,7 @@ Element* Short::rightshift(LispE* lisp, Element* e)  {
         content >>= e->checkShort(lisp);
         return this;
     }
-    return new Short(content>>e->checkShort(lisp));
+    return lisp->provideShort(content>>e->checkShort(lisp));
 }
 
 Element* Complexe::plus(LispE* lisp, Element* e) {
@@ -3511,7 +3511,7 @@ Element* Shorts::bit_not(LispE* l) {
         }
         return this;
     }
-    Shorts* num = new Shorts();
+    Shorts* num = l->provideShorts();
     for (long i = 0; i < size(); i++)
         num->liste.push_back(~liste[i]);
     release();
@@ -3526,7 +3526,7 @@ Element* Shorts::bit_and(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             d &= liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     
     if (e->isList()) {
@@ -3562,7 +3562,7 @@ Element* Shorts::bit_and_not(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             d &= ~liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     
     if (e->isList()) {
@@ -3599,7 +3599,7 @@ Element* Shorts::bit_or(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             d |= liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     if (e->isList()) {
         if (e->size() && e->index(0)->isList()) {
@@ -3634,7 +3634,7 @@ Element* Shorts::bit_xor(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             d ^= liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     if (e->isList()) {
         if (e->size() && e->index(0)->isList()) {
@@ -3665,7 +3665,7 @@ Element* Shorts::bit_xor(LispE* lisp, Element* e) {
 Element* Shorts::plus(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        return new Short(liste.sum());
+        return lisp->provideShort(liste.sum());
     }
     
     if (e->isList()) {
@@ -3703,7 +3703,7 @@ Element* Shorts::minus(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             d -= liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     
     //Two cases either e is a number or it is a list...
@@ -3737,7 +3737,7 @@ Element* Shorts::minus(LispE* lisp, Element* e) {
 
 Element* Shorts::multiply(LispE* lisp, Element* e) {
     if (e == NULL) {
-        return new Short(liste.product());
+        return lisp->provideShort(liste.product());
     }
     
     //Two cases either e is a number or it is a list...
@@ -3778,7 +3778,7 @@ Element* Shorts::divide(LispE* lisp, Element* e) {
                 throw new Error("Error: division by zero");
             d /= liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     if (e->isList()) {
         if (e->size() && e->index(0)->isList()) {
@@ -3815,7 +3815,7 @@ Element* Shorts::mod(LispE* lisp, Element* e) {
                 throw new Error("Error: division by zero");
             d %= liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
@@ -3850,7 +3850,7 @@ Element* Shorts::power(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             d = pow(d, (double)liste[i]);
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
@@ -3885,7 +3885,7 @@ Element* Shorts::leftshift(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             d <<= liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
@@ -3921,7 +3921,7 @@ Element* Shorts::rightshift(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             d >>= liste[i];
         }
-        return new Short(d);
+        return lisp->provideShort(d);
     }
     if (e->isList()) {
         if (e->size() && e->index(0)->isList()) {
@@ -5832,7 +5832,7 @@ Element* List::evall_multiply(LispE* lisp) {
                 case t_shorts: {
                     int16_t v = ((Shorts*)lst)->liste.product();
                     first_element->release();
-                    return v?new Short(v):zero_value;
+                    return v?lisp->provideShort(v):zero_value;
                 }
                 case t_integers: {
                     long v = ((Integers*)lst)->liste.product();
@@ -5944,7 +5944,7 @@ Element* List_multiply2::eval(LispE* lisp) {
                 int16_t v = ((Shorts*)lst)->liste.product();
                 first_element->release();
                 lisp->resetStack();
-                return v?new Short(v):zero_value;
+                return v?lisp->provideShort(v):zero_value;
             }
             case t_integers: {
                 long v = ((Integers*)lst)->liste.product();
@@ -6055,7 +6055,7 @@ Element* List::evall_plus(LispE* lisp) {
                 case t_shorts: {
                     int16_t v = ((Shorts*)lst)->liste.sum();
                     first_element->release();
-                    return v?new Short(v):zero_value;
+                    return v?lisp->provideShort(v):zero_value;
                 }
                 case t_integers: {
                     long v = ((Integers*)lst)->liste.sum();
@@ -6171,7 +6171,7 @@ Element* List_plus2::eval(LispE* lisp) {
                 int16_t v = ((Shorts*)lst)->liste.sum();
                 first_element->release();
                 lisp->resetStack();
-                return v?new Short(v):zero_value;
+                return v?lisp->provideShort(v):zero_value;
             }
             case t_integers: {
                 long v = ((Integers*)lst)->liste.sum();
@@ -9421,7 +9421,7 @@ Element* Numbers::matrix_product(LispE* lisp, Element* mat, long sh, long sh10, 
 Element* Shorts::matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21) {
     Shorts* m2 = (Shorts*)mat;
     
-    Shorts* result = new Shorts();
+    Shorts* result = lisp->provideShorts();
     result->liste.reserve(sh10 * sh21);
 
     long sz = size();
@@ -9658,7 +9658,7 @@ Element* Numbers::negate(LispE* lisp) {
 }
 
 Element* Shorts::negate(LispE* lisp) {
-    Shorts* n = new Shorts();
+    Shorts* n = lisp->provideShorts();
     for (long i = 0; i < size(); i++) {
         n->liste.push_back(neg_[!liste[i]]);
     }

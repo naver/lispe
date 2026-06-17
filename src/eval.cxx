@@ -957,7 +957,7 @@ Element* List::evall_clone(LispE* lisp) {
 
 Element* List::evall_converttoshort(LispE* lisp) {
     Element* value = liste[1]->eval(lisp);
-    Element* element = new Short(value->asShort());
+    Element* element = lisp->provideShort(value->asShort());
     value->release();
     return element;
 }

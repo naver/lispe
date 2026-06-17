@@ -1546,6 +1546,14 @@ public:
         return numbers_pool.last?numbers_pool.backpop()->set(n, pos):new Numberspool(this, n, pos);
     }
 
+    inline Shorts* provideShorts(long nb, int16_t v) {
+        return new Shorts(nb, v);
+    }
+
+    inline Shorts* provideShorts(Shorts* n, long pos) {
+        return new Shorts(n, pos);
+    }
+
     inline Integers* provideIntegers(long nb, long v) {
         return integers_pool.last?integers_pool.backpop()->set(nb, v):new Integerspool(this, nb, v);
     }
@@ -1574,6 +1582,14 @@ public:
         return integers_pool.last?integers_pool.backpop():new Integerspool(this);
     }
     
+    inline Shorts* provideShorts(Shorts* n) {
+        return new Shorts(n);
+    }
+
+    inline Shorts* provideShorts() {
+        return new Shorts();
+    }
+
     inline Strings* provideStrings() {
         return strings_pool.last?strings_pool.backpop():new Stringspool(this);
     }
@@ -1596,6 +1612,10 @@ public:
 
     inline Integer* provideInteger(long d) {
         return integer_pool.last?integer_pool.backpop()->set(d):new Integerpool(this, d);
+    }
+
+    inline Short* provideShort(long d) {
+        return new Short(d);
     }
 
     inline Complexe* provideComplex(double d, double imaginary) {

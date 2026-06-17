@@ -6875,7 +6875,7 @@ Element* Stringbytes::insert_with_compare(LispE* lisp, Element* e, List& compari
 //--------------------------------------------------------------------------------
 
 Element* Shorts::check_member(LispE* lisp, Element* the_set) {
-    Shorts* n = new Shorts();
+    Shorts* n = lisp->provideShorts();
     long v;
     long i, j;
     long sz = the_set->size();
@@ -6917,20 +6917,20 @@ void Shorts::sorting(LispE* lisp, List* comparison) {
 Element* Shorts::minimum(LispE* lisp) {
     if (!liste.size())
         return null_;
-    return new Short(liste.mini());
+    return lisp->provideShort(liste.mini());
 }
 
 Element* Shorts::maximum(LispE* lisp) {
     if (!liste.size())
         return null_;
-    return new Short(liste.maxi());
+    return lisp->provideShort(liste.maxi());
 }
 
 Element* Shorts::minmax(LispE* lisp) {
     int16_t v_min;
     int16_t v_max;
     if (liste.minmax(v_min, v_max)) {
-        Shorts* f = new Shorts();
+        Shorts* f = lisp->provideShorts();
         f->liste.push_back(v_min);
         f->liste.push_back(v_max);
         return f;
@@ -6940,7 +6940,7 @@ Element* Shorts::minmax(LispE* lisp) {
 
 void Shorts::flatten(LispE* lisp, List* l) {
     for (long i = 0; i < size(); i++) {
-        l->append(new Short(liste[i]));
+        l->append(lisp->provideShort(liste[i]));
     }
 }
 
@@ -6996,7 +6996,7 @@ void Shorts::storevalue(LispE* lisp, u_ustring& s) {
 Element* Shorts::invert_sign(LispE* lisp) {
     Shorts* n = this;
     if (status)
-        n = new Shorts(this);
+        n = lisp->provideShorts(this);
     
     for (long i = 0; i < n->liste.size(); i++)
         n->liste[i] *= -1;
@@ -7019,7 +7019,7 @@ void Shorts::append(LispE* lisp, long v) {
 Element* Shorts::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    Short* element = new Short(0);
+    Short* element = lisp->provideShort(0);
     lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
@@ -7027,7 +7027,7 @@ Element* Shorts::loop(LispE* lisp, int16_t label, List* code) {
         e = lisp->get_variable(label);
         if (e != element) {
             if (e->type != t_short) {
-                e = new Short(liste[i]);
+                e = lisp->provideShort(liste[i]);
                 lisp->recording(e, label);
             }
             else
@@ -7074,7 +7074,7 @@ Element* Shorts::rotate(LispE* lisp, long nb) {
         nb = nb % sz;
         if (!nb)
             return this;
-        Shorts* reverse = new Shorts();
+        Shorts* reverse = lisp->provideShorts();
         for (i = nb; i < sz; i++)
             reverse->liste.push_back(liste[i]);
         for (i = 0; i < nb; i++)
@@ -7085,7 +7085,7 @@ Element* Shorts::rotate(LispE* lisp, long nb) {
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
-    Shorts* reverse = new Shorts();
+    Shorts* reverse = lisp->provideShorts();
     for (i = sz - nb; i < sz; i++)
         reverse->liste.push_back(liste[i]);
     for (i = nb; i < sz; i++)
@@ -7121,7 +7121,7 @@ Element* Shorts::unique(LispE* lisp) {
     if (liste.size() == 0)
         return this;
     
-    Shorts* nb = new Shorts();
+    Shorts* nb = lisp->provideShorts();
     long i;
     std::set<int16_t> values;
     for (i = 0; i < liste.size(); i++) {
@@ -7132,7 +7132,7 @@ Element* Shorts::unique(LispE* lisp) {
 }
 
 Element* Shorts::thekeys(LispE* lisp) {
-    Shorts* keys = new Shorts();
+    Shorts* keys = lisp->provideShorts();
     for (long i = 0; i< size(); i++) {
         keys->liste.push_back(i);
     }
@@ -7170,7 +7170,7 @@ Element* Shorts::list_and(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
         throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
     
-    Shorts* l = new Shorts();
+    Shorts* l = lisp->provideShorts();
     long sz = liste.size();
     for (long i = 0; i < sz; i++) {
         if (!l->liste.check(liste[i]) && value->check_element(lisp, index(i)))
@@ -7188,7 +7188,7 @@ Element* Shorts::list_or(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
         throw new Error("Error: Can only apply '|||' to strings, lists or sets");
     
-    Shorts* l = new Shorts();
+    Shorts* l = lisp->provideShorts();
     long sz = liste.size();
     long i;
     for (i = 0; i < sz; i++) {
@@ -7248,7 +7248,7 @@ Element* Shorts::list_xor(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
         throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
     
-    Shorts* l = new Shorts();
+    Shorts* l = lisp->provideShorts();
     Shorts* intersection = (Shorts*)list_and(lisp, value);
     long sz = liste.size();
     long i;
@@ -7309,7 +7309,7 @@ Element* Shorts::reverse(LispE* lisp, bool duplicate) {
         return this;
     
     if (duplicate) {
-        Shorts* l = new Shorts(size(), 0);
+        Shorts* l = lisp->provideShorts(size(), 0);
         l->reset();
         for (long i = liste.size()-1; i >= 0; i--) {
             l->liste.push_raw(liste[i]);
@@ -7323,24 +7323,24 @@ Element* Shorts::reverse(LispE* lisp, bool duplicate) {
 
 Element* Shorts::protected_index(LispE* lisp,long i) {
     if (i >= 0 && i < liste.size())
-        return new Short(liste[i]);
+        return lisp->provideShort(liste[i]);
     return null_;
 }
 
 Element* Shorts::last_element(LispE* lisp) {
     if (!liste.size())
         return null_;
-    return new Short(liste.back());
+    return lisp->provideShort(liste.back());
 }
 
 Element* Shorts::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < liste.size())
-        return new Short(liste[i]);
+        return lisp->provideShort(liste[i]);
     return null_;
 }
 
 Element* Shorts::value_from_index(LispE* lisp, long i) {
-    return new Short(liste[i]);
+    return lisp->provideShort(liste[i]);
 }
 
 Element* Shorts::value_on_index(LispE* lisp, Element* ix) {
@@ -7349,7 +7349,7 @@ Element* Shorts::value_on_index(LispE* lisp, Element* ix) {
         i = liste.size() + i;
     
     if (i >= 0 && i < liste.size())
-        return new Short(liste[i]);
+        return lisp->provideShort(liste[i]);
     
     return null_;
 }
@@ -7360,7 +7360,7 @@ Element* Shorts::protected_index(LispE* lisp, Element* ix) {
         i = liste.size() + i;
     
     if (i >= 0 && i < liste.size())
-        return new Short(liste[i]);
+        return lisp->provideShort(liste[i]);
     
     throw new Error("Error: index out of bounds");
 }
@@ -7401,7 +7401,7 @@ Element* Shorts::extraction(LispE* lisp, List* l) {
     }
     if (l->size() == 3) {
         //On returns only one element
-        return new Short(liste[from]);
+        return lisp->provideShort(liste[from]);
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
@@ -7420,9 +7420,9 @@ Element* Shorts::extraction(LispE* lisp, List* l) {
     }
     
     if (upto == sz)
-        return new Shorts(this, from);
+        return lisp->provideShorts(this, from);
     
-    Shorts* n = new Shorts(upto-from, 0);
+    Shorts* n = lisp->provideShorts(upto-from, 0);
     n->reset();
     for (;from < upto; from++) {
         n->liste.push_raw(liste[from]);
@@ -7469,7 +7469,7 @@ Element* Shorts::replace_in(LispE* lisp, List* l) {
         return this;
     }
     
-    Shorts* n = new Shorts();
+    Shorts* n = lisp->provideShorts();
     long i;
     for (i = 0; i < depuis; i++)
         n->liste.push_back(liste[i]);
@@ -7481,7 +7481,7 @@ Element* Shorts::replace_in(LispE* lisp, List* l) {
 
 Element* Shorts::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
-        Shorts* l = new Shorts;
+        Shorts* l = lisp->provideShorts();
         l->liste = liste;
         return l;
     }
@@ -7490,7 +7490,7 @@ Element* Shorts::duplicate_constant(LispE* lisp) {
 
 Element* Shorts::asList(LispE* lisp, List* l) {
     for (long i = 0; i < liste.size(); i++)
-        l->append(new Short(liste[i]));
+        l->append(lisp->provideShort(liste[i]));
     return l;
 }
 
@@ -7508,7 +7508,7 @@ Element* Shorts::cadr(LispE* lisp, u_ustring& action) {
                     err += U"'";
                     throw new Error(err);
                 }
-                return new Short(liste[pos]);
+                return lisp->provideShort(liste[pos]);
             }
             if (pos == sz)
                 throw new Error("Error: No more elements to traverse with 'cad..r'");
@@ -7519,7 +7519,7 @@ Element* Shorts::cadr(LispE* lisp, u_ustring& action) {
     if (pos) {
         if (pos == sz)
             return null_;
-        return new Shorts(this, pos);
+        return lisp->provideShorts(this, pos);
     }
     
     return null_;
@@ -7528,13 +7528,13 @@ Element* Shorts::cadr(LispE* lisp, u_ustring& action) {
 Element* Shorts::car(LispE* lisp) {
     if (liste.size() == 0)
         return null_;
-    return new Short(liste[0]);
+    return lisp->provideShort(liste[0]);
 }
 
 Element* Shorts::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
-    return new Shorts(this, 1);
+    return lisp->provideShorts(this, 1);
 }
 
 //--------------------------------------------------------------------------------
@@ -8278,7 +8278,7 @@ Element* Shorts::next_iter(LispE* lisp, void* it) {
         return emptyatom_;
     int16_t v = liste[n[0]];
     n[0]++;
-    return new Short(v);
+    return lisp->provideShort(v);
 }
 
 Element* Shorts::next_iter_exchange(LispE* lisp, void* it) {
@@ -9232,7 +9232,7 @@ Element* Integers::takenb(LispE* lisp, long nb, bool direction) {
 }
 
 Element* Shorts::takenb(LispE* lisp, long nb, bool direction) {
-    Shorts* l = new Shorts();
+    Shorts* l = lisp->provideShorts();
     
     if (direction) {
         nb = lmin(nb, size());

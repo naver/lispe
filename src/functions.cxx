@@ -4083,7 +4083,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                     result = lisp->provideNumbers();
                     break;
                 case t_shorts:
-                    result = new Shorts();
+                    result = lisp->provideShorts();
                     break;
                 case t_integers:
                     result = lisp->provideIntegers();
@@ -4281,7 +4281,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                     result = lisp->provideNumbers();
                     break;
                 case t_shorts:
-                    result = new Shorts();
+                    result = lisp->provideShorts();
                     break;
                 case t_integers:
                     result = lisp->provideIntegers();
@@ -4491,7 +4491,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                     result = lisp->provideNumbers();
                     break;
                 case t_shorts:
-                    result = new Shorts();
+                    result = lisp->provideShorts();
                     break;
                 case t_integers:
                     result = lisp->provideIntegers();
@@ -4804,7 +4804,7 @@ Element* List_outerproduct_eval::eval(LispE* lisp) {
                     ((Numbers*)l2)->liste = ((Numbers*)l1)->liste;
                     break;
                 case t_shorts:
-                    l2 = new Shorts();
+                    l2 = lisp->provideShorts();
                     ((Shorts*)l2)->liste = ((Shorts*)l1)->liste;
                     break;
                 case t_integers:

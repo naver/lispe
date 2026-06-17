@@ -169,7 +169,7 @@ public:
         long v;
         switch (valuevect->type) {
             case  t_shorts: {
-                Shorts* liste = new Shorts();
+                Shorts* liste = lisp->provideShorts();
                 int16_t vlispe;
                 for (i = 0; i < nb; i++) {
                     v = d(gen);
@@ -352,7 +352,7 @@ public:
         Element* iv;
         switch(tvect->type) {
             case t_shorts:
-                iv = new Shorts();
+                iv = lisp->provideShorts();
                 break;
             case t_integers:
                 iv = lisp->provideIntegers();
@@ -387,7 +387,7 @@ public:
             vect.push_back(tvect->index(i)->asNumber());
         
         for (i = 0; i < tinter->size(); i++)
-            vect.push_back(tinter->index(i)->asNumber());
+            inter.push_back(tinter->index(i)->asNumber());
         
         std::piecewise_constant_distribution<double> d(vect.begin(), vect.end(), inter.begin());
         if (nb == 1)
@@ -415,7 +415,7 @@ public:
             vect.push_back(tvect->index(i)->asNumber());
         
         for (i = 0; i < tinter->size(); i++)
-            vect.push_back(tinter->index(i)->asNumber());
+            inter.push_back(tinter->index(i)->asNumber());
         
         std::piecewise_linear_distribution<double> d(vect.begin(), vect.end(), inter.begin());
        
