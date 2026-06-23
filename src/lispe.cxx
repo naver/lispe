@@ -31,7 +31,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.6.17.10.35";
+static std::string version = "1.2026.6.22.11.6";
 string LispVersion() {
     return version;
 }
@@ -3838,6 +3838,7 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
 
 
 

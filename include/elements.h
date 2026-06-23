@@ -1681,6 +1681,11 @@ public:
         return true;
     }
 
+    Element* duplicate_constant(LispE* lisp) {
+        Element* v = value->duplicate_constant(lisp);
+        release();
+        return v;
+    }
 };
 
 class Cadr : public Element {
