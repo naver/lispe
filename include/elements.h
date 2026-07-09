@@ -1454,7 +1454,6 @@ public:
     char check_match(LispE* lisp, Element* value) {
         return check_ok*(atome == value->type_element());
     }
-
 };
 
 class Atomenotunifiable : public Atome {
@@ -2798,6 +2797,8 @@ public:
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
+    Element* replace(LispE* lisp, Element* i, Element* e);
+    Element* replace(LispE* lisp, long i, Element* e);
     
     Element* list_and(LispE*, Element* value);
     Element* list_xor(LispE*, Element* value);
@@ -2818,7 +2819,6 @@ public:
         return (v == content);
     }
 
-    Element* replace(LispE* lisp, long i, Element* e);
     
     bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
@@ -3145,7 +3145,9 @@ public:
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
-    
+    Element* replace(LispE* lisp, Element* i, Element* e);
+    Element* replace(LispE* lisp, long i, Element* e);
+
     Element* list_and(LispE*, Element* value);
     Element* list_xor(LispE*, Element* value);
     Element* list_or(LispE*, Element* value);
@@ -3164,8 +3166,6 @@ public:
     bool equalvalue(u_ustring& v) {
         return (v == asUString(NULL));
     }
-
-    Element* replace(LispE* lisp, long i, Element* e);
     
     bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);

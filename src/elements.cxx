@@ -2407,6 +2407,18 @@ Element* Element::replace(LispE* lisp, long i, Element* e) {
     throw new Error("Error: cannot modify this element");
 }
 
+Element* String::replace(LispE* lisp, Element* idx, Element* e) {
+    if (idx->isString()) {
+        u_ustring src = idx->asUString(lisp);
+        long i = content.find(src);
+        if (i == -1)
+            return this;
+        content = content.substr(0,i) + e->asUString(lisp) + content.substr(i + src.size(), content.size());
+        return this;
+    }
+    return replace(lisp, idx->asInteger(), e);
+}
+
 Element* String::replace(LispE* lisp, long i, Element* e) {
     if (i < 0) {
         i += content.size();
@@ -2424,6 +2436,18 @@ Element* String::replace(LispE* lisp, long i, Element* e) {
         content = c;
     }
     return this;
+}
+
+Element* Stringbyte::replace(LispE* lisp, Element* idx, Element* e) {
+    if (idx->isString()) {
+        string src = idx->toString(lisp);
+        long i = content.find(src);
+        if (i == -1)
+            return this;
+        content = content.substr(0,i) + e->toString(lisp) + content.substr(i + src.size(), content.size());        
+        return this;
+    }
+    return replace(lisp, idx->asInteger(), e);
 }
 
 Element* Stringbyte::replace(LispE* lisp, long i, Element* e) {
