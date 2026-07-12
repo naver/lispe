@@ -4604,49 +4604,36 @@ Element* List_apply_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         //(apply func l)
         arguments = liste[2]->eval(lisp);
-        if (arguments->type == t_list) {
-            if (arguments->status) {
-                if (use_list)
-                    call = lisp->provideList();
-                else
-                    call = lisp->delegation->straight_eval[lab]->cloning();
-                call->append(function);
-                call->extend((List*)arguments);
-                arguments = call;
-                call = NULL;
-            }
-            else {
-                if (!arguments->insertion(function, 0))
-                    return lisp->check_error(this, new Error("Error: cannot insert this element in this list"), idxinfo);
-            }
-            
-            lisp->check_arity(lab, arguments->size());
-            result = arguments->eval(lisp);
-            arguments->force_release();
-            lisp->resetStack();
-            return result;
+        if (arguments->type != t_list) {
+            List* e = lisp->provideList();
+            if (arguments->isList())
+                arguments->asList(lisp, e);
+            else
+                e->append(arguments);
+            arguments->release();
+            arguments = e;
         }
-
-        if (!arguments->isList())
-            return lisp->check_error(this, new Error("Error: arguments to 'apply' should be given as a list"), idxinfo);
-
-        if (use_list)
-            call = lisp->provideList();
-        else
-            call = lisp->delegation->straight_eval[lab]->cloning();
-        call->append(function);
-        call = (List*)arguments->asList(lisp, call);
-        if (call == arguments) {
+        
+        if (arguments->status) {
+            if (use_list)
+                call = lisp->provideList();
+            else
+                call = lisp->delegation->straight_eval[lab]->cloning();
+            call->append(function);
+            call->extend((List*)arguments);
+            arguments = call;
             call = NULL;
-            arguments = NULL;
-            return lisp->check_error(this, new Error("Error: wrong use of 'apply'"), idxinfo);
         }
-
-        lisp->check_arity(lab, call->size());
-        result = call->eval(lisp);
-
-        call->force_release();
-        arguments->release();
+        else {
+            if (!arguments->insertion(function, 0))
+                return lisp->check_error(this, new Error("Error: cannot insert this element in this list"), idxinfo);
+        }
+        
+        lisp->check_arity(lab, arguments->size());
+        result = arguments->eval(lisp);
+        arguments->force_release();
+        lisp->resetStack();
+        return result;
     }
     catch (Error* err) {
         if (call != NULL) {
@@ -4661,8 +4648,6 @@ Element* List_apply_eval::eval(LispE* lisp) {
         }
         return lisp->check_error(this, err, idxinfo);
     }
-    lisp->resetStack();
-    return result;
 }
 
 Element* List_over_eval::eval(LispE* lisp) {
