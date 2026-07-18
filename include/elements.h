@@ -196,7 +196,7 @@ inline const unsigned long _arity(long sz) {
     return (sz > 15)?P_FULL:1<<sz;
 }
 //------------------------------------------------------------------------------------------
-#define false_ lisp->delegation->_FALSE
+#define false_ lisp->n_false
 #define true_ lisp->n_true
 #define null_ lisp->n_null
 

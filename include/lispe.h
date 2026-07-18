@@ -132,6 +132,7 @@ public:
 
     Element* n_null;
     Element* n_emptylist;
+    Element* n_false;
     Element* n_true;
     Element* n_zero;
     Element* n_one;
@@ -197,6 +198,7 @@ public:
         delegation->initialisation(this);
         n_null = delegation->_NULL;
         n_emptylist = delegation->_EMPTYLIST;
+        n_false = delegation->_FALSE;
         n_true = delegation->_TRUE;
         n_zero = delegation->_ZERO;
         n_one = delegation->_ONE;

@@ -1476,6 +1476,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
 
     n_null = delegation->_NULL;
     n_emptylist = delegation->_EMPTYLIST;
+    n_false = delegation->_FALSE;
     n_true = delegation->_TRUE;
     n_zero = delegation->_ZERO;
     n_one = delegation->_ONE;
@@ -1483,6 +1484,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
         fast_variables[i] = n_null;
 
     recordingunique(n_true, v_true);
+    recordingunique(n_false, v_false);
     recordingunique(n_null, v_null);
     recordingunique(delegation->_CUT, v_cut);
     recordingunique(delegation->_ERROR, t_error);
@@ -1528,6 +1530,7 @@ LispE::LispE(LispE* lisp) {
 
     n_null = delegation->_NULL;
     n_emptylist = delegation->_EMPTYLIST;
+    n_false = delegation->_FALSE;
     n_true = delegation->_TRUE;
     n_zero = delegation->_ZERO;
     n_one = delegation->_ONE;
@@ -1535,6 +1538,7 @@ LispE::LispE(LispE* lisp) {
         fast_variables[i] = n_null;
 
     recordingunique(n_true, v_true);
+    recordingunique(n_false, v_false);
     recordingunique(n_null, v_null);
     recordingunique(delegation->_CUT, v_cut);
     recordingunique(delegation->_ERROR, t_error);
