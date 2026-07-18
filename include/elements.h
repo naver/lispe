@@ -53,7 +53,7 @@ void decrement_total();
 
 typedef enum {
     //Default values
-    v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, v_cut, v_into,
+    v_null, v_emptylist, v_emptyatom, v_false, v_true, v_mainspace, v_cut, v_into,
     
     //Default types
     t_emptystring, t_operator, t_atom,
@@ -196,8 +196,7 @@ inline const unsigned long _arity(long sz) {
     return (sz > 15)?P_FULL:1<<sz;
 }
 //------------------------------------------------------------------------------------------
-//false_ is actually a bit misleading as it is an alias to null_
-#define false_ lisp->n_null
+#define false_ lisp->delegation->_FALSE
 #define true_ lisp->n_true
 #define null_ lisp->n_null
 
@@ -1334,10 +1333,6 @@ public:
         return name;
     }
 
-    bool isNULL() {
-        return (atome == v_null);
-    }
-
     int16_t function_label(LispE* lisp) {
         return atome;
     }
@@ -1356,9 +1351,11 @@ public:
     wstring jsonString(LispE* lisp) {
         switch (atome) {
             case v_null:
-                return L"false";
+                return L"null";
             case v_emptylist:
                 return L"[]";
+            case v_false:
+                return L"false";
             case v_true:
                 return L"true";
             default:
@@ -1403,8 +1400,12 @@ public:
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
     
+    bool isNULL() {
+        return (atome == v_null || atome == v_false);
+    }
+
     bool Boolean() {
-        return atome;
+        return (atome != v_null && atome != v_false);
     }
     
     double asNumber() {

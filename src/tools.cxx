@@ -5662,6 +5662,9 @@ void replacemetas(u_ustring& sub) {
 }
 
 bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s, bool raw) {
+    _false = false_;
+    _true = true_;
+    _null = null_;
     if (!raw)
         return compile_to_json(s);
     
@@ -5741,13 +5744,13 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
             src[to] = 0;
             token = (u_uchar*)src+i-1;
             if (token == U"false")
-                container->append(false_);
+                container->append(_false);
             else {
                 if (token == U"true")
-                    container->append(true_);
+                    container->append(_true);
                 else {
                     if (token == U"null" || token == U"nil")
-                        container->append(null_);
+                        container->append(_null);
                     else
                         container->append(lisp, token);
                 }
@@ -5909,13 +5912,13 @@ char LispEJsonCompiler::build_to_json(Element* container) {
             src[to] = 0;
             token = (u_uchar*)src+i-1;
             if (token == U"false")
-                container->append(new Integer(0));
+                container->append(_false);
             else {
                 if (token == U"true")
-                    container->append(new Integer(0));
+                    container->append(_true);
                 else {
                     if (token == U"null" || token == U"nil")
-                        container->append(new Atome(v_null, U"nil"));
+                        container->append(_null);
                     else
                         container->append(new String(token));
                 }

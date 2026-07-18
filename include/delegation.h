@@ -199,6 +199,7 @@ public:
     Atome* _TERMINAL;
     Atome* _INTO_STACK;
     Atome* _TRUE;
+    Atome* _FALSE;
     Atome* _NULL;
     Atome* _CUT;
     Atome* _EMPTYATOM;

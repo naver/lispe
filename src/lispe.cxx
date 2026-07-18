@@ -31,7 +31,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.7.12.20.8";
+static std::string version = "1.2026.7.17.15.31";
 string LispVersion() {
     return version;
 }
@@ -880,6 +880,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     code_to_string[v_null] = U"nil";
     code_to_string[v_true] = U"true";
+    code_to_string[v_false] = U"false";
     code_to_string[v_cut] = U"cut_";
     code_to_string[v_into] = U"into";
 
@@ -928,6 +929,7 @@ void Delegation::initialisation(LispE* lisp) {
     _TERMINAL = (Atome*)lisp->provideAtomOrInstruction(l_terminal);
     _INTO_STACK = (Atome*)lisp->provideAtomOrInstruction(v_into);
     _TRUE = (Atome*)lisp->provideAtomOrInstruction(v_true);
+    _FALSE = (Atome*)lisp->provideAtomOrInstruction(v_false);
     _CUT = (Atome*)lisp->provideAtomOrInstruction(v_cut);
     _EMPTYATOM = (Atome*)lisp->provideAtomOrInstruction(v_emptyatom);
     _DEFPAT = (Atome*)lisp->provideAtomOrInstruction(l_defpat);
@@ -976,7 +978,7 @@ void Delegation::initialisation(LispE* lisp) {
     _NUMERICAL_BOOLEANS[0] = _ZERO;
     _NUMERICAL_BOOLEANS[1] = _ONE;
 
-    _BOOLEANS[0][0] = _NULL;
+    _BOOLEANS[0][0] = _FALSE;
     _BOOLEANS[0][1] = _TRUE;
     _BOOLEANS[1][0] = _ZERO;
     _BOOLEANS[1][1] = _ONE;
@@ -989,6 +991,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     //We create our constant values
     lisp->recordingunique(_TRUE, v_true);
+    lisp->recordingunique(_FALSE, v_false);
     lisp->recordingunique(_NULL, v_null);
     lisp->recordingunique(_CUT, v_cut);
     lisp->recordingunique(_ERROR, t_error);
@@ -1160,10 +1163,6 @@ void Delegation::initialisation(LispE* lisp) {
         
     w = U("¨");
     string_to_code[w] = l_maplist;
-
-    //But also 'false', which is a substitute to nil as well
-    w = U"false";
-    string_to_code[w] = v_null;
 
     //But also 'fail_', which is a substitute to nil as well (see cut_)
     w = U"fail_";
@@ -3838,6 +3837,7 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
 
 
 

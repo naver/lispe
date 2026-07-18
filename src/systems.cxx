@@ -1141,7 +1141,7 @@ public:
             if ((scible.st_mode & S_IFMT) == S_IFDIR)
                 recording(mp, U"directory", true_);
             else
-                recording(mp, U"directory", false_);
+                recording(mp, U"directory", null_);
             return mp;
         }
         

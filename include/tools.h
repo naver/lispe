@@ -427,6 +427,7 @@ public:
 
 void split_container(wchar_t* src, long lensrc, vector<long>&);
 void split_container(u_uchar* src, long lensrc, vector<long>&);
+class Atome;
 
 class LispEJsonCompiler {
 public:
@@ -444,6 +445,9 @@ public:
     long to;
     long l;
     u_uchar c;
+    Element* _false;
+    Element* _true;
+    Element* _null;
 
     Element* compile_to_json(string& s);
     Element* compile_to_json(u_ustring& s);
