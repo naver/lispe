@@ -1401,7 +1401,7 @@ public:
     bool egal(Element* e);
     
     bool isNULL() {
-        return (atome == v_null || atome == v_false);
+        return (atome == v_null);
     }
 
     bool Boolean() {

@@ -522,7 +522,7 @@ public:
     }
     
     Element* compose(LispE* lisp, Element* var, Element* e) {
-        if (e == NULL || counter->more(lisp,e)->isNULL())
+        if (e == NULL || counter->more(lisp,e) == null_)
             return this;
         return e;
     }
