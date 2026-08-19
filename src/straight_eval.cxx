@@ -5864,9 +5864,15 @@ Element* List_range_eval::eval(LispE* lisp) {
         e3 = liste[3]->eval(lisp);
     }
     else {
-        e2 = e1;
-        e1 = zero_value;
-        e3 = one_value;
+        if (size() == 3) {
+            e2 = liste[2]->eval(lisp);
+            e3 = one_value;
+        }
+        else {
+            e2 = e1;
+            e1 = zero_value;
+            e3 = one_value;
+        }
     }
     
     Element* e;
@@ -5904,9 +5910,15 @@ Element* List_rangein_eval::eval(LispE* lisp) {
         e3 = liste[3]->eval(lisp);
     }
     else {
-        e2 = e1;
-        e1 = zero_value;
-        e3 = one_value;
+        if (size() == 3) {
+            e2 = liste[2]->eval(lisp);
+            e3 = one_value;
+        }
+        else {
+            e2 = e1;
+            e1 = zero_value;
+            e3 = one_value;
+        }
     }
 
     Element* e;

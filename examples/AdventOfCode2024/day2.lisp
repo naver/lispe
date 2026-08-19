@@ -11,7 +11,7 @@
       (fabs (sum 
             (maplist 
                (\(x) (if (< (iabs x) 4) (signp x) 0))
-               (shift '- l)
+               (shift@ '- l)
             )
          )
       )

@@ -10,8 +10,8 @@
    (setq ligne (@ code (car i)))
    (check 
       (or
-         (eq (count ligne "\"\"\"") 1)
-         (eq (count ligne "'''") 1)
+         (eq (count@ ligne "\"\"\"") 1)
+         (eq (count@ ligne "'''") 1)
       )
       (push v ligne)
       (inc i)

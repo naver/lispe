@@ -24,7 +24,7 @@ QQQJA 483
 
 (defun modif(x)
    (setq v (maplist (\(x) (@ force x)) (split x "")))
-   (setq nb (sort '> (filterlist (\(x) x) (maplist '(count x) letters))))
+   (setq nb (sort '> (filterlist (\(x) x) (maplist '(count@ x) letters))))
    (setq id
       (switch (size nb)
          (5 0)
@@ -57,9 +57,9 @@ QQQJA 483
 
 (defun modif2(x)
    (setq v (maplist (\(x) (@ force x)) (split x "")))
-   (setq nb (sort '> (filterlist (\(x) x) (maplist '(count x) letters))))
+   (setq nb (sort '> (filterlist (\(x) x) (maplist '(count@ x) letters))))
    (setq nb (integer (join nb "")))
-   (setq nbj (count x "J"))
+   (setq nbj (count@ x "J"))
    (setq id
       (if nbj
          (switch nb

@@ -33,7 +33,7 @@
 
    (setq nb (integer 0))
    (loop i (irange 0 9 1)
-      (+= nb (* (taille_generation (integers i) gen) (count fishes i)))
+      (+= nb (* (taille_generation (integers i) gen) (count@ fishes i)))
    )
    (println 'Taille nb)
 )

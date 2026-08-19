@@ -17,8 +17,8 @@
       (setq ligne (@ code (@ i 0)))
       (setq clr (segment (trim ligne)))
       (inc i)
-      (setq nb (count clr "{"))
-      (-= nb (count clr "}"))
+      (setq nb (count@ clr "{"))
+      (-= nb (count@ clr "}"))
       (ife (eq nb 1)
          (block
             (setq sub (list ligne))

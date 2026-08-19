@@ -48,7 +48,7 @@
    )
 )
 
-(println (+ (maplist (\(x) (count x "#")) réponses)))
+(println (+ (maplist (\(x) (count@ x "#")) réponses)))
 
 (loop l (enum carte)
    (loop c (enum (@ l 1))
@@ -80,7 +80,7 @@
 (println 
    (+ 
       (maplist (\(x) 
-            (+ (maplist (\(u) (count x u)) codes)))
+            (+ (maplist (\(u) (count@ x u)) codes)))
          réponses
       )
    )

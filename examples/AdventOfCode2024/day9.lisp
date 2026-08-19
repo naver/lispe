@@ -7,7 +7,7 @@
 
 (setq base ())
 
-(setq blocs (slice codes 2))
+(setq blocs (slice@ codes 2))
 
 (setq lst (last blocs))
 (pop blocs)

@@ -31,7 +31,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.7.17.15.31";
+static std::string version = "1.2026.8.18.10.46";
 string LispVersion() {
     return version;
 }
@@ -438,9 +438,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_cons, "cons", P_THREE, new List_cons_eval());
     set_instruction(l_consb, "consb", P_THREE,  new List_consb_eval());
     set_instruction(l_conspoint, "conspoint", P_ATLEASTTWO, &List::evall_conspoint);
-    set_instruction(l_count, "count", P_THREE|P_FOUR,  new List_count_eval());
-    set_instruction(l_shift, "shift", P_THREE | P_FOUR,  new List_shift_eval());
-    set_instruction(l_slice, "slice", P_THREE,  new List_slice_eval());
+    set_instruction(l_count, "count@", P_THREE|P_FOUR,  new List_count_eval());
+    set_instruction(l_shift, "shift@", P_THREE | P_FOUR,  new List_shift_eval());
+    set_instruction(l_slice, "slice@", P_THREE,  new List_slice_eval());
     set_instruction(l_short, "short", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger, new List_integer_eval());
     set_instruction(l_enumerate, "enum", P_TWO | P_THREE, new List_enumerate_eval());
@@ -608,8 +608,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_pushfirst, "pushfirst", P_ATLEASTTHREE,  new List_pushfirst_eval());
     set_instruction(l_pushlast, "pushlast", P_ATLEASTTHREE,  new List_pushlast_eval());
     set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
-    set_instruction(l_range, "range", P_TWO | P_FOUR,  new List_range_eval());
-    set_instruction(l_rangein, "rangein", P_TWO | P_FOUR,  new List_rangein_eval());
+    set_instruction(l_range, "range", P_TWO | P_THREE | P_FOUR,  new List_range_eval());
+    set_instruction(l_rangein, "rangein", P_TWO | P_THREE | P_FOUR,  new List_rangein_eval());
     set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark, new List_resetmark_eval());
     set_instruction(l_return, "return", P_ONE | P_TWO , &List::evall_return);
     set_instruction(l_replaceall, "replaceall", P_FOUR,  new List_replaceall_eval());
@@ -3841,6 +3841,7 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
 
 
 

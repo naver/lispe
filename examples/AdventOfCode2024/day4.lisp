@@ -7,11 +7,11 @@
 
 (setq message (split enigma "\n"))
 
-(setq nb (+ (maplist (\(x) (+ (count x "XMAS") (count x "SAMX"))) message)))
+(setq nb (+ (maplist (\(x) (+ (count@ x "XMAS") (count@ x "SAMX"))) message)))
 (setq m (transpose (maplist (\(x) (split x "")) message)))
 
 (setq m (maplist (\(x) (join x "")) m))
-(+= nb (+ (maplist (\(x) (+ (count x "XMAS") (count x "SAMX"))) m)))
+(+= nb (+ (maplist (\(x) (+ (count@ x "XMAS") (count@ x "SAMX"))) m)))
 
 (setq X (size message))
 (setq Y (size (@ message 0)))
