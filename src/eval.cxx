@@ -505,7 +505,7 @@ Element* List::evall_js(LispE* lisp) {
     return lisp->provideString(code);
 }
 
-Element* List::evall_js_sync(LispE* lisp) {
+Element* List::evall_js_async(LispE* lisp) {
     static int i = 0;
     Element* element = liste[1]->eval(lisp);
     string code;

@@ -1440,7 +1440,7 @@ public:
     Element* evall_input(LispE* lisp);
 #ifdef LISPE_WASM
     Element* evall_js(LispE* lisp);
-    Element* evall_js_sync(LispE* lisp);
+    Element* evall_js_async(LispE* lisp);
 #endif
     Element* evall_lambda(LispE* lisp);
     Element* evall_last(LispE* lisp);

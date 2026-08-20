@@ -31,7 +31,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.8.18.10.46";
+static std::string version = "1.2026.8.20.11.3";
 string LispVersion() {
     return version;
 }
@@ -517,7 +517,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_infix, "infix", P_TWO, &List::evall_infix, new List_infix_eval());
 #ifdef LISPE_WASM 
     set_instruction(l_evaljs, "evaljs", P_TWO, &List::evall_js);
-    set_instruction(l_evaljssync, "asyncjs", P_ATLEASTTWO, &List::evall_js_sync);
+    set_instruction(l_evaljssync, "asyncjs", P_ATLEASTTWO, &List::evall_js_async);
 #else
     set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
     set_instruction(l_input, "input@", P_ONE | P_TWO, &List::evall_input);
@@ -3841,6 +3841,7 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
 
 
 

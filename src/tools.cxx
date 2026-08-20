@@ -1417,7 +1417,11 @@ Exporting string doublequoted(string value) {
         c = value[i];
         if (c == '\\') {
             output += c;
-            output += value[++i];
+            c = value[++i];
+            if (c)
+                output += c;
+            else
+                output += '\\';
             continue;
         }
         if (c == '"')
@@ -1440,7 +1444,11 @@ Exporting wstring wdoublequoted(wstring value) {
         c = value[i];
         if (c == '\\') {
             output += c;
-            output += value[++i];
+            c = value[++i];
+            if (c)
+                output += c;
+            else
+                output += '\\';
             continue;
         }
         if (c == '"')
@@ -1467,7 +1475,11 @@ Exporting u_ustring udoublequoted(u_ustring value) {
         c = value[i];
         if (c == '\\') {
             output += c;
-            output += value[++i];
+            c = value[++i];
+            if (c)
+                output += c;
+            else
+                output += '\\';
             continue;
         }
         if (c == '"')
@@ -4562,7 +4574,12 @@ long IndentationCode(string& codestr) {
                 p = i;
                 while (r < sz) {
                     p = pos[r++];
-                    if ((codestr[p-1] != '\\' && codestr[p] == '"') || codestr[p] == '\n')
+                    if (codestr[p] == '\\') {
+                        r++;
+                        continue;
+                    }
+                        
+                    if (codestr[p] == '"' || codestr[p] == '\n')
                         break;
                 }
                 p++;
@@ -4828,7 +4845,13 @@ void IndentationCode(string& str, string& codeindente) {
                 p = i;
                 while (r < sz) {
                     p = pos[r++];
-                    if ((codestr[p-1] != '\\' && codestr[p] == '"') || codestr[p] == '\n')
+                    c = codestr[p];
+                    if (c == '\\') {
+                        r++;
+                        continue;
+                    }
+                        
+                    if (c == '"' || c == '\n')
                         break;
                 }
                 p++;
@@ -5188,7 +5211,13 @@ void IndentatingCode(string& str, string& codeindente) {
                 p = i;
                 while (r < sz) {
                     p = pos[r++];
-                    if ((codestr[p-1] != '\\' && codestr[p] == '"') || codestr[p] == '\n')
+                    c = codestr[p];
+                    if (c == '\\') {
+                        r++;
+                        continue;
+                    }
+                        
+                    if (c == '"' || c == '\n')
                         break;
                 }
                 p++;
