@@ -4575,7 +4575,8 @@ long IndentationCode(string& codestr) {
                 while (r < sz) {
                     p = pos[r++];
                     if (codestr[p] == '\\') {
-                        r++;
+                        if (strchr((char*)_tocheck, (char)codestr[p+1]))
+                            r++;
                         continue;
                     }
                         
@@ -4847,7 +4848,8 @@ void IndentationCode(string& str, string& codeindente) {
                     p = pos[r++];
                     c = codestr[p];
                     if (c == '\\') {
-                        r++;
+                        if (strchr((char*)_tocheck, (char)codestr[p+1]))
+                            r++;
                         continue;
                     }
                         
@@ -5213,7 +5215,8 @@ void IndentatingCode(string& str, string& codeindente) {
                     p = pos[r++];
                     c = codestr[p];
                     if (c == '\\') {
-                        r++;
+                        if (strchr((char*)_tocheck, (char)codestr[p+1]))
+                            r++;
                         continue;
                     }
                         
