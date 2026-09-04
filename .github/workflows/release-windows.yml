@@ -1,0 +1,64 @@
+name: Build and Release Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Windows binaries
+        working-directory: lispe
+        run: |
+          msbuild lispe.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir="$env:GITHUB_WORKSPACE\build\Release\\"
+
+      - name: Install WiX Toolset
+        run: choco install wixtoolset --yes
+
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="0.0.1"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build MSI installer
+        shell: cmd
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set BIN_DIR=%GITHUB_WORKSPACE%\build\Release
+          "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe" ^
+            -dBinDir="%BIN_DIR%" ^
+            -dVersion="%VERSION%" ^
+            installer\lispeinstaller.wxs ^
+            -o installer\lispeinstaller.wixobj
+          "C:\Program Files (x86)\WiX Toolset v3.14\bin\light.exe" ^
+            -ext WixUIExtension ^
+            installer\lispeinstaller.wixobj ^
+            -o installer\lispeinstaller.msi
+
+      - name: Upload installer as release asset
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: installer/lispeinstaller.msi
+          fail_on_unmatched_files: true
+
