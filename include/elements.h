@@ -223,7 +223,7 @@ inline const unsigned long _arity(long sz) {
 
 #define separator_ lisp->delegation->_LISTSEPARATOR
 
-#define error_ lisp->delegation->_ERROR
+#define error_lispe lisp->delegation->_ERROR
 #define break_ lisp->delegation->_BREAK
 
 #define check_mismatch -2

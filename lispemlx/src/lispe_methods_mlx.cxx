@@ -1065,7 +1065,11 @@ enum mlx_method_actions {
     mlx_method_kv_decompress,
     mlx_method_kv_compressed_attention,
     mlx_method_kv_cache_free,
-    mlx_method_kv_cache_stats
+    mlx_method_kv_cache_stats,
+    mlx_method_gated_delta,
+    mlx_method_linear_attn,
+    mlx_method_swiglu_mlp,
+    mlx_method_attn_step
 };
 
  // Type for MLX arrays
@@ -1942,6 +1946,10 @@ public:
     Element* method_kv_streaming_scores(LispE* lisp);
     Element* method_kv_decompress(LispE* lisp);
     Element* method_kv_compressed_attention(LispE* lisp);
+    Element* method_gated_delta(LispE* lisp);
+    Element* method_linear_attn(LispE* lisp);
+    Element* method_swiglu_mlp(LispE* lisp);
+    Element* method_attn_step(LispE* lisp);
     Element* method_kv_cache_free(LispE* lisp);
     Element* method_kv_cache_stats(LispE* lisp);
 };
@@ -2498,6 +2506,14 @@ Element* Lispe_mlx_methods::eval(LispE* lisp) {
             return method_kv_cache_free(lisp);
         case mlx_method_kv_cache_stats:
             return method_kv_cache_stats(lisp);
+        case mlx_method_gated_delta:
+            return method_gated_delta(lisp);
+        case mlx_method_linear_attn:
+            return method_linear_attn(lisp);
+        case mlx_method_swiglu_mlp:
+            return method_swiglu_mlp(lisp);
+        case mlx_method_attn_step:
+            return method_attn_step(lisp);
         default:
             return null_;
     }
@@ -3039,6 +3055,14 @@ wstring Lispe_mlx_methods::asString(LispE* lisp) {
             return L"Free a compressed KV cache and release its memory";
         case mlx_method_kv_cache_stats:
             return L"Return compression statistics for a compressed KV cache";
+        case mlx_method_gated_delta:
+            return L"Fused GatedDeltaNet recurrence (Qwen3.5 linear attention) via Metal kernel";
+        case mlx_method_linear_attn:
+            return L"Fused GatedDeltaNet layer: projections, conv, gates, recurrence and output projection";
+        case mlx_method_swiglu_mlp:
+            return L"Fused dense SwiGLU MLP: down(silu(gate(x)) * up(x))";
+        case mlx_method_attn_step:
+            return L"Fused Qwen3.5 attention layer with output gate, partial RoPE and KV cache";
     }
     return L"";
 }
@@ -11478,6 +11502,475 @@ Element* Lispe_mlx_methods::method_kv_cache_stats(LispE* lisp) {
  // ============================================================================
 
 extern "C" {
+
+// =============================================================================
+// GatedDeltaNet fused recurrence (Qwen3.5 "linear attention")
+// =============================================================================
+// Port of mlx_lm/models/gated_delta.py's Metal kernel. The delta rule is
+// sequential in time, so instead of launching one kernel per position we launch
+// one thread-group per (batch, value head) and keep the whole time loop inside
+// the kernel with the recurrent state held in registers.
+//
+// Parallelism: grid (32, Dv, B*Hv) — one simdgroup of 32 lanes cooperates on
+// the Dk reduction for a single (b, hv, dv) slice; each lane owns Dk/32 state
+// entries and simd_sum() reduces across the key dimension.
+//
+// Shapes: q,k [B,T,Hk,Dk]  v [B,T,Hv,Dv]  g,beta [B,T,Hv]
+//         state_in/out [B,Hv,Dv,Dk]  ->  y [B,T,Hv,Dv]
+static const char* gated_delta_source = R"(
+    auto n = thread_position_in_grid.z;
+    auto b_idx = n / Hv;
+    auto hv_idx = n % Hv;
+    auto hk_idx = hv_idx / (Hv / Hk);
+    constexpr int n_per_t = Dk / 32;
+
+    // q, k: [B, T, Hk, Dk]
+    auto q_ = q + b_idx * T * Hk * Dk + hk_idx * Dk;
+    auto k_ = k + b_idx * T * Hk * Dk + hk_idx * Dk;
+
+    // v, y: [B, T, Hv, Dv]
+    auto v_ = v + b_idx * T * Hv * Dv + hv_idx * Dv;
+    y += b_idx * T * Hv * Dv + hv_idx * Dv;
+
+    auto dk_idx = thread_position_in_threadgroup.x;
+    auto dv_idx = thread_position_in_grid.y;
+
+    // state_in, state_out: [B, Hv, Dv, Dk]
+    auto i_state = state_in + (n * Dv + dv_idx) * Dk;
+    auto o_state = state_out + (n * Dv + dv_idx) * Dk;
+
+    // Recurrent state slice held in registers for the whole time loop
+    float state[n_per_t];
+    for (int i = 0; i < n_per_t; ++i) {
+      auto s_idx = n_per_t * dk_idx + i;
+      state[i] = static_cast<float>(i_state[s_idx]);
+    }
+
+    // g, beta: [B, T, Hv]
+    auto g_ = g + b_idx * T * Hv;
+    auto beta_ = beta + b_idx * T * Hv;
+
+    for (int t = 0; t < T; ++t) {
+      // Decay the state, then kv_mem = <state, k>
+      float kv_mem = 0.0f;
+      for (int i = 0; i < n_per_t; ++i) {
+        auto s_idx = n_per_t * dk_idx + i;
+        state[i] = state[i] * g_[hv_idx];
+        kv_mem += state[i] * k_[s_idx];
+      }
+      kv_mem = simd_sum(kv_mem);
+
+      // Prediction error, scaled by the gate
+      auto delta = (v_[dv_idx] - kv_mem) * beta_[hv_idx];
+
+      // Rank-1 update, then read out y = <state, q>
+      float out = 0.0f;
+      for (int i = 0; i < n_per_t; ++i) {
+        auto s_idx = n_per_t * dk_idx + i;
+        state[i] = state[i] + k_[s_idx] * delta;
+        out += state[i] * q_[s_idx];
+      }
+      out = simd_sum(out);
+      if (thread_index_in_simdgroup == 0) {
+        y[dv_idx] = static_cast<InT>(out);
+      }
+
+      // Advance to the next time step
+      q_ += Hk * Dk;
+      k_ += Hk * Dk;
+      v_ += Hv * Dv;
+      y += Hv * Dv;
+      g_ += Hv;
+      beta_ += Hv;
+    }
+    for (int i = 0; i < n_per_t; ++i) {
+      auto s_idx = n_per_t * dk_idx + i;
+      o_state[s_idx] = static_cast<StT>(state[i]);
+    }
+)";
+
+// Returns the cached GatedDeltaNet kernel function
+static mx::fast::CustomKernelFunction& get_gated_delta_kernel() {
+    static mx::fast::CustomKernelFunction fn = mx::fast::metal_kernel(
+        "gated_delta_step",
+        {"q", "k", "v", "g", "beta", "state_in"},
+        {"y", "state_out"},
+        gated_delta_source,
+        "",     // header
+        true,   // ensure_row_contiguous
+        false   // atomic_outputs
+    );
+    return fn;
+}
+
+ // mlx_gated_delta - Fused GatedDeltaNet recurrence via Metal kernel
+ // Runs the whole time loop on the GPU with the state in registers, replacing a
+ // per-position LispE loop. Grouped heads (Hv > Hk) are handled inside the
+ // kernel, so q/k must NOT be pre-repeated by the caller.
+ // Signature: deflib mlx_gated_delta(q k v g beta state)
+ // Returns: (y new_state)
+Element* Lispe_mlx_methods::method_gated_delta(LispE* lisp) {
+    Element* q_elem = lisp->get_variable(U"q");
+    Element* k_elem = lisp->get_variable(U"k");
+    Element* v_elem = lisp->get_variable(U"v");
+    Element* g_elem = lisp->get_variable(U"g");
+    Element* beta_elem = lisp->get_variable(U"beta");
+    Element* state_elem = lisp->get_variable(U"state");
+
+    try {
+        mx::array q = element_to_array(lisp, q_elem);
+        mx::array k = element_to_array(lisp, k_elem);
+        mx::array v = element_to_array(lisp, v_elem);
+        mx::array g = element_to_array(lisp, g_elem);
+        mx::array beta = element_to_array(lisp, beta_elem);
+        mx::array state = element_to_array(lisp, state_elem);
+
+        auto qs = q.shape();
+        auto vs = v.shape();
+        if (qs.size() != 4 || vs.size() != 4)
+            throw new Error("mlx_gated_delta: q/k must be [B,T,Hk,Dk] and v [B,T,Hv,Dv]");
+
+        int B = qs[0], T = qs[1], Hk = qs[2], Dk = qs[3];
+        int Hv = vs[2], Dv = vs[3];
+
+        if (Dk % 32 != 0)
+            throw new Error("mlx_gated_delta: Dk must be a multiple of 32");
+        if (Hv % Hk != 0)
+            throw new Error("mlx_gated_delta: Hv must be divisible by Hk");
+
+        auto ss = state.shape();
+        if (ss.size() != 4 || ss[0] != B || ss[1] != Hv || ss[2] != Dv || ss[3] != Dk)
+            throw new Error("mlx_gated_delta: state must be [B, Hv, Dv, Dk]");
+
+        // The recurrence accumulates over T steps: keep it in float32
+        if (state.dtype() != mx::float32)
+            state = mx::astype(state, mx::float32);
+        if (g.dtype() != mx::float32)
+            g = mx::astype(g, mx::float32);
+        if (beta.dtype() != mx::float32)
+            beta = mx::astype(beta, mx::float32);
+
+        mx::Dtype in_type = q.dtype();
+        if (k.dtype() != in_type) k = mx::astype(k, in_type);
+        if (v.dtype() != in_type) v = mx::astype(v, in_type);
+
+        // No mx::eval here: forcing evaluation at every layer would serialise
+        // the graph and defeat MLX's asynchronous scheduling. Let the caller
+        // decide when to materialise the results.
+        auto& kernel = get_gated_delta_kernel();
+        auto results = kernel(
+            {q, k, v, g, beta, state},
+            {{B, T, Hv, Dv}, ss},                  // output_shapes
+            {in_type, mx::float32},                // output_dtypes
+            {32, Dv, B * Hv},                      // grid (total threads)
+            {32, 4, 1},                            // threadgroup
+            {{"InT", in_type}, {"StT", mx::float32},
+             {"Dk", Dk}, {"Dv", Dv},
+             {"Hk", Hk}, {"Hv", Hv}, {"T", T}},    // template_args
+            std::nullopt,                          // init_value
+            false,                                 // verbose
+            std::monostate{}                       // stream
+        );
+
+        List* out = lisp->provideList();
+        out->append(new MLXArray(std::move(results[0])));
+        out->append(new MLXArray(std::move(results[1])));
+        return out;
+
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_gated_delta: " + std::string(e.what()));
+    }
+}
+
+
+// =============================================================================
+// Fused GatedDeltaNet layer (Qwen3.5 "linear attention")
+// =============================================================================
+// The LispE version of this layer issued ~47 separate mlx_ calls per layer, and
+// with 48 such layers the elementwise glue (astype / slice / squeeze / reshape)
+// cost more than the matmuls themselves: every one of those ops round-trips a
+// tensor through memory. Everything between the input projections and the
+// output projection is folded into this single primitive, so the intermediates
+// stay inside one MLX graph.
+//
+// Signature: deflib mlx_linear_attn(x tensors params conv_state rec_state)
+//   tensors: the layer's quantized weights, in the order laid out below
+//   params : (num_v_heads num_k_heads head_k_dim head_v_dim conv_kernel
+//             key_dim value_dim conv_dim eps group_size bits)
+// Returns: (out new_conv_state new_rec_state)
+//
+// The recurrence itself is left to the existing gated-delta Metal kernel.
+Element* Lispe_mlx_methods::method_linear_attn(LispE* lisp) {
+    Element* x_elem = lisp->get_variable(U"x");
+    Element* tensors_elem = lisp->get_variable(U"tensors");
+    Element* params_elem = lisp->get_variable(U"params");
+    Element* conv_state_elem = lisp->get_variable(U"conv_state");
+    Element* rec_state_elem = lisp->get_variable(U"rec_state");
+
+    try {
+        if (!tensors_elem->isList() || !params_elem->isList())
+            throw new Error("mlx_linear_attn: tensors and params must be lists");
+        if (tensors_elem->size() < 18)
+            throw new Error("mlx_linear_attn: expecting 18 tensors");
+
+        auto T = [&](int i) { return element_to_array(lisp, tensors_elem->index(i)); };
+        auto P = [&](int i) { return params_elem->index(i)->asNumber(); };
+
+        int num_v_heads  = (int)P(0);
+        int num_k_heads  = (int)P(1);
+        int head_k_dim   = (int)P(2);
+        int head_v_dim   = (int)P(3);
+        int conv_kernel  = (int)P(4);
+        int key_dim      = (int)P(5);
+        int value_dim    = (int)P(6);
+        int conv_dim     = (int)P(7);
+        float eps        = (float)P(8);
+        int group_size   = (int)P(9);
+        int bits         = (int)P(10);
+
+        mx::array x = element_to_array(lisp, x_elem);
+        auto xs = x.shape();
+        if (xs.size() != 3)
+            throw new Error("mlx_linear_attn: x must be [B, L, hidden]");
+        int B = xs[0], L = xs[1];
+        mx::Dtype in_type = x.dtype();
+
+        // Quantized projection: x @ dequant(w, scales, biases)^T
+        auto qproj = [&](int wi) {
+            return mx::quantized_matmul(x, T(wi), T(wi + 1), T(wi + 2),
+                                        true, group_size, bits);
+        };
+
+        // Tensor slots: qkv(0..2) z(3..5) b(6..8) a(9..11) conv(12) norm(13)
+        //               out(14..16) A_log(17) dt_bias(18)
+        mx::array qkv = qproj(0);
+        mx::array z   = qproj(3);
+        mx::array bb  = qproj(6);
+        mx::array aa  = qproj(9);
+        mx::array conv_w  = T(12);
+        mx::array la_norm = T(13);
+        mx::array A_log   = T(17);
+        mx::array dt_bias = T(18);
+
+        z = mx::reshape(z, {B, L, num_v_heads, head_v_dim});
+
+        // --- Causal depthwise convolution over the packed (q,k,v) stream ---
+        int n_keep = conv_kernel - 1;
+        mx::array prev = (conv_state_elem != null_ && conv_state_elem->type != v_emptyatom)
+            ? mx::astype(element_to_array(lisp, conv_state_elem), in_type)
+            : mx::zeros({B, n_keep, conv_dim}, in_type);
+
+        mx::array conv_input = mx::concatenate({prev, qkv}, 1);
+        int total = L + n_keep;
+        // Keep the trailing kernel_size-1 positions for the next call
+        mx::array new_conv_state = mx::slice(conv_input,
+            {0, total - n_keep, 0}, {B, total, conv_dim});
+        mx::array conv_out = mx::conv1d(conv_input, conv_w, 1, 0, 1, conv_dim);
+        conv_out = mx::multiply(conv_out, mx::sigmoid(conv_out));   // silu
+
+        // --- Split back into q, k, v ---
+        auto parts = mx::split(conv_out, mx::Shape{key_dim, 2 * key_dim}, -1);
+        mx::array q = mx::reshape(parts[0], {B, L, num_k_heads, head_k_dim});
+        mx::array k = mx::reshape(parts[1], {B, L, num_k_heads, head_k_dim});
+        mx::array v = mx::reshape(parts[2], {B, L, num_v_heads, head_v_dim});
+
+        // L2-style normalisation, folding the attention scale into q and k
+        float inv_scale = 1.0f / std::sqrt((float)head_k_dim);
+        q = mx::multiply(mx::array(inv_scale * inv_scale),
+                         mx::fast::rms_norm(q, std::nullopt, 1e-6f));
+        k = mx::multiply(mx::array(inv_scale),
+                         mx::fast::rms_norm(k, std::nullopt, 1e-6f));
+
+        // --- Gates, in float32 for the recurrence ---
+        mx::array beta = mx::sigmoid(mx::astype(bb, mx::float32));
+        mx::array a32 = mx::astype(aa, mx::float32);
+        mx::array decay = mx::exp(mx::astype(A_log, mx::float32));
+        // softplus(t) = max(t,0) + log1p(exp(-|t|)), stable for large t
+        mx::array t = mx::add(a32, mx::astype(dt_bias, mx::float32));
+        mx::array sp = mx::add(mx::maximum(t, mx::array(0.0f)),
+                               mx::log1p(mx::exp(mx::negative(mx::abs(t)))));
+        mx::array g = mx::exp(mx::negative(mx::multiply(decay, sp)));
+
+        mx::array state = (rec_state_elem != null_ && rec_state_elem->type != v_emptyatom)
+            ? mx::astype(element_to_array(lisp, rec_state_elem), mx::float32)
+            : mx::zeros({B, num_v_heads, head_v_dim, head_k_dim}, mx::float32);
+
+        // --- Recurrence: reuse the gated-delta Metal kernel ---
+        auto& kernel = get_gated_delta_kernel();
+        auto results = kernel(
+            {mx::astype(q, in_type), mx::astype(k, in_type), mx::astype(v, in_type),
+             g, beta, state},
+            {{B, L, num_v_heads, head_v_dim}, state.shape()},
+            {in_type, mx::float32},
+            {32, head_v_dim, B * num_v_heads},
+            {32, 4, 1},
+            {{"InT", in_type}, {"StT", mx::float32},
+             {"Dk", head_k_dim}, {"Dv", head_v_dim},
+             {"Hk", num_k_heads}, {"Hv", num_v_heads}, {"T", L}},
+            std::nullopt, false, std::monostate{}
+        );
+        mx::array out = results[0];
+        mx::array new_state = results[1];
+
+        // --- Gated RMSNorm, then project back ---
+        out = mx::astype(out, in_type);
+        out = mx::fast::rms_norm(out, la_norm, eps);
+        out = mx::multiply(out, mx::multiply(z, mx::sigmoid(z)));   // * silu(z)
+        out = mx::reshape(out, {B, L, value_dim});
+        out = mx::quantized_matmul(out, T(14), T(15), T(16), true, group_size, bits);
+
+        List* res = lisp->provideList();
+        res->append(new MLXArray(std::move(out)));
+        res->append(new MLXArray(std::move(new_conv_state)));
+        res->append(new MLXArray(std::move(new_state)));
+        return res;
+
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_linear_attn: " + std::string(e.what()));
+    }
+}
+
+
+// =============================================================================
+// Fused dense SwiGLU MLP
+// =============================================================================
+// down(silu(gate(x)) * up(x)). The two elementwise steps run on a [B, L, 17408]
+// tensor, so in LispE they cost a full round-trip through memory each; folding
+// them into one graph is worth ~13 ms per token over the model's 64 layers.
+// Signature: deflib mlx_swiglu_mlp(x tensors params)
+//   tensors: gate(w,s,b) up(w,s,b) down(w,s,b)
+//   params : (group_size bits)
+Element* Lispe_mlx_methods::method_swiglu_mlp(LispE* lisp) {
+    Element* x_elem = lisp->get_variable(U"x");
+    Element* tensors_elem = lisp->get_variable(U"tensors");
+    Element* params_elem = lisp->get_variable(U"params");
+
+    try {
+        if (!tensors_elem->isList() || tensors_elem->size() < 9)
+            throw new Error("mlx_swiglu_mlp: expecting 9 tensors");
+        auto T = [&](int i) { return element_to_array(lisp, tensors_elem->index(i)); };
+        int group_size = (int)params_elem->index(0)->asNumber();
+        int bits       = (int)params_elem->index(1)->asNumber();
+
+        mx::array x = element_to_array(lisp, x_elem);
+        mx::array gate = mx::quantized_matmul(x, T(0), T(1), T(2), true, group_size, bits);
+        mx::array up   = mx::quantized_matmul(x, T(3), T(4), T(5), true, group_size, bits);
+        mx::array h = mx::multiply(mx::multiply(gate, mx::sigmoid(gate)), up);
+        mx::array out = mx::quantized_matmul(h, T(6), T(7), T(8), true, group_size, bits);
+        return new MLXArray(std::move(out));
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_swiglu_mlp: " + std::string(e.what()));
+    }
+}
+
+// =============================================================================
+// Fused Qwen3.5 full-attention layer
+// =============================================================================
+// Differs from a plain attention block: q_proj emits 2*head_dim per head, the
+// second half being a sigmoid output gate; q/k are RMS-normed per head before a
+// partial RoPE. The KV cache is passed in and the updated one returned, so the
+// caller never materialises the intermediate reshapes and transposes.
+// Signature: deflib mlx_attn_step(x tensors params offset keys values)
+//   tensors: q(w,s,b) k(w,s,b) v(w,s,b) o(w,s,b) q_norm k_norm
+//   params : (n_heads n_kv_heads head_dim scale eps hidden_out rope_dims
+//             rope_theta group_size bits)
+// Returns: (out new_keys new_values)
+Element* Lispe_mlx_methods::method_attn_step(LispE* lisp) {
+    Element* x_elem = lisp->get_variable(U"x");
+    Element* tensors_elem = lisp->get_variable(U"tensors");
+    Element* params_elem = lisp->get_variable(U"params");
+    Element* offset_elem = lisp->get_variable(U"offset");
+    Element* keys_elem = lisp->get_variable(U"keys");
+    Element* values_elem = lisp->get_variable(U"values");
+
+    try {
+        if (!tensors_elem->isList() || tensors_elem->size() < 14)
+            throw new Error("mlx_attn_step: expecting 14 tensors");
+        auto T = [&](int i) { return element_to_array(lisp, tensors_elem->index(i)); };
+        auto P = [&](int i) { return params_elem->index(i)->asNumber(); };
+
+        int n_heads     = (int)P(0);
+        int n_kv_heads  = (int)P(1);
+        int head_dim    = (int)P(2);
+        float scale     = (float)P(3);
+        float eps       = (float)P(4);
+        int hidden_out  = (int)P(5);
+        int rope_dims   = (int)P(6);
+        float rope_base = (float)P(7);
+        int group_size  = (int)P(8);
+        int bits        = (int)P(9);
+        int offset      = offset_elem->asInteger();
+
+        mx::array x = element_to_array(lisp, x_elem);
+        auto xs = x.shape();
+        int B = xs[0], L = xs[1];
+
+        auto qproj = [&](int i, const mx::array& in) {
+            return mx::quantized_matmul(in, T(i), T(i + 1), T(i + 2), true, group_size, bits);
+        };
+
+        // q_proj carries values and gate side by side, per head
+        mx::array q_out = qproj(0, x);
+        q_out = mx::reshape(q_out, {B, L, n_heads, 2 * head_dim});
+        auto q_parts = mx::split(q_out, 2, -1);
+        mx::array queries = q_parts[0];
+        mx::array gate = mx::reshape(q_parts[1], {B, L, hidden_out});
+
+        mx::array keys = mx::reshape(qproj(3, x), {B, L, n_kv_heads, head_dim});
+        mx::array values = mx::reshape(qproj(6, x), {B, L, n_kv_heads, head_dim});
+
+        // Per-head RMSNorm, then [B, H, L, D]
+        std::vector<int> perm = {0, 2, 1, 3};
+        queries = mx::transpose(mx::fast::rms_norm(queries, T(12), eps), perm);
+        keys = mx::transpose(mx::fast::rms_norm(keys, T(13), eps), perm);
+        values = mx::transpose(values, perm);
+
+        // Partial RoPE: only the first rope_dims of each head rotate
+        queries = mx::fast::rope(queries, rope_dims, false, rope_base, 1.0f, offset, std::nullopt);
+        keys = mx::fast::rope(keys, rope_dims, false, rope_base, 1.0f, offset, std::nullopt);
+
+        std::string mask_mode = (L == 1) ? "" : "causal";
+
+        // When `keys` is an integer it names a native KV cache: that one grows
+        // by preallocated blocks and writes with slice_update, so appending a
+        // token no longer recopies the whole history the way concatenating
+        // does. Otherwise fall back to plain arrays passed in and out.
+        if (keys_elem != null_ && keys_elem->isNumber()) {
+            KVNativeCache* cache = kv_get_native_cache(keys_elem->asInteger());
+            if (!cache)
+                throw new Error("mlx_attn_step: invalid kv cache id");
+            cache->append(keys, values);
+            mx::array out = cache->attention(queries, scale, mask_mode, std::nullopt);
+            out = mx::reshape(mx::transpose(out, perm), {B, L, hidden_out});
+            out = mx::multiply(out, mx::sigmoid(gate));
+            return new MLXArray(qproj(9, out));
+        }
+
+        bool has_cache = (keys_elem != null_ && keys_elem->type != v_emptyatom);
+        mx::array all_keys = has_cache
+            ? mx::concatenate({element_to_array(lisp, keys_elem), keys}, 2)
+            : keys;
+        mx::array all_values = has_cache
+            ? mx::concatenate({element_to_array(lisp, values_elem), values}, 2)
+            : values;
+
+        mx::array out = mx::fast::scaled_dot_product_attention(
+            queries, all_keys, all_values, scale, mask_mode, {}, {});
+
+        out = mx::reshape(mx::transpose(out, perm), {B, L, hidden_out});
+        out = mx::multiply(out, mx::sigmoid(gate));
+        out = qproj(9, out);
+
+        List* res = lisp->provideList();
+        res->append(new MLXArray(std::move(out)));
+        res->append(new MLXArray(std::move(all_keys)));
+        res->append(new MLXArray(std::move(all_values)));
+        return res;
+    } catch (const std::exception& e) {
+        throw new Error("Error in mlx_attn_step: " + std::string(e.what()));
+    }
+}
+
 Exporting bool InitialisationModule(LispE* lisp) {
     // Allocate the type for MLX arrays
     std::string mlx_array_type_key = "mlx_array";
@@ -12071,6 +12564,18 @@ Exporting bool InitialisationModule(LispE* lisp) {
     // Group 22: Convolutions (deep learning)
     lisp->extension("deflib mlx_conv1d(input weight (stride) (padding) (dilation) (groups))",
                     new Lispe_mlx_methods(mlx_method_conv1d));
+
+    lisp->extension("deflib mlx_gated_delta(q k v g beta state)",
+                    new Lispe_mlx_methods(mlx_method_gated_delta));
+
+    lisp->extension("deflib mlx_linear_attn(x tensors params conv_state rec_state)",
+                    new Lispe_mlx_methods(mlx_method_linear_attn));
+
+    lisp->extension("deflib mlx_swiglu_mlp(x tensors params)",
+                    new Lispe_mlx_methods(mlx_method_swiglu_mlp));
+
+    lisp->extension("deflib mlx_attn_step(x tensors params offset keys values)",
+                    new Lispe_mlx_methods(mlx_method_attn_step));
 
     lisp->extension("deflib mlx_conv2d(input weight (stride) (padding) (dilation) (groups))",
                     new Lispe_mlx_methods(mlx_method_conv2d));

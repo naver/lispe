@@ -11,6 +11,14 @@
 #ifndef lispe_lispetorch_h
 #define lispe_lispetorch_h
 
+// SentencePiece doit être inclus AVANT lispe.h : depuis la version 0.2.x, ses
+// en-têtes tirent <absl/...>, dont des membres nommés error_ que la macro
+// error_ de elements.h casserait.
+#ifdef USE_SENTENCEPIECE
+#include <sentencepiece_processor.h>
+#include <sentencepiece_trainer.h>
+#endif
+
 #include "lispe.h"
 #include <torch/torch.h>
 #include <sstream>
@@ -22,11 +30,6 @@
 #endif
 
 #ifdef USE_CUDA
-#endif
-
-#ifdef USE_SENTENCEPIECE
-#include <sentencepiece_processor.h>
-#include <sentencepiece_trainer.h>
 #endif
 
 

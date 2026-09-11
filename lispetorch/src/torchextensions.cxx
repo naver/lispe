@@ -8,6 +8,11 @@
 //  lispe_lispetorch.cxx
 
 
+// SentencePiece doit être inclus AVANT lispe.h (macro error_ vs absl)
+#ifdef USE_SENTENCEPIECE
+#include <sentencepiece_processor.h>
+#include <sentencepiece_trainer.h>
+#endif
 #include "lispe.h"
 #include "lispe_lispetorch.h"
 #include "listes.h"

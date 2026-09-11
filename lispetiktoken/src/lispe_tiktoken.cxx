@@ -159,6 +159,11 @@ public:
     std::vector<std::vector<uint8_t>> sorted_token_bytes;
     std::string espace;
     std::unordered_map<std::string, std::string> meta_characters;
+    // True when the vocabulary keys were stored as raw bytes decoded from a
+    // HuggingFace ByteLevel representation. In that case a leading space is
+    // already byte 0x20 in the keys, so the meta-space substitutions below
+    // (a SentencePiece-era convention) must not be applied.
+    bool byte_level_vocab = false;
 
     CoreBPE(const Vocab& enc,
             const SpecialTokens& special_enc,
@@ -432,6 +437,58 @@ public:
     }
 
     // Encode ordinary (sans tokens spéciaux)
+    // Encode text, honouring special tokens ("<|im_start|>", "<think>"...).
+    // encode_ordinary() runs the BPE regex over the whole string, which would
+    // split a marker like "<|im_start|>" into its individual characters. Chat
+    // templates depend on those markers being single ids, so scan for the
+    // longest special token at each position and BPE-encode only the text
+    // between them.
+    std::vector<Rank> encode_with_special(const std::string& text_utf8) const {
+        if (special_tokens_encoder.empty())
+            return encode_ordinary(text_utf8);
+
+        std::vector<Rank> ret;
+        size_t pos = 0;
+        const size_t n = text_utf8.size();
+        while (pos < n) {
+            // Longest match wins, so "<|im_start|>" is preferred over any
+            // shorter special token sharing its prefix.
+            size_t best_len = 0;
+            Rank best_id = 0;
+            for (const auto& kv : special_tokens_encoder) {
+                const std::string& tokstr = kv.first;
+                if (tokstr.empty() || tokstr.size() > n - pos)
+                    continue;
+                if (tokstr.size() > best_len &&
+                    text_utf8.compare(pos, tokstr.size(), tokstr) == 0) {
+                    best_len = tokstr.size();
+                    best_id = kv.second;
+                }
+            }
+            if (best_len) {
+                ret.push_back(best_id);
+                pos += best_len;
+                continue;
+            }
+            // No special token here: find where the next one starts
+            size_t next = std::string::npos;
+            for (const auto& kv : special_tokens_encoder) {
+                if (kv.first.empty())
+                    continue;
+                size_t f = text_utf8.find(kv.first, pos);
+                if (f != std::string::npos && (next == std::string::npos || f < next))
+                    next = f;
+            }
+            size_t end = (next == std::string::npos) ? n : next;
+            if (end > pos) {
+                std::vector<Rank> sub = encode_ordinary(text_utf8.substr(pos, end - pos));
+                ret.insert(ret.end(), sub.begin(), sub.end());
+            }
+            pos = end;
+        }
+        return ret;
+    }
+
     std::vector<Rank> encode_ordinary(const std::string& text_utf8) const {
         std::vector<Rank> ret;
         UErrorCode status = U_ZERO_ERROR;
@@ -445,7 +502,7 @@ public:
             std::string piece_utf8;
             piece.toUTF8String(piece_utf8);
             std::vector<uint8_t> bytes(piece_utf8.begin(), piece_utf8.end());
-            if (!bytes.empty()) {
+            if (!bytes.empty() && !byte_level_vocab) {
                 if (bytes[0] == 0x20) {
                     // Remplacer l'espace initial par les bytes UTF-8 de U+0120 (0xC4 0xA0)
                     bytes.erase(bytes.begin());
@@ -487,9 +544,11 @@ public:
             }
         }
 
-        for (const auto& k: meta_characters) {
-            if (result.find(k.first) != -1)
-                result = s_replacingstring(result, k.first, k.second);
+        if (!byte_level_vocab) {
+            for (const auto& k: meta_characters) {
+                if (result.find(k.first) != -1)
+                    result = s_replacingstring(result, k.first, k.second);
+            }
         }
         
         u_ustring final_str;
@@ -514,15 +573,64 @@ public:
         string s;
         std::vector<uint8_t> v;
 
+        // HuggingFace "ByteLevel" vocabularies (GPT-2 style, used by Qwen,
+        // GPT-OSS, Llama...) do not store raw bytes as keys. Every byte is
+        // remapped to a printable codepoint so the JSON stays readable:
+        // byte 0xE2 is written U+00E2, byte 0x80 is written U+0100+n, etc.
+        // Re-encoding such a key to UTF-8 would yield the bytes of the
+        // *escaped* form, not the bytes the token actually stands for, so any
+        // character needing 3+ bytes (…, →, emoji) became unmatchable and was
+        // silently dropped. Build the inverse table and decode keys with it.
+        std::unordered_map<uint32_t, uint8_t> byte_decoder;
+        {
+            std::vector<int> bs;
+            for (int b = '!'; b <= '~'; b++) bs.push_back(b);
+            for (int b = 0xA1; b <= 0xAC; b++) bs.push_back(b);
+            for (int b = 0xAE; b <= 0xFF; b++) bs.push_back(b);
+            std::vector<int> cs = bs;
+            int n = 0;
+            for (int b = 0; b < 256; b++) {
+                if (std::find(bs.begin(), bs.end(), b) == bs.end()) {
+                    bs.push_back(b);
+                    cs.push_back(256 + n);
+                    n++;
+                }
+            }
+            for (size_t j = 0; j < bs.size(); j++)
+                byte_decoder[(uint32_t)cs[j]] = (uint8_t)bs[j];
+        }
+
+        // A ByteLevel vocabulary uses only codepoints from that table. If any
+        // key falls outside it, this is a plain vocabulary (e.g. SentencePiece)
+        // and the keys are already the literal text.
+        bool byte_level = true;
+        for (const auto& k : ((Dictionary*)vocab)->dictionary) {
+            for (const auto& c : k.first) {
+                if (byte_decoder.find((uint32_t)c) == byte_decoder.end()) {
+                    byte_level = false;
+                    break;
+                }
+            }
+            if (!byte_level)
+                break;
+        }
+
         long i;
         u_ustring key;
         for (const auto& k : ((Dictionary*)vocab)->dictionary) {
             key = k.first;
-            s = "";
-            s_unicode_to_utf8(s, key);
             v.clear();
-            for (i = 0; i < s.size(); i++)
-                v.push_back(s[i]);
+            if (byte_level) {
+                // Map each escaped codepoint back to the single byte it denotes
+                for (const auto& c : key)
+                    v.push_back(byte_decoder[(uint32_t)c]);
+            }
+            else {
+                s = "";
+                s_unicode_to_utf8(s, key);
+                for (i = 0; i < s.size(); i++)
+                    v.push_back(s[i]);
+            }
             vocabulary[v] = k.second->asInteger();
         }
 
@@ -547,6 +655,7 @@ public:
 
         s = pattern->toString(lisp);
         bpe = new CoreBPE(vocabulary, specialtokens, s);
+        bpe->byte_level_vocab = byte_level;
     }
 
     Element* set_space(LispE* lisp, std::string espace) {
@@ -629,7 +738,7 @@ public:
         if (bpe == NULL)
             throw new Error("BPE object not initialized");
         std::string s = texte->toString(lisp);
-        std::vector<Rank> ids = bpe->encode_ordinary(s);
+        std::vector<Rank> ids = bpe->encode_with_special(s);
         // On retourne une liste LispE d'entiers
         Integers *result = lisp->provideIntegers();
         for (auto id : ids)

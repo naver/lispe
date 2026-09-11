@@ -193,7 +193,7 @@ static Element* toLispE(LispE* lisp, PyObject* po) {
         return e;
     }
 
-    return error_;
+    return error_lispe;
 }
 
 static PyObject* toPython(LispE* lisp, Element* resultat) {
@@ -219,7 +219,7 @@ static PyObject* toPython(LispE* lisp, Element* resultat) {
         }
         return vect;
     }
-    
+
     if (resultat->isList()) {
         long sz = resultat->size();
         PyObject* vect = PyList_New(0);
@@ -406,7 +406,7 @@ static PyObject* LispE_execute(LispEObject* self, PyObject* args)
     catch(Error* err) {
         e = err;
     }
-    
+
     pelement = toPython(self->lisp, e);
     e->release();
     return pelement;
@@ -537,7 +537,7 @@ public:
             init_python = true;
         }
     }
-    
+
     Element* methodSetpath(LispE* lisp, string& path) {
         lisp->lock();
         initialize();
@@ -578,7 +578,7 @@ public:
             lisp->unlock();
             throw new Error(err);
         }
-        
+
         //you may return any value of course...
         lisp->unlock();
         return true_;
@@ -603,7 +603,7 @@ public:
             }
             else {
                 code += "    if mod not in ('sys', 'builtins', '__main__', 'numpy'):\n";
-            }            
+            }
             code += "        del sys.modules[mod]\n";
 
             PyErr_Clear();
@@ -615,7 +615,7 @@ public:
         }
         return null_;
     }
-    
+
     Element* Run_simple(LispE* lisp, string& code, PyObject* py_dict)
     {
 
@@ -644,7 +644,7 @@ public:
         static char* func_code = "def timeout_handler(signum, frame):\n  signal.signal(signal.SIGALRM, signal.SIG_DFL)\n  signal.alarm(0)\n  raise TimeoutError(\"Time out\")\n";
         static char* init_code = "signal.signal(signal.SIGALRM, timeout_handler)\nsignal.alarm(";
         const char* clean_code = "signal.signal(signal.SIGALRM, signal.SIG_DFL)\nsignal.alarm(0)\n";
-        
+
         stringstream c;
         c << import_code << func_code << init_code << elapse_time << ")\n";
         string cde = c.str();
@@ -739,7 +739,7 @@ public:
 
         lisp->lock();
         initialize();
-        
+
         //0 is the first parameter and so on...
         if (pathname != "") {
             FILE * fp;
@@ -787,7 +787,7 @@ public:
         if (code != "")
         {
             try {
-                PyObject *compiled_code = Py_CompileString(code.c_str(), "<string>", Py_file_input);            
+                PyObject *compiled_code = Py_CompileString(code.c_str(), "<string>", Py_file_input);
                 if (compiled_code == NULL) {
                     return_variable = "PYT(997):";
                     return_variable += python_error_string();
@@ -818,14 +818,14 @@ public:
             }
             catch (Error* err) {
                 lisp->unlock();
-                clean_signal();                
+                clean_signal();
                 throw err;
             }
         }
 
         Element* return_value = true_;
         if (return_variable != "") {
-            
+
             PyObject* py_result_val = PyDict_GetItemString(local_dict, return_variable.c_str());
             if (py_result_val != NULL) {
                 return_value = toLispE(lisp, py_result_val);
@@ -845,8 +845,8 @@ public:
     }
 
     Element* methodGetModule(LispE* lisp, string& module_name, string& return_variable)
-    {        
-        if (!init_python)    
+    {
+        if (!init_python)
         {
             throw new Error("No Python interpreter has been initialized");
         }
@@ -909,7 +909,7 @@ public:
         lisp->lock();
 
         initialize();
-        
+
         PyObject* module = NULL;
 
         //0 is the first parameter and so on...
