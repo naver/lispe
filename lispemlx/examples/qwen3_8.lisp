@@ -30,7 +30,7 @@
 ; Model configuration
 ; =============================================================================
 
-(setq MODEL_PATH "/Users/clauderoux/.lmstudio/models/lmstudio-community/Qwen3.8-27B-MLX-4bit")
+(setq MODEL_PATH "/Users/user/.lmstudio/models/lmstudio-community/Qwen3.8-27B-MLX-4bit")
 
 ; Reasoning-effort instructions, copied verbatim from chat_template.jinja.
 ; The template injects one of these as the system message when thinking is on
