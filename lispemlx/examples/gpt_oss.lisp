@@ -19,7 +19,7 @@
 ; Model configuration
 ; =============================================================================
 
-(setq MODEL_PATH "/Users/clauderoux/.lmstudio/models/lmstudio-community/gpt-oss-20b-MLX-8bit")
+(setq MODEL_PATH "/Users/user/.lmstudio/models/lmstudio-community/gpt-oss-20b-MLX-8bit")
 
 (setq DEFAULT_SYSTEM_PROMPT
     "You are ChatGPT, a large language model trained by OpenAI. Answer helpfully and naturally.")
