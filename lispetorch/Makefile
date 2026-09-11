@@ -44,6 +44,15 @@ ifneq ($(SENTENCEPIECE_PATH),)
     SENTENCEPIECE_LIB = $(SENTENCEPIECE_PATH)/lib
     SENTENCEPIECE_FLAGS = -DUSE_SENTENCEPIECE
     SENTENCEPIECE_LIBS = -L$(SENTENCEPIECE_LIB) -lsentencepiece -lsentencepiece_train
+    # Depuis sentencepiece 0.2.x, sentencepiece_processor.h inclut <absl/...>
+    ABSEIL_PATH = $(shell /opt/homebrew/bin/brew --prefix abseil 2>/dev/null)
+    ifneq ($(ABSEIL_PATH),)
+        SENTENCEPIECE_INCLUDE_EXTRA = -I$(ABSEIL_PATH)/include
+        # absl::Status est utilisé inline dans les en-têtes : il faut le lier
+        SENTENCEPIECE_LIBS += -L$(ABSEIL_PATH)/lib -labsl_status -labsl_statusor \
+            -labsl_cord -labsl_strings -labsl_base -labsl_raw_logging_internal \
+            -Wl,-rpath,$(ABSEIL_PATH)/lib
+    endif
 else
     SENTENCEPIECE_FLAGS = 
     SENTENCEPIECE_LIBS = 
@@ -60,10 +69,10 @@ LOBJPATH = ../objs
 #------------------------------------------------------------
 objectlispetorch = $(sourcelispetorch:%.cxx=$(LOBJPATH)/lispetorch/%.o)
 #------------------------------------------------------------
-C++11Flag = -std=c++17 -fPIC -w -c $(COPTION) -DUNIX -D_GLIBCXX_USE_CXX11_ABI=0 $(CUDA_FLAGS) $(SENTENCEPIECE_FLAGS) $(HF_FLAGS)
+C++11Flag = -std=c++17 -fPIC -w -c $(COPTION) -Wno-invalid-specialization -DUNIX -D_GLIBCXX_USE_CXX11_ABI=0 $(CUDA_FLAGS) $(SENTENCEPIECE_FLAGS) $(HF_FLAGS)
 LIBPATH = ../bin
 #------------------------------------------------------------
-INCLUDEPATH = -I../include -Iinclude -I$(LIBTORCH_INCLUDE) -I$(LIBTORCH_INCLUDE)/torch/csrc/api/include $(if $(CUDA_PATH),-I$(CUDA_INCLUDE),) $(if $(SENTENCEPIECE_PATH),-I$(SENTENCEPIECE_INCLUDE),)
+INCLUDEPATH = -I../include -Iinclude -I$(LIBTORCH_INCLUDE) -I$(LIBTORCH_INCLUDE)/torch/csrc/api/include $(if $(CUDA_PATH),-I$(CUDA_INCLUDE),) $(if $(SENTENCEPIECE_PATH),-I$(SENTENCEPIECE_INCLUDE),) $(SENTENCEPIECE_INCLUDE_EXTRA)
 #------------------------------------------------------------
 # Modification : utiliser les chemins absolus PyTorch au lieu de @rpath
 LIBTORCH_LIBS = -L$(LIBTORCH_LIB) -ltorch -ltorch_cpu -lc10 $(CUDA_LIBS) $(SENTENCEPIECE_LIBS)
