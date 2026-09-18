@@ -1407,6 +1407,49 @@ Exporting u_ustring ujsonstring(u_ustring value) {
 }
 
 
+Exporting string longstringquoted(string value) {
+    if (value == "")
+        return "\"\"";
+    
+    string output;
+    if (value.find("`") == -1) {
+        output = "`";
+        output += value;
+        output += "`";
+        return output;
+    }
+    
+    if (value.find("«") == -1 && value.find("»") == -1) {
+        output = "«";
+        output += value;
+        output += "»";
+        return output;
+    }
+    
+    output = "\"";
+   
+    uchar c;
+    for (long i = 0; i < value.size(); i++) {
+        c = value[i];
+        if (c == '\\') {
+            output += c;
+            c = value[++i];
+            if (c)
+                output += c;
+            else
+                output += '\\';
+            continue;
+        }
+        if (c == '"')
+            output += "\\\"";
+        else
+            output += c;
+    }
+    
+    output += "\"";
+    return output;
+}
+
 Exporting string doublequoted(string value) {
     if (value == "")
         return "\"\"";

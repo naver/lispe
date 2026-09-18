@@ -80,6 +80,7 @@ Exporting wstring wjsonstring(wstring value);
 Exporting wstring wjsonstring(u_ustring value);
 Exporting u_ustring ujsonstring(u_ustring value);
 
+Exporting string longstringquoted(string value);
 Exporting string doublequoted(string value);
 Exporting wstring wdoublequoted(wstring value);
 Exporting wstring wdoublequoted(u_ustring value);

@@ -2615,7 +2615,7 @@ Element* List::eval_call_function(LispE* lisp) {
         //We also retrieve its label (which is l_defun or l_defpat or...)
         int16_t label = body->index(0)->label();
         char tr = debug_next;
-        if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred || label == l_defprol) {
+        if (isFunctions.check(label)) {
             if (lisp->trace == debug_inside_function)
                 lisp->stop_at_next_line(debug_next);
             else {
@@ -2646,7 +2646,7 @@ Element* Listincode::eval_call_function(LispE* lisp) {
             //We also retrieve its label (which is l_defun or l_defpat or...)
             int16_t label = body->index(0)->label();
             char tr = debug_next;
-            if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred || label == l_defprol) {
+            if (isFunctions.check(label)) {
                 if (lisp->trace == debug_inside_function)
                     lisp->stop_at_next_line(debug_next);
                 else {
@@ -2718,7 +2718,7 @@ Element* Listincode::eval_call_self(LispE* lisp) {
             //We also retrieve its label (which is l_defun or l_defpat or...)
             int16_t label = body->index(0)->label();
             char tr = debug_next;
-            if (label == l_defun || label == l_defpat || label == l_lambda || label == l_defpred || label == l_defprol) {
+            if (isFunctions.check(label)) {
                 if (lisp->trace == debug_inside_function)
                     lisp->stop_at_next_line(debug_next);
                 else {

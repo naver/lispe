@@ -897,7 +897,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         
         Element* params;
         
-        if (type == l_defun || type == l_defpat || type == l_dethread || type == l_deflib || type == l_defpred || type == l_defprol || type == l_class) {
+        if (isFunctions.check(type) || type == l_class) {
             code += "(";
             code += lisp->toString(type);
             code += " ";
@@ -1023,8 +1023,12 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
             l->setusermark(false);
         return;
     }
-    if (isString())
-        code += doublequoted(toString(lisp));
+    if (isString()) {
+        if (type == t_longstring)
+            code += longstringquoted(toString(lisp));
+        else
+            code += doublequoted(toString(lisp));
+    }
     else {
         if (isDictionary()) {
             string local = toString(lisp);

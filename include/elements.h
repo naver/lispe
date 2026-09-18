@@ -20,6 +20,8 @@
 
 //#define MACDEBUG 1
 
+extern binHash<bool> isFunctions;
+
 #ifdef MACDEBUG
 extern std::recursive_mutex lock_indexes;
 extern vector<Element*> __indexes;
@@ -77,6 +79,8 @@ typedef enum {
     //Default Lisp instructions
     l_number, l_float, l_format, l_string, l_stringbyte, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary, l_bytes, l_aslongstring,
         
+    l_withclass, l_lambda, l_class, l_this, l_from, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defprol, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label, l_toclean,
+
     //threads
     l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear, l_threadspace, l_thread,
     
@@ -85,7 +89,7 @@ typedef enum {
 #ifdef LISPE_WASM
     l_evaljs, l_evaljssync,
 #endif
-    l_withclass, l_lambda, l_class, l_this, l_from, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defprol, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label, l_toclean,
+
     l_set_const, l_setq, l_setqv, l_setqi, l_setg, l_setqequal, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
     l_setfast, l_getfast,
     l_block, l_root, l_elapse, l_code,

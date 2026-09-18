@@ -809,6 +809,12 @@ public:
         //in the case of a goto, we only take into account breakpoints
         delegation->set_context(e->idxinfo);
 
+#ifdef LISPE_WASM
+        string s = e->toString(this);
+        long nb = stackSize();
+        string space(nb, ' ');
+        std::cout << "[" << delegation->i_current_line << "] " << nb << ":" << space << s << std::endl;
+#else
         if (trace == debug_goto)
             delegation->next_stop = false;
         
@@ -819,6 +825,7 @@ public:
                 std::cout << "(" << delegation->i_current_line << ") " << nb << ":" << space << e->toString(this) << std::endl;
             }
         }
+#endif
     }
 
     inline string toString(int16_t c) {

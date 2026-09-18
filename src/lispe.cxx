@@ -21,6 +21,8 @@
 #endif
 
 //------------------------------------------------------------
+binHash<bool> isFunctions;
+//------------------------------------------------------------
 static long total_objects = 0;
 
 void increment_total() {
@@ -31,7 +33,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.9.1.10.1";
+static std::string version = "1.2026.9.18.14.11";
 string LispVersion() {
     return version;
 }
@@ -1334,6 +1336,15 @@ void Delegation::initialisation(LispE* lisp) {
     
     e = lisp->provideConststring(end_path);
     lisp->storing_variable(e, encode(w));
+    
+    isFunctions[l_lambda] = true;
+    isFunctions[l_defun] = true;
+    isFunctions[l_dethread] = true;
+    isFunctions[l_deflib] = true;
+    isFunctions[l_deflibpat] = true;
+    isFunctions[l_defpred] = true;
+    isFunctions[l_defprol] = true;
+    isFunctions[l_defpat] = true;
 }
 
 void LispE::cleaning() {
@@ -3847,6 +3858,8 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
+
 
 
 
