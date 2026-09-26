@@ -10,3 +10,12 @@ editor/objs/shell/jagtools.o
 editor/objs/shell/shellmain.o
 editor/objs/shell/tokenize.o
 Makefile.in
+
+# Compiled binaries - these should be published as GitHub Releases, not committed to git
+binaries/windows/
+binaries/mac/
+binaries/M1/
+docker/bin/
+*.msi
+*.wixobj
+*.wixpdb
