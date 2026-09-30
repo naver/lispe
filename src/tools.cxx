@@ -3514,8 +3514,10 @@ long convertinginteger(string& number) {
     long v = 0;
     
     uchar c = number[ipos++];
-    if (sz == ipos)
-        return isadigit(c)?(c - 48)*sign:0;
+    if (sz == ipos) {
+        v = c & 15;
+        return isadigit(c)?v*sign:0;
+    }
 
     if (c == '0') {
         if (number[ipos] == 'x' || number[ipos] == 'X') {
@@ -3573,8 +3575,10 @@ long convertinginteger(wstring& number) {
     long v = 0;
     
     UWCHAR c = number[ipos++];
-    if (sz == ipos)
-        return isadigit(c)?(c - 48)*sign:0;
+    if (sz == ipos) {
+        v = c & 15;
+        return isadigit(c)?v*sign:0;
+    }
 
     if (c == '0') {
         if (number[ipos] == 'x' || number[ipos] == 'X') {
@@ -3632,8 +3636,10 @@ long convertinginteger(u_ustring& number) {
     long v = 0;
     
     u_uchar c = number[ipos++];
-    if (sz == ipos)
-        return isadigit(c)?(c - 48)*sign:0;
+    if (sz == ipos) {
+        v = c & 15;
+        return isadigit(c)?v*sign:0;
+    }
 
     if (c == '0') {
         if (number[ipos] == 'x' || number[ipos] == 'X') {
