@@ -439,7 +439,7 @@ Element* Set_s::count_all_elements(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set_s::list_and(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '&&&' to strings, lists or sets");
     
     Set_s* s = lisp->provideSet_s();
     for (const auto& a: ensemble) {
@@ -452,7 +452,7 @@ Element* Set_s::list_and(LispE* lisp, Element* value) {
 
 Element* Set_s::list_or(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '|||' to strings, lists or sets");
     
     Set_s* s = lisp->provideSet_s();
     s->ensemble = ensemble;
@@ -488,7 +488,7 @@ Element* Set_s::list_or(LispE* lisp, Element* value) {
 
 Element* Set_s::list_xor(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '^^^' to strings, lists or sets");
     
     Set_s* s = lisp->provideSet_s();
     Set_s* intersection = (Set_s*)list_and(lisp, value);
@@ -703,7 +703,7 @@ bool Set_i::check_element(LispE* lisp, Element* a_value) {
 
 Element* Set_i::list_and(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '&&&' to strings, lists or sets");
     
     Set_i* s = lisp->provideSet_i();
     for (const auto& a: ensemble) {
@@ -716,7 +716,7 @@ Element* Set_i::list_and(LispE* lisp, Element* value) {
 
 Element* Set_i::list_or(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '|||' to strings, lists or sets");
     
     Set_i* s = lisp->provideSet_i();
     s->ensemble = ensemble;
@@ -752,7 +752,7 @@ Element* Set_i::list_or(LispE* lisp, Element* value) {
 
 Element* Set_i::list_xor(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '^^^' to strings, lists or sets");
     
     Set_i* s = lisp->provideSet_i();
     Set_i* intersection = (Set_i*)list_and(lisp, value);
@@ -1248,7 +1248,7 @@ Element* Set_n::count_all_elements(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set_n::list_and(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '&&&' to strings, lists or sets");
     
     Set_n* s = lisp->provideSet_n();
     for (const auto& a: ensemble) {
@@ -1261,7 +1261,7 @@ Element* Set_n::list_and(LispE* lisp, Element* value) {
 
 Element* Set_n::list_or(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '|||' to strings, lists or sets");
     
     Set_n* s = lisp->provideSet_n();
     s->ensemble = ensemble;
@@ -1297,7 +1297,7 @@ Element* Set_n::list_or(LispE* lisp, Element* value) {
 
 Element* Set_n::list_xor(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '^^^' to strings, lists or sets");
     
     Set_n* s = lisp->provideSet_n();
     Set_n* intersection = (Set_n*)list_and(lisp, value);
@@ -1615,7 +1615,7 @@ Element* Set::count_all_elements(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set::list_and(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '&&&' to strings, lists or sets");
     
     Set* s = lisp->provideSet();
     for (const auto& a: dictionary) {
@@ -1629,7 +1629,7 @@ Element* Set::list_and(LispE* lisp, Element* value) {
 
 Element* Set::list_or(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '|||' to strings, lists or sets");
     
     Set* s = lisp->provideSet();
     s->dictionary = dictionary;
@@ -1665,7 +1665,7 @@ Element* Set::list_or(LispE* lisp, Element* value) {
 
 Element* Set::list_xor(LispE* lisp, Element* value) {
     if (!value->isList() && !value->isSet())
-        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+        throw new Errorstack(lisp, "Error: Can only apply '^^^' to strings, lists or sets");
     
     Set* s = lisp->provideSet();
     Set* intersection = (Set*)list_and(lisp, value);
@@ -2879,12 +2879,12 @@ Element* Heap::value_on_index(LispE* lisp, Element* idx) {
 Element* Heap::protected_index(LispE* lisp, Element* k) {
     long i = k->asInteger();
     if (root == NULL)
-        throw new Error("Error: index out of bounds");
+        throw new Errorstack(lisp, "Error: index out of bounds");
     if (i == -1)
         return root->back(lisp);
     Element* e = root->traverse(lisp, i);
     if (e == NULL)
-        throw new Error("Error: index out of bounds");
+        throw new Errorstack(lisp, "Error: index out of bounds");
     return e;
 }
 

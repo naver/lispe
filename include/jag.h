@@ -553,10 +553,20 @@ public:
 
             if ((p+u) < end)
                 erase(p+u, end);
+            status[p] = (subs.size() > 1) ? beg_line : solo_line;
             numbers();
             return;
         }
         lines[p] = line;
+        //The new line fits in one row, we remove the stale continuation rows
+        if ((p+1) < end) {
+            erase(p+1, end);
+            status[p] = solo_line;
+            numbers();
+        }
+        else
+            if (status[p] == beg_line && Status(p+1) != concat_line)
+                status[p] = solo_line;
     }
 
     bool refactoring(long p);
@@ -726,6 +736,7 @@ public:
     bool replaceall;
     bool modified;
     bool tobesaved;
+    bool noundorecord = false; //true while undoing/redoing: no new undo entries
     bool tooglehelp;
     bool updateline;
     bool noprefix;
@@ -893,7 +904,7 @@ public:
 
     virtual string coloringline(string line, long i, bool thread);
     void undo(wstring& l, long p, char a) {
-        if (!emode() || p >= lines.size())
+        if (noundorecord || !emode() || p >= lines.size())
             return;
 
         modified = true;
@@ -917,10 +928,22 @@ public:
 
         lines.setcode(code, true);
 
-        displaylist(poslines[0]);
+        long top = poslines.size() ? poslines[0] : 0;
+        if (top >= lines.size())
+            top = lines.size() - 1 - row_size;
+        if (top < 0)
+            top = 0;
+        displaylist(top);
+        if (currentline >= (long)poslines.size())
+            currentline = poslines.size() - 1;
+        if (currentline < 0)
+            currentline = 0;
+        pos = poslines.size() ? poslines[currentline] : 0;
+        line = lines[pos];
+        if (posinstring > line.size())
+            posinstring = line.size();
         movetoline(currentline);
         movetoposition();
-        line = lines[pos];
     }
 
     void processredos();
@@ -966,6 +989,8 @@ public:
         }
         wstring code = wconvert(cde);
         lines.setcode(code, true);
+        undos.clear();
+        redos.clear();
         displayonlast("Reloaded", true);
         posinstring = 0;
         pos = 0;
@@ -1104,9 +1129,12 @@ public:
     //We detect long commented lines or long strings
     void resetlist(long i) {
         poslines.clear();
+        if (i < 0)
+            i = 0;
         long mx = i + row_size;
 
-        while (i <= mx) {
+        //poslines should never go beyond the end of lines
+        while (i <= mx && (i < lines.size() || poslines.empty())) {
             poslines.push_back(i);
             i++;
         }
@@ -1224,6 +1252,8 @@ public:
             return false;
         wd << convert(code);
         wd.close();
+        if (wd.fail())
+            return false;
         tobesaved = false;
         return true;
     }
@@ -1242,10 +1272,12 @@ public:
     }
 
     virtual bool loadfile(string name) {
-        setpathname(name);
-        ifstream rd(pathname(), openMode);
+        ifstream rd(name, openMode);
         if (rd.fail())
             return false;
+        setpathname(name);
+        undos.clear();
+        redos.clear();
 
         string code = "";
         string line;

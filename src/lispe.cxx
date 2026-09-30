@@ -33,7 +33,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.9.18.14.11";
+static std::string version = "1.2026.9.27.18.58";
 string LispVersion() {
     return version;
 }
@@ -326,7 +326,7 @@ int16_t LispE::createNewType(u_ustring identifier) {
     Element* newType = provideAtom(identifier);
     int16_t label = newType->label();
     if (delegation->data_pool.check(label))
-        throw new Error("Error: data structure has already been recorded");
+        throw new Errorstack(this, "Error: data structure has already been recorded");
     
     Element* e = create_instruction(label, delegation->_NULL);
     delegation->data_pool[label] = e;
@@ -464,6 +464,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_defpat, "defpat", P_ATLEASTFOUR, &List::evall_defpat);
     set_instruction(l_defpred, "defpred", P_ATLEASTFOUR, &List::evall_defpred);
     set_instruction(l_defprol, "defprol", P_ATLEASTFOUR, &List::evall_defprol);
+    set_instruction(l_defprederr, "defprederr", P_ATLEASTFOUR, &List::evall_defpred);
     set_instruction(l_defspace, "defspace", P_TWO, &List::evall_defspace);
     set_instruction(l_class, "class@", P_ATLEASTFOUR, &List::evall_class);
     set_instruction(l_from, "from@", P_ATLEASTTWO, new List_from());
@@ -1344,6 +1345,7 @@ void Delegation::initialisation(LispE* lisp) {
     isFunctions[l_deflibpat] = true;
     isFunctions[l_defpred] = true;
     isFunctions[l_defprol] = true;
+    isFunctions[l_defprederr] = true;
     isFunctions[l_defpat] = true;
 }
 
@@ -2204,6 +2206,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
             }
             case l_defpred:
             case l_defprol:
+            case l_defprederr:
             case l_defpat: {
                 Element* arguments = element->index(2);
                 Element* a;
@@ -2247,7 +2250,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                     while (posbeg != -1) {
                         posend = u.find(U"}", posbeg);
                         if (posend == -1)
-                            throw new Error("Wrong format");
+                            throw new Errorstack(this, "Wrong format");
                         sub = u.substr(posinit, posbeg-posinit);
                         if (sub.size())
                             v.push_back(sub);
@@ -2292,7 +2295,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                     }
                 }
                 else
-                    throw new Error("Wrong use of 'f_'");
+                    throw new Errorstack(this, "Wrong use of 'f_'");
                 break;
             }
             case l_setq:
@@ -2308,7 +2311,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                                 wstring msg = L"Error: Invalid variable name: '";
                                 msg += element->index(1)->asString(this);
                                 msg += L"' (keyword)";
-                                throw new Error(msg);
+                                throw new Errorstack(this, msg);
                             }
                         }
                     }
@@ -2317,14 +2320,14 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                             wstring msg = L"Error: Invalid variable name: '";
                             msg += element->index(1)->asString(this);
                             msg += L"' (keyword)";
-                            throw new Error(msg);
+                            throw new Errorstack(this, msg);
                         }
                         else {
                             if (delegation->const_values.check(element->index(1)->label())) {
                                 wstring msg = L"Error: '";
                                 msg += element->index(1)->asString(this);
                                 msg += L"' is a constant value";
-                                throw new Error(msg);
+                                throw new Errorstack(this, msg);
                             }
                         }
                     }
@@ -2338,20 +2341,20 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                         wstring msg = L"Error: '";
                         msg += element->index(1)->asString(this);
                         msg += L"' is a constant value";
-                        throw new Error(msg);
+                        throw new Errorstack(this, msg);
                     }
                 }
                 break;
             case l_let:{
                 if (element->size() < 3)
-                    throw new Error("Error: unbalanced list of variables in 'let'");
+                    throw new Errorstack(this, "Error: unbalanced list of variables in 'let'");
                 
                 Element* arguments = element->index(1);
                 if (!arguments->isList() || !arguments->size())
-                    throw new Error("Error: unbalanced list of variables in 'let'");
+                    throw new Errorstack(this, "Error: unbalanced list of variables in 'let'");
                 for (long i = 0; i < arguments->size(); i++) {
                     if (!arguments->index(i)->isList() || arguments->index(i)->size() != 2)
-                        throw new Error("Error: unbalanced list of variables in 'let'");
+                        throw new Errorstack(this, "Error: unbalanced list of variables in 'let'");
                 }
                 break;
             }
@@ -2373,7 +2376,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                         if (nxt->isList()) {
                             if (nxt->size() < 2 || nxt->index(0)->label() != l_at) {
                                 wstring msg = L"Error: Expecting an index access with 'at'";
-                                throw new Error(msg);
+                                throw new Errorstack(this, msg);
                             }
                             equal_op_list = true;
                         }
@@ -2381,7 +2384,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                             wstring msg = L"Error: Invalid variable name: '";
                             msg += element->index(1)->asString(this);
                             msg += L"' (keyword)";
-                            throw new Error(msg);
+                            throw new Errorstack(this, msg);
                         }
                     }
                     else {
@@ -2389,7 +2392,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                             wstring msg = L"Error: '";
                             msg += element->index(1)->asString(this);
                             msg += L"' is a constant value";
-                            throw new Error(msg);
+                            throw new Errorstack(this, msg);
                         }
                     }
                 }
@@ -2460,9 +2463,11 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 case l_dethread:
                     body = new List_thread_eval(this, (Listincode*)element, (List*)body, local_space);
                     break;
-                case l_defpred:
+                case l_defprederr:
+                case l_defpred: {
                     body = new List_predicate_eval((Listincode*)element, (List*)body, local_space);
                     break;
+                }
                 case l_defprol:
                     body = new List_prolog_eval((Listincode*)element, (List*)body, local_space);
                     break;
@@ -2526,7 +2531,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
         switch (lab) {
             case l_break:
                 if (nbarguments != 1)
-                    throw new Error("Error: break does not take any arguments");
+                    throw new Errorstack(this, "Error: break does not take any arguments");
                 removefromgarbage(element);
                 element = &delegation->_BREAKEVAL;
                 break;
@@ -2634,7 +2639,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 wstring err = L"Error: Wrong number of arguments for: '";
                 err += delegation->asString(lab);
                 err += L"'";
-                throw new Error(err);
+                throw new Errorstack(this, err);
             }
             removefromgarbage(element);
             element = lm;
@@ -2815,7 +2820,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     current_program->reversechoice();
                     index++;
                     if (parse.types[index] == c_colon)
-                        throw new Error("Error: wrong key/value separator in a dictionary");
+                        throw new Errorstack(this, "Error: wrong key/value separator in a dictionary");
                 }
                 else {
                     element = provideAtom(c_colon);
@@ -2827,7 +2832,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 if (quoting) {
                     index++;
                     if (current_program->size() == 0)
-                        throw new Error("Error: Wrong use of '.'");
+                        throw new Errorstack(this, "Error: Wrong use of '.'");
                     if (parse.types[index] == c_opening) {
                         index++;
                         syntaxTree(current_program, parse, index, quoting);
@@ -2846,11 +2851,11 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
             case l_compose:
                 index++;
                 if (!current_program->size())
-                    throw new Error("Error: unknown operation: '.'");
+                    throw new Errorstack(this, "Error: unknown operation: '.'");
                 if (current_program->index(0) != n_compose)
                     ((List*)current_program)->liste.insert(0, n_compose);
                 if (current_program->last(this) == n_compose)
-                    throw new Error("Error: two '.' in a row. Composition is impossible");
+                    throw new Errorstack(this, "Error: two '.' in a row. Composition is impossible");
                 current_program->append(n_compose);
                 break;
             case t_atom:
@@ -2881,7 +2886,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     if (delegation->function_spaces.check(labfunc)) {
                                         stringstream st;
                                         st << "Error: '" << current_program->index(0)->toString(this) << "' is a function definition next to a class definition.";
-                                        throw new Error(st.str());
+                                        throw new Errorstack(this, st.str());
                                     }
                                 }
                             }
@@ -2891,13 +2896,14 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         case l_defun:
                         case l_defpred:
                         case l_defprol:
+                        case l_defprederr:
                         case l_dethread:
                         case l_defpat: {
                             //We are defining a function, we can record it now...
                             if (delegation->instructions.check(element->label())) {
                                 stringstream st;
                                 st << "Error: '" << delegation->instructions[element->label()] << "' is a reserved keyword.";
-                                throw new Error(st.str());
+                                throw new Errorstack(this, st.str());
                             }
                             delegation->recordingFunction(current_program, element->label(), current_space);
                         }
@@ -2913,7 +2919,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 current_program->append(element);
                 abstractSyntaxTree(element, parse, index, true);
                 if (element->size() != 2)
-                    throw new Error("Error: Wrong number of arguments for 'quote'");
+                    throw new Errorstack(this, "Error: Wrong number of arguments for 'quote'");
                 break;
             default:
                 break;
@@ -3041,7 +3047,7 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                     courant->reversechoice();
                     index++;
                     if (parse.types[index] == c_colon)
-                        throw new Error("Error: wrong key/value separator in a dictionary");
+                        throw new Errorstack(this, "Error: wrong key/value separator in a dictionary");
                 }
                 else {
                     e = provideAtom(encode(parse.tokens[index]));
@@ -3053,7 +3059,7 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                 if (quoting) {
                     index++;
                     if (courant->size() == 0)
-                        throw new Error("Error: Wrong use of '.'");
+                        throw new Errorstack(this, "Error: Wrong use of '.'");
                     if (parse.types[index] == c_opening) {
                         index++;
                         syntaxTree(courant, parse, index, quoting);
@@ -3086,7 +3092,7 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                 index++;
                 syntaxTree(e, parse, index, true);
                 if (e->size() != 2)
-                    throw new Error("Error: Wrong number of arguments for 'quote'");
+                    throw new Errorstack(this, "Error: Wrong number of arguments for 'quote'");
                 break;
             default:
                 index++;
@@ -3265,7 +3271,7 @@ Element* LispE::load(string pathname) {
     if (f.fail()) {
         string err = "Unknown file: ";
         err += pathname;
-        throw new Error(err);
+        throw new Errorstack(this, err);
     }
 
     string code;
@@ -3284,6 +3290,9 @@ Element* LispE::load(string pathname) {
 
         current_path();
         depth_stack = 0;
+#ifdef LISPE_WASM
+        line_stack.last = 0;
+#endif
         return tree->eval(this);
     }
     catch (Error* err) {
@@ -3323,6 +3332,9 @@ Element* LispE::compile_eval(u_ustring& code) {
     try {
         Element* tree = compile_lisp_code(code);
         depth_stack = 0;
+#ifdef LISPE_WASM
+        line_stack.last = 0;
+#endif
         return tree->eval(this);
     }
     catch (Error* err) {
@@ -3491,7 +3503,7 @@ Element* LispE::extension(string code, Element* etendre) {
         string error("Error: While parsing '");
         error += code;
         error += "'. Check if parameter names are not keywords.";
-        throw new Error(error);
+        throw new Errorstack(this, error);
     }
 }
 
@@ -3522,6 +3534,9 @@ Element* LispE::execute(string code, string pathname) {
         delegation->entrypoints[delegation->i_current_file] = tree;
         current_path();
         depth_stack = 0;
+#ifdef LISPE_WASM
+        line_stack.last = 0;
+#endif
         return tree->eval(this);
     }
     catch (Error* err) {
@@ -3652,7 +3667,7 @@ int16_t LispE::generate_macro(Element* code, int16_t lab) {
             pop(n_null);
             stringstream st;
             st << "Error: cannot apply this macro: " << toString(label) << " to '" << lcode->toString(this) << "'";
-            throw new Error(st.str());
+            throw new Errorstack(this, st.str());
         }
         
         //We clear it... We have already saved the important parts of the code
@@ -3858,6 +3873,8 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
+
 
 
 

@@ -68,6 +68,10 @@ class LispE {
     vecte<Stackelement*> stack_pool;
 
     vecte<Stackelement*> execution_stack;
+
+#ifdef LISPE_WASM
+    vecte<Listincode*> line_stack;
+#endif
     
 public:
     
@@ -645,19 +649,19 @@ public:
     }
 
     inline bool sendError(u_ustring msg) {
-        throw new Error(msg);
+        throw new Errorstack(this, msg);
     }
 
     inline void sendStackError() {
         depth_stack++;
-        throw new Error(U"Stack overflow");
+        throw new Errorstack(this, U"Stack overflow");
     }
 
     inline bool unboundAtomError(int16_t label) {
         u_ustring err = U"Error: Unbound atom: '";
         err += delegation->code_to_string[label];
         err += U"'";
-        throw new Error(err);
+        throw new Errorstack(this, err);
     }
 
     inline Element* getDataStructure(int16_t label) {
@@ -722,11 +726,43 @@ public:
         depth_stack++;
         trace_and_context(l);
     }
-        
+
+#ifdef LISPE_WASM
+    inline void setStack() {
+        depth_stack++;
+        line_stack.push_back(NULL);
+    }
+
+    inline void setStack(Listincode* l) {
+        depth_stack++;
+        line_stack.push_back(l);
+    }
+
+    inline void checkState(Listincode* l) {
+        (!delegation->stop_execution && !trace && depth_stack != max_stack_size)?setStack(l):
+            delegation->stop_execution?
+                sendEnd():
+                depth_stack == max_stack_size?
+                    sendStackError():
+                    trace?
+                        checkTrace(l):
+                        setStack(l);
+                    
+    }
+
+    inline void resetStack() {
+        if (depth_stack) {
+            depth_stack--;
+            line_stack.pop_protect();
+        }
+        else
+            line_stack.last = 0;        
+    }
+#else
     inline void setStack() {
         depth_stack++;
     }
-    
+
     inline void checkState(Listincode* l) {
         (!delegation->stop_execution && !trace && depth_stack != max_stack_size)?setStack():
             delegation->stop_execution?
@@ -740,8 +776,10 @@ public:
     }
 
     inline void resetStack() {
-        depth_stack--;
+        if (depth_stack)
+            depth_stack--;
     }
+#endif
     
     List* cloning(int16_t lab) {
         return delegation->straight_eval[lab]->cloning();
@@ -869,6 +907,34 @@ public:
         return NULL;
     }
 
+#ifdef LISPE_WASM
+    wstring stackString() {
+        std::wstringstream the_stack;
+        wstring line;
+        Element* ligne;
+        int idx_info;
+        for (long i = line_stack.last-1; i >= 0; i--) {
+            ligne = line_stack[i];
+            if (ligne == NULL)
+                continue;
+            
+            idx_info = ligne->infoIdx();
+            if (idx_info && idx_info < delegation->idxinfos.size())
+                the_stack << L"[" << delegation->idxinfos[idx_info] << L"] ";
+            else
+                the_stack << L"[-] ";
+            line = ligne->asString(this);
+            if (line.size() > 47) {
+                line = line.substr(0,47);
+                line += L"...";
+            }
+            the_stack << line;
+            the_stack << L"\n";
+        }
+        return the_stack.str();
+    }
+#endif
+    
     string stackImage() {
         string the_stack;
         long sz;
@@ -1003,7 +1069,7 @@ public:
             //place.
             if (dico != NULL) {
                 if (!dico->verify())
-                    throw new Error("Error: When building a pattern for a dictionary, keys with actual values (number of string) should appear first");
+                    throw new Errorstack(this, "Error: When building a pattern for a dictionary, keys with actual values (number of string) should appear first");
                 parameters->change(i, dico);
             }
         }
@@ -1097,7 +1163,7 @@ public:
         if (!execution_stack.back()->recordingunique(e, label)) {
             std::wstringstream w;
             w << "Error: '" << u_to_w(delegation->code_to_string[label]) << "' has been recorded already";
-            throw new Error(w.str());
+            throw new Errorstack(this, w.str());
         }
         return e;
     }
@@ -1244,13 +1310,13 @@ public:
 
     void create_name_space(int16_t label) {
         if (label < l_final && label != v_mainspace)
-            throw new Error("Error: Cannot use this label to define a space");
+            throw new Errorstack(this, "Error: Cannot use this label to define a space");
                 
         if (delegation->namespaces.check(label))
             current_space = delegation->namespaces[label];
         else {
             if (delegation->function_pool.size() > 65534)
-                throw new Error("Error: Maximum number of namespace reached");
+                throw new Errorstack(this, "Error: Maximum number of namespace reached");
             
             current_space = delegation->function_pool.size();
             delegation->function_pool.push_back(new binHash<Element*>());
@@ -1293,7 +1359,7 @@ public:
         int16_t label = l->index(0)->label();
         if (delegation->function_pool[current_space]->check(label))
             return delegation->function_pool[current_space]->at(label);
-        throw new Error("Error: Unknown function");
+        throw new Errorstack(this, "Error: Unknown function");
     }
     
     inline bool checkFunctionLabel(int16_t label) {

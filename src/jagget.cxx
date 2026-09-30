@@ -16,6 +16,8 @@
 #include <unistd.h>   //_getch
 #include <termios.h>  //_getch
 #include <sys/ioctl.h>
+#include <poll.h>
+#include <errno.h>
 #endif
 
 #include <signal.h>
@@ -110,9 +112,12 @@ void jag_get::initialisation() {
     tcgetattr(0, &theterm);
     theterm.c_iflag &= ~IXON;
     theterm.c_iflag |= IXOFF;
-    theterm.c_cc[VSTART] = NULL;
-    theterm.c_cc[VSTOP] = NULL;
-    theterm.c_cc[VSUSP] = NULL;
+    theterm.c_cc[VSTART] = _POSIX_VDISABLE;
+    theterm.c_cc[VSTOP] = _POSIX_VDISABLE;
+    theterm.c_cc[VSUSP] = _POSIX_VDISABLE;
+#ifdef VDSUSP
+    theterm.c_cc[VDSUSP] = _POSIX_VDISABLE;
+#endif
     tcsetattr(0, TCSADRAIN, &theterm);
 #endif
 }
@@ -123,15 +128,15 @@ jag_get::jag_get(bool inside) {
     col_size = -1;
     margin = margin_value_reference;
 
-    if (inside) {
-        main_handler = this;
-        initialisation();
-    }
-    
     inside_editor = inside;
     mouse_status = false;
     activate_mouse = false;
 	nbclicks = 0;
+
+    if (inside) {
+        main_handler = this;
+        initialisation();
+    }
 
 #ifdef XTERM_MOUSE_VT100
     vt100 = true;
@@ -164,7 +169,6 @@ string jag_get::getch() {
 string jag_get::getch(){
     initialisation();
     static char buf[_getbuffsize+2];
-    memset(buf,0, _getbuffsize);
 
     struct termios remove_echo={0};
     fflush(stdout);
@@ -175,6 +179,8 @@ string jag_get::getch(){
     
     remove_echo.c_lflag&=~ICANON;
     remove_echo.c_lflag&=~ECHO;
+    //no extended input processing (ctrl-v, ctrl-o on BSD), ISIG is kept for ctrl-c
+    remove_echo.c_lflag&=~IEXTEN;
     remove_echo.c_cc[VMIN]=1;
     remove_echo.c_cc[VTIME]=0;
     if(tcsetattr(0, TCSANOW, &remove_echo)<0) {
@@ -189,18 +195,48 @@ string jag_get::getch(){
     string res;
     long nb;
     
-    do {
-        nb = read(0,buf,_getbuffsize);
-        if (nb < 0)
-            perror("read()");
-        buf[nb] = 0;
-        res += buf;
-        memset(buf,0, _getbuffsize);
-    }
-    while (nb == _getbuffsize);
+    struct pollfd pfd;
+    pfd.fd = 0;
+    pfd.events = POLLIN;
+    long need, k;
+    int timeout;
     
+    while (true) {
+        nb = read(0,buf,_getbuffsize);
+        if (nb < 0) {
+            if (errno == EINTR)
+                continue;
+            perror("read()");
+            break;
+        }
+        if (nb == 0) //EOF
+            break;
+        //We keep NUL characters
+        res.append(buf, nb);
+        
+        //Do we have an incomplete UTF-8 character at the end?
+        timeout = 0;
+        k = res.size() - 1;
+        while (k > 0 && k > (long)res.size() - 4 && (((uchar)res[k]) & 0xC0) == 0x80)
+            k--;
+        need = 1;
+        if ((((uchar)res[k]) & 0xE0) == 0xC0)
+            need = 2;
+        else if ((((uchar)res[k]) & 0xF0) == 0xE0)
+            need = 3;
+        else if ((((uchar)res[k]) & 0xF8) == 0xF0)
+            need = 4;
+        if ((long)res.size() - k < need)
+            timeout = 50;
+        
+        //we drain the bytes that are already available
+        pfd.revents = 0;
+        if (poll(&pfd, 1, timeout) <= 0 || !(pfd.revents & POLLIN))
+            break;
+    }
     
     remove_echo.c_lflag|=ICANON;
+    remove_echo.c_lflag|=IEXTEN;
     if (!isMouseAction(res))
         remove_echo.c_lflag|=ECHO;
     if(tcsetattr(0, TCSADRAIN, &remove_echo)<0) {
@@ -246,9 +282,12 @@ void jag_get::reset() {
     theterm.c_iflag &= ~IXON;
     theterm.c_iflag |= IXOFF;
     //The next modifications allows for the use of ctrl-q and ctrl-s
-    theterm.c_cc[VSTART] = 0;
-    theterm.c_cc[VSTOP] = 0;
-    theterm.c_cc[VSUSP] = 0;
+    theterm.c_cc[VSTART] = _POSIX_VDISABLE;
+    theterm.c_cc[VSTOP] = _POSIX_VDISABLE;
+    theterm.c_cc[VSUSP] = _POSIX_VDISABLE;
+#ifdef VDSUSP
+    theterm.c_cc[VDSUSP] = _POSIX_VDISABLE;
+#endif
     tcsetattr(0, TCSADRAIN, &theterm);
 #endif
 }
@@ -272,6 +311,8 @@ void jag_get::get_a_string(string& string_input) {
     
     while (true) {
         buff = getch();
+        if (buff.empty()) //EOF or read error
+            break;
         
 #ifdef WIN32
     if (buff == c_homekey) {
@@ -354,7 +395,7 @@ void jag_get::get_a_string(string& string_input) {
         }
 
         if (buff[0] == m_delback || buff[0] == m_delbackbis) {
-            if (!input_string.size())
+            if (!input_string.size() || !cursor)
                 continue;
             cout << m_oneleft << m_deletechar;
             if (cursor < input_string.size()) {
@@ -373,6 +414,10 @@ void jag_get::get_a_string(string& string_input) {
             break;
         }
         
+        //unknown escape sequences are ignored
+        if (buff[0] == 27)
+            continue;
+        
         cout << buff;
         s_utf8_to_unicode_clean(wbuff, buff, buff.size());
         
@@ -386,7 +431,7 @@ void jag_get::get_a_string(string& string_input) {
         }
         else
             input_string += wbuff;
-        cursor++;
+        cursor += wbuff.size();
     }
     
     s_unicode_to_utf8_clean(string_input, input_string);

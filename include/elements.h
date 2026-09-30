@@ -47,10 +47,10 @@ class ITEM;
 void increment_total();
 void decrement_total();
 
-#define sent_error(e) throw new Error(e)
-#define sent_error_0(e) throw new Error(e)
-#define sent_error_e(e) throw new Error(e)
-#define sent_error_n(e) throw new Error(e)
+#define sent_error(e) throw new Errorstack(lisp, e)
+#define sent_error_0(e) throw new Errorstack(lisp, e)
+#define sent_error_e(e) throw new Errorstack(lisp, e)
+#define sent_error_n(e) throw new Errorstack(lisp, e)
 
 
 typedef enum {
@@ -79,7 +79,7 @@ typedef enum {
     //Default Lisp instructions
     l_number, l_float, l_format, l_string, l_stringbyte, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary, l_bytes, l_aslongstring,
         
-    l_withclass, l_lambda, l_class, l_this, l_from, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defprol, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label, l_toclean,
+    l_withclass, l_lambda, l_class, l_this, l_from, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defprederr,  l_defprol, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label, l_toclean,
 
     //threads
     l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear, l_threadspace, l_thread,
@@ -1182,6 +1182,15 @@ public:
 
     wstring asString(LispE* lisp);
     
+    void setvalue(string m) {
+        if (m.size()) {
+            wstring mm = L"";
+            s_utf8_to_unicode(mm, m, m.size());
+            mm += L"\n" + message;
+            message = mm;
+        }
+    }
+    
     bool Boolean() {
         return false;
     }
@@ -1191,6 +1200,18 @@ public:
         return true;
     }
 };
+
+#ifdef LISPE_WASM
+class Errorstack : public Error {
+public:
+    Errorstack(LispE*, string m);
+    Errorstack(LispE*, wstring m);
+    Errorstack(LispE*, u_ustring m);
+
+};
+#else
+#define Errorstack(a,b) Error(b)
+#endif
 
 class Force : public Element {
 public:

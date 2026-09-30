@@ -164,7 +164,7 @@ public:
     
     void setrules(vecte_n<u_ustring>& v) {
         if (main && lisp->id_thread)
-            throw new Error("You cannot modify the main tokenizer rules in a thread");
+            throw new Errorstack(lisp, "You cannot modify the main tokenizer rules in a thread");
         
         tok->set_rules(v);
     }
@@ -182,7 +182,7 @@ public:
     
     Element* setoperators(Set_s* lst) {
         if (main && lisp->id_thread)
-            throw new Error("You cannot modify the main tokenizer oeprators in a thread");
+            throw new Errorstack(lisp, "You cannot modify the main tokenizer oeprators in a thread");
         
         tok->operators.clear();
         for (const auto& u: lst->ensemble) {
@@ -335,7 +335,7 @@ public:
             std::wstringstream wstr;
             wstr << "Error: JSON' structure contains errors line: ";
             wstr << json.line << " at position: " << json.i;
-            throw new Error(wstr.str());
+            throw new Errorstack(lisp, wstr.str());
         }
         return json.compiled_result;
     }
@@ -397,11 +397,11 @@ public:
                     break;
                 }
                 default:
-                    throw new Error("Error: 'spritnf' can only be used with numerical values");
+                    throw new Errorstack(lisp, "Error: 'spritnf' can only be used with numerical values");
             }
         }
         catch(...) {
-            throw new Error("Error: wrong format");
+            throw new Errorstack(lisp, "Error: wrong format");
         }
         sformat = value;
         return lisp->provideString(sformat);
@@ -680,7 +680,7 @@ public:
         bool toconvert = lisp->get_variable(U"convert")->Boolean();
         b = lisp->get_variable(U"b")->asInteger();
         if (b <= 1)
-            throw new Error("Error: cannot convert to this base");
+            throw new Errorstack(lisp, "Error: cannot convert to this base");
         
         if (caracs.size() == 0) {
             w = U"0";
@@ -735,7 +735,7 @@ public:
         for (n = 0; n < w.size(); n++) {
             wc = w[n];
             if (!mcaracs.count(wc) || mcaracs[wc] >= b)
-                throw new Error(U"Error: Cannot analyze this string in this base.");
+                throw new Errorstack(lisp, U"Error: Cannot analyze this string in this base.");
 
             v *= b;
             v += mcaracs[wc];
@@ -817,13 +817,13 @@ public:
         if (i_beg < 0)
             i_beg = sz + i_beg;
         if (i_beg >= sz)
-            throw new Error("Error: out of range");
+            throw new Errorstack(lisp, "Error: out of range");
         if (i_beg < 0)
             i_beg = 0;
         if (i_end < 0)
             i_end = sz + i_end;
         if (i_end < i_beg)
-            throw new Error("Error: out of range");
+            throw new Errorstack(lisp, "Error: out of range");
         if (i_end > sz)
             i_end = sz;
         cherche = strvalue.substr(0, i_beg);
@@ -852,13 +852,13 @@ public:
         if (i_beg < 0)
             i_beg = sz + i_beg;
         if (i_beg >= sz)
-            throw new Error("Error: out of range");
+            throw new Errorstack(lisp, "Error: out of range");
         if (i_beg < 0)
             i_beg = 0;
         if (i_end < 0)
             i_end = sz + i_end;
         if (i_end < i_beg)
-            throw new Error("Error: out of range");
+            throw new Errorstack(lisp, "Error: out of range");
         if (i_end > sz)
             i_end = sz;
         cherche = strvalue.substr(0, i_beg);
@@ -1202,7 +1202,7 @@ public:
                 if (end->type == t_stringbyte)
                     return method_replace8(lisp, end);
                 if (end->type != t_string && end->type != t_longstring)
-                    throw new Error("Error: cannot apply 'replace' to this type of object");
+                    throw new Errorstack(lisp, "Error: cannot apply 'replace' to this type of object");
                 return method_replace(lisp, end);
             }
             case str_lowercase: {
@@ -1292,7 +1292,7 @@ public:
             case str_ngrams: {
                 long nb = lisp->get_variable(v_nb)->asNumber();
                 if (nb <= 0)
-                    throw new Error("Error: nb should be a positive value");
+                    throw new Errorstack(lisp, "Error: nb should be a positive value");
                 return method_ngrams(lisp, nb);
             }
             case str_trim0: {
@@ -1400,14 +1400,14 @@ public:
                     for (long i = 0; i < str->size(); i++) {
                         v = str->index(i)->asInteger();
                         if (v < 0 || v > 255)
-                            throw new Error("Error: cannot convert this value to a stringbyte");
+                            throw new Errorstack(lisp, "Error: cannot convert this value to a stringbyte");
                         s += (uchar)v;
                     }
                     return new Stringbyte(s);
                 }
                 v = str->asInteger();
                 if (v < 0 || v > 255)
-                    throw new Error("Error: cannot convert this value to a stringbyte");
+                    throw new Errorstack(lisp, "Error: cannot convert this value to a stringbyte");
                 return new Stringbyte((uchar)v);
             }
             case str_is_punctuation: {
@@ -1443,7 +1443,7 @@ public:
                     return new Dictionary_json((Dictionary*)e);
                 
                 if (!e->isList() || (e->size()%2))
-                    throw new Error("Error: expecting a list of an even number of values");
+                    throw new Errorstack(lisp, "Error: expecting a list of an even number of values");
                 Dictionary_json* d = new Dictionary_json;
                 u_ustring ky;
                 for (long i = 0; i < e->size(); i+=2) {
@@ -1504,7 +1504,7 @@ public:
             case str_tokenizer_display_rules: {
                 Element* rtok = lisp->get_variable(U"rules");
                 if (rtok->type != v_tokenize)
-                    throw new Error("Error: the first element should be a string_rule object");
+                    throw new Errorstack(lisp, "Error: the first element should be a string_rule object");
                 Rulemethod* tok = (Rulemethod*)rtok;
                 std::wstringstream str;
                 tokenizer_node* a;
@@ -1523,7 +1523,7 @@ public:
             case str_tokenize_rules: {
                 Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != v_tokenize)
-                    throw new Error("Error: the first element should be a string_rule object");
+                    throw new Errorstack(lisp, "Error: the first element should be a string_rule object");
                 Element* types = lisp->get_variable(U"types");
                 Element* vstr = lisp->get_variable(v_str);
                 if (vstr->type == t_stringbyte) {
@@ -1536,16 +1536,16 @@ public:
             case str_get_rules: {
                 Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != v_tokenize)
-                    throw new Error("Error: the first element should be a string_rule object");
+                    throw new Errorstack(lisp, "Error: the first element should be a string_rule object");
                 return ((Rulemethod*)tok)->getrules();
             }
             case str_set_rules: {
                 Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != v_tokenize)
-                    throw new Error("Error: the first element should be a string_rule object");
+                    throw new Errorstack(lisp, "Error: the first element should be a string_rule object");
                 Element* lst = lisp->get_variable(U"lst");
                 if (!lst->isList())
-                    throw new Error("Error: This function expects a list");
+                    throw new Errorstack(lisp, "Error: This function expects a list");
                 vecte_n<u_ustring> wlst;
                 for (long i = 0; i < lst->size(); i++) {
                     wlst.push_back(lst->index(i)->asUString(lisp));
@@ -1556,16 +1556,16 @@ public:
             case str_get_operators: {
                 Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != v_tokenize)
-                    throw new Error("Error: the first element should be a string_rule object");
+                    throw new Errorstack(lisp, "Error: the first element should be a string_rule object");
                 return ((Rulemethod*)tok)->getoperators();
             }
             case str_set_operators: {
                 Element* rtok = lisp->get_variable(U"rules");
                 if (rtok->type != v_tokenize)
-                    throw new Error("Error: the first element should be a string_rule object");
+                    throw new Errorstack(lisp, "Error: the first element should be a string_rule object");
                 Element* lst = lisp->get_variable(U"a_set");
                 if (lst->type != t_sets)
-                    throw new Error("Error: This function expects a set of strings (sets)");
+                    throw new Errorstack(lisp, "Error: This function expects a set of strings (sets)");
                 return ((Rulemethod*)rtok)->setoperators((Set_s*)lst);
             }
             case str_format: {

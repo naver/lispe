@@ -145,7 +145,7 @@ public:
         Element* valuevect = lisp->get_variable(v_liste);
         
         if (!valuevect->isList())
-            throw new Error("Error: The second parameter must be a list");
+            throw new Errorstack(lisp, "Error: The second parameter must be a list");
         
         long i;
         size_t sz = valuevect->size();
@@ -633,7 +633,7 @@ public:
         
         Element* l = lisp->get_variable(v_liste);
         if (!l->isList())
-            throw new Error("Error: the 'shuffle' argument must be a list");
+            throw new Errorstack(lisp, "Error: the 'shuffle' argument must be a list");
         
         switch (l->type) {
             case t_shorts: {

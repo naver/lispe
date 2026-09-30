@@ -1111,7 +1111,7 @@ public:
         if (i < 0) {
             i += liste.size();
             if (i < 0)
-                throw new Error("Error: index out of bounds");
+                throw new Errorstack(lisp, "Error: index out of bounds");
         }
         
         if (i >= liste.size())
@@ -1132,7 +1132,7 @@ public:
     }
     
     Element* eval_pattern(LispE* lisp, List* body);
-    Element* eval_predicate(LispE* lisp, List* body);
+    Element* eval_predicate(LispE* lisp, List* body, bool e);
     Element* eval_prolog(LispE* lisp, List* body);
     
     void evalthread(LispE*, List* body);
@@ -1576,7 +1576,7 @@ public:
 
     inline Element* evalt_predicate(LispE* lisp) {
         //In this case, it must be a pattern function call (t_predicate)
-        return eval_predicate(lisp, ((Atomefonction*)liste[0])->asBody());
+        return eval_predicate(lisp, ((Atomefonction*)liste[0])->asBody(), false);
     }
 
     inline Element* evalt_lambda(LispE* lisp) {
@@ -4918,7 +4918,7 @@ public:
 
     Element* protected_index(LispE* lisp,long i) {
         if (i < 0 || i >= size())
-            throw new Error("Error: index out of bounds");
+            throw new Errorstack(lisp, "Error: index out of bounds");
         return liste[i];
     }
     
@@ -5163,6 +5163,7 @@ class List_prolog_eval : public Listincode {
 public:
     int16_t space, function_label;
     bool check_terminal;
+
     
     List_prolog_eval(Listincode* l, List* body, int16_t s) : Listincode(l) {
         type = t_call;
@@ -10089,7 +10090,7 @@ public:
         if (i < 0) {
             i += liste.size();
             if (i < 0)
-                throw new Error("Error: index out of bounds");
+                throw new Errorstack(lisp, "Error: index out of bounds");
         }
         
         if (i >= liste.size())
@@ -10605,7 +10606,7 @@ public:
         if (i < 0) {
             i += liste.size();
             if (i < 0)
-                throw new Error("Error: index out of bounds");
+                throw new Errorstack(lisp, "Error: index out of bounds");
         }
         
         if (i >= liste.size())
@@ -11116,7 +11117,7 @@ public:
         if (i < 0) {
             i += liste.size();
             if (i < 0)
-                throw new Error("Error: index out of bounds");
+                throw new Errorstack(lisp, "Error: index out of bounds");
         }
         
         if (i >= liste.size())
@@ -11579,7 +11580,7 @@ public:
         if (i < 0) {
             i += liste.size();
             if (i < 0)
-                throw new Error("Error: index out of bounds");
+                throw new Errorstack(lisp, "Error: index out of bounds");
         }
         
         if (i >= liste.size())
@@ -12108,7 +12109,7 @@ public:
         if (i < 0) {
             i += liste.size();
             if (i < 0)
-                throw new Error("Error: index out of bounds");
+                throw new Errorstack(lisp, "Error: index out of bounds");
         }
         
         if (i >= liste.size())
@@ -12636,7 +12637,7 @@ public:
         if (i < 0) {
             i += liste.size();
             if (i < 0)
-                throw new Error("Error: index out of bounds");
+                throw new Errorstack(lisp, "Error: index out of bounds");
         }
         
         if (i >= liste.size())

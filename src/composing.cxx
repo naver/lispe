@@ -254,7 +254,7 @@ public:
                     wstring err = L"Error: Wrong number of arguments for: '";
                     err += action->asString(lisp);
                     err += L"'";
-                    throw new Error(err);
+                    throw new Errorstack(lisp, err);
                 }
 
                 List_call_lambda* a = new List_call_lambda();
@@ -288,7 +288,7 @@ public:
                     return this;
                 }
             }
-            throw new Error("Error: missing operator");
+            throw new Errorstack(lisp, "Error: missing operator");
         }
         
         int16_t lab = action->label();
@@ -317,6 +317,7 @@ public:
                         action = a;
                         return this;
                     }
+                    case l_defprederr:
                     case l_defpred: {
                         List* a = new List_predicate_eval((List*)body);
                         lisp->storeforgarbage(a);
@@ -402,7 +403,7 @@ public:
                     wstring err = L"Error: Wrong number of arguments for: '";
                     err += condition->asString(lisp);
                     err += L"'";
-                    throw new Error(err);
+                    throw new Errorstack(lisp, err);
                 }
                 
                 List_call_lambda* a = new List_call_lambda();
@@ -436,7 +437,7 @@ public:
                             lisp->storeforgarbage(c);
                         }
                         else
-                            throw new Error("Error: missing operator");
+                            throw new Errorstack(lisp, "Error: missing operator");
                     }
                 }
             }
@@ -642,7 +643,7 @@ Element* List::evall_repeat_cps(LispE* lisp) {
      (repeat value)
      */
     if (!lisp->composition_stack.empty())
-         throw new Error("Error: cannot apply 'repeat' with a context");
+         throw new Errorstack(lisp, "Error: cannot apply 'repeat' with a context");
     
     Element* e = new Infinitelist(lisp);
     e->append(liste[1]);
@@ -656,7 +657,7 @@ Element* List::evall_cycle_cps(LispE* lisp) {
      (cycle value)
      */
     if (!lisp->composition_stack.empty())
-         throw new Error("Error: cannot apply 'cycle' with a context");
+         throw new Errorstack(lisp, "Error: cannot apply 'cycle' with a context");
     Element* c = new Cyclelist(lisp);
     c->append(liste[1]);
     lisp->storeforgarbage(c);
@@ -677,12 +678,12 @@ Element* List::evall_map_cps(LispE* lisp) {
     //First we push the list into the composition
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'map'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'map'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'map'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'map'");
     lisp->composition_stack.push_back(new Action(lisp, liste[1]));
     return lisp->composition_stack.back();
 }
@@ -700,12 +701,12 @@ Element* List::evall_filter_cps(LispE* lisp) {
     //First we push the list into the composition
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'filter'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'filter'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'filter'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'filter'");
 
     lisp->composition_stack.push_back(new Condition(lisp, liste[1]));
     return lisp->composition_stack.back();
@@ -718,12 +719,12 @@ Element* List::evall_take_cps(LispE* lisp) {
     
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'take'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'take'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'take'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'take'");
 
     lisp->composition_stack.push_back(new Counter(lisp, liste[1], t_countertake));
     return lisp->composition_stack.back();
@@ -736,12 +737,12 @@ Element* List::evall_drop_cps(LispE* lisp) {
     
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'drop'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'drop'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'drop'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'drop'");
 
     lisp->composition_stack.push_back(new Counter(lisp, liste[1], t_counterdrop));
     return lisp->composition_stack.back();
@@ -754,12 +755,12 @@ Element* List::evall_takewhile_cps(LispE* lisp) {
     
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'takewhile'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'takewhile'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'takewhile'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'takewhile'");
 
     lisp->composition_stack.push_back(new Conditiontake(lisp, liste[1]));
     return lisp->composition_stack.back();
@@ -772,12 +773,12 @@ Element* List::evall_dropwhile_cps(LispE* lisp) {
     
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'dropwhile'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'dropwhile'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'dropwhile'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'dropwhile'");
 
     lisp->composition_stack.push_back(new Conditiondrop(lisp, liste[1]));
     return lisp->composition_stack.back();
@@ -785,7 +786,7 @@ Element* List::evall_dropwhile_cps(LispE* lisp) {
 
 Element* List::evall_for_cps(LispE* lisp) {
     if (size() < 4)
-        throw new Error("Error: Wrong number of arguments for 'for'");
+        throw new Errorstack(lisp, "Error: Wrong number of arguments for 'for'");
 
     if (lisp->composition_stack.empty())
         lisp->composition_stack.push_back(liste[2]);
@@ -800,12 +801,12 @@ Element* List::evall_foldl_cps(LispE* lisp) {
      */
     if (lisp->composition_stack.empty()) {
         if (size() < 4)
-            throw new Error("Error: Wrong number of arguments for 'foldl'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'foldl'");
         lisp->composition_stack.push_back(liste[3]);
     }
     else
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'foldl'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'foldl'");
 
     lisp->composition_stack.push_back(new Fold(lisp, liste[2], liste[1], l_foldl));
     return lisp->composition_stack.back();
@@ -817,12 +818,12 @@ Element* List::evall_scanl_cps(LispE* lisp) {
      */
     if (lisp->composition_stack.empty()) {
         if (size() < 4)
-            throw new Error("Error: Wrong number of arguments for 'scanl'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'scanl'");
         lisp->composition_stack.push_back(liste[3]);
     }
     else
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'scanl'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'scanl'");
     lisp->composition_stack.push_back(new Fold(lisp, liste[2], liste[1], l_scanl));
     return lisp->composition_stack.back();
 }
@@ -833,12 +834,12 @@ Element* List::evall_foldr_cps(LispE* lisp) {
      */
     if (lisp->composition_stack.empty()) {
         if (size() < 4)
-            throw new Error("Error: Wrong number of arguments for 'foldr'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'foldr'");
         lisp->composition_stack.push_back(liste[3]);
     }
     else
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'foldr'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'foldr'");
     
     lisp->composition_stack.push_back(new Fold(lisp, liste[2], liste[1], l_foldr));
     return lisp->composition_stack.back();
@@ -850,12 +851,12 @@ Element* List::evall_scanr_cps(LispE* lisp) {
      */
     if (lisp->composition_stack.empty()) {
         if (size() < 4)
-            throw new Error("Error: Wrong number of arguments for 'scanr'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'scanr'");
         lisp->composition_stack.push_back(liste[3]);
     }
     else
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'scanr'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'scanr'");
     lisp->composition_stack.push_back(new Fold(lisp, liste[2], liste[1], l_scanr));
     return lisp->composition_stack.back();
 }
@@ -866,12 +867,12 @@ Element* List::evall_foldl1_cps(LispE* lisp) {
      */
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'foldl1'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'foldl1'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'foldl1'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'foldl1'");
     lisp->composition_stack.push_back(new Fold(lisp, null_, liste[1], l_foldl1));
     return lisp->composition_stack.back();
 }
@@ -882,12 +883,12 @@ Element* List::evall_scanl1_cps(LispE* lisp) {
      */
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'scanl1'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'scanl1'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'scanl1'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'scanl1'");
     lisp->composition_stack.push_back(new Fold(lisp, null_, liste[1], l_scanl1));
     return lisp->composition_stack.back();
 }
@@ -898,12 +899,12 @@ Element* List::evall_foldr1_cps(LispE* lisp) {
      */
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'foldr1'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'foldr1'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'foldr1'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'foldr1'");
     lisp->composition_stack.push_back(new Fold(lisp, null_, liste[1], l_foldr1));
     return lisp->composition_stack.back();
 }
@@ -911,12 +912,12 @@ Element* List::evall_foldr1_cps(LispE* lisp) {
 Element* List::evall_scanr1_cps(LispE* lisp) {
     if (lisp->composition_stack.empty()) {
         if (size() < 3)
-            throw new Error("Error: Wrong number of arguments for 'scanr1'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'scanr1'");
         lisp->composition_stack.push_back(liste[2]);
     }
     else
         if (size() < 2)
-            throw new Error("Error: Wrong number of arguments for 'scanr1'");
+            throw new Errorstack(lisp, "Error: Wrong number of arguments for 'scanr1'");
     lisp->composition_stack.push_back(new Fold(lisp, null_, liste[1], l_scanr1));
     return lisp->composition_stack.back();
 }
@@ -1195,7 +1196,7 @@ void List_switch_eval::build(LispE* lisp) {
     for (long i = 2; i < size(); i++) {
         e = liste[i];
         if (e->type != t_list || !e->size())
-            throw new Error("Error: wrong 'switch statement'");
+            throw new Errorstack(lisp, "Error: wrong 'switch statement'");
         
         v = e->index(0);
         if (v == true_)
@@ -1206,7 +1207,7 @@ void List_switch_eval::build(LispE* lisp) {
                 cases[key] = (List*)e;
             }
             else
-                throw new Error("Error: Unknown statement");
+                throw new Errorstack(lisp, "Error: Unknown statement");
         }
     }
 }
@@ -1264,7 +1265,7 @@ Element* List::transformargument(LispE* lisp) {
             }
             else {
                 if (i > 1)
-                    throw new Error("Error: The Kleene operators (*+%) can only apply to a function call");
+                    throw new Errorstack(lisp, "Error: The Kleene operators (*+%) can only apply to a function call");
                 else //In this case, the first element was not yet evaluated...
                     kleene = true;
             }
@@ -1333,7 +1334,7 @@ Element* List::transformargument(LispE* lisp) {
                         }
                     }
                     if (!element->isAtom())
-                        throw new Error("Error: Missing argument in defpat/defpred/defprol function");
+                        throw new Errorstack(lisp, "Error: Missing argument in defpat/defpred/defprol function");
                 }
                 element = new Listargumentfunction(this, element);
             }
@@ -1347,7 +1348,7 @@ Element* List::transformargument(LispE* lisp) {
     if (kleene) {
         element = liste[0]->transformargument(lisp);
         if (element->argumentvalue() == NULL)
-            throw new Error("Error: The Kleene operators (*+%) can only apply to a function call");
+            throw new Errorstack(lisp, "Error: The Kleene operators (*+%) can only apply to a function call");
         sz--;
         element = new Listkleene(element, element->argumentvalue(), element->label());
         lisp->storeforgarbage(element);

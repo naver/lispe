@@ -47,7 +47,7 @@ Rankloop::Rankloop(LispE* lp, List* l) : List(l,0) {
 }
 //------------------------------------------------------------------------------------------
 int16_t Element::function_label(LispE* lisp) {
-    throw new Error("Error: Not a function or a data structure");
+    throw new Errorstack(lisp, "Error: Not a function or a data structure");
 }
 
 //------------------------------------------------------------------------------------------
@@ -58,8 +58,28 @@ void Element::copyfrom(Element* x) {
 
 //------------------------------------------------------------------------------------------
 Element* Element::matrix_product(LispE* lisp, Element* m2, long, long, long) {
-    throw new Error("Error: '+*' only apply to numerical vectors");
+    throw new Errorstack(lisp, "Error: '+*' only apply to numerical vectors");
 }
+//------------------------------------------------------------------------------------------
+#ifdef LISPE_WASM
+Errorstack::Errorstack(LispE* lisp, string m) : Error(m) {
+    message = L"";
+    message = lisp->stackString() + L"\n";
+    s_utf8_to_unicode(message, m, m.size());
+}
+
+Errorstack::Errorstack(LispE* lisp, wstring m) : Error(m) {
+    message = lisp->stackString();
+    message += L"\n" + m;
+}
+
+
+Errorstack::Errorstack(LispE* lisp, u_ustring m) : Error(m) {
+    wstring mm = lisp->stackString() + L"\n";
+    message = _u_to_w(mm);
+    message += _u_to_w(m);
+}
+#endif
 //------------------------------------------------------------------------------------------
 
 Element* String::charge(LispE* lisp, string chemin) {
@@ -67,7 +87,7 @@ Element* String::charge(LispE* lisp, string chemin) {
     if (f.fail()) {
         string erreur = "Unknown file: ";
         erreur += chemin;
-        throw new Error(erreur);
+        throw new Errorstack(lisp, erreur);
     }
     
     string ch = "";
@@ -87,7 +107,7 @@ Element* Stringbyte::charge(LispE* lisp, string chemin) {
     if (f.fail()) {
         string erreur = "Unknown file: ";
         erreur += chemin;
-        throw new Error(erreur);
+        throw new Errorstack(lisp, erreur);
     }
     
     content = "";
@@ -105,7 +125,7 @@ Element* String::chargebin(LispE* lisp, string chemin) {
     if (f.fail()) {
         string erreur = "Unknown file: ";
         erreur += chemin;
-        throw new Error(erreur);
+        throw new Errorstack(lisp, erreur);
     }
 
     Shorts* s = lisp->provideShorts();
@@ -821,23 +841,23 @@ Dictionary_as_buffer::Dictionary_as_buffer(LispE* lisp) : Element(t_dictionary) 
 }
 
 //------------------------------------------------------------------------------------------
-Element* Element::eval_lambda_min(LispE*) {
-    throw new Error("Error: this is not a lambda function");
+Element* Element::eval_lambda_min(LispE* lisp) {
+    throw new Errorstack(lisp, "Error: this is not a lambda function");
 }
 //------------------------------------------------------------------------------------------
 Element* Element::minimum(LispE* lisp) {
-    throw new Error("Error: cannot find the minimum for this object");
+    throw new Errorstack(lisp, "Error: cannot find the minimum for this object");
 }
 
 //------------------------------------------------------------------------------------------
 Element* Element::maximum(LispE* lisp) {
-    throw new Error("Error: cannot find the maximum for this object");
+    throw new Errorstack(lisp, "Error: cannot find the maximum for this object");
 }
 
 //------------------------------------------------------------------------------------------
 
 Element* Element::minmax(LispE* lisp) {
-    throw new Error("Error: cannot find the minmax for this object");
+    throw new Errorstack(lisp, "Error: cannot find the minmax for this object");
 }
 
 //------------------------------------------------------------------------------------------
@@ -887,16 +907,10 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         }
         
         int16_t type = index(0)->type;
-        if (type == l_lambda) {
-            code += " ";
-            code += toString(lisp);
-            if (l)
-                l->setusermark(false);
-            return;
-        }
-        
         Element* params;
-        
+
+        long i;
+
         if (isFunctions.check(type) || type == l_class) {
             code += "(";
             code += lisp->toString(type);
@@ -907,7 +921,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
             if (type == l_defpat || type == l_defpred || type == l_defprol) {
                 code += "(";
                 string local;
-                for (long i = 0; i < params->size(); i++) {
+                for (i = 0; i < params->size(); i++) {
                     if (i)
                         code += " ";
                     local = params->index(i)->toString(lisp);
@@ -920,11 +934,19 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                     code += local;
                 }
                 code += ")";
+                i = 3;
             }
-            else
-                code += params->toString(lisp);
+            else {
+                if (type == l_lambda)
+                    i = 2;
+                else {
+                    code += params->toString(lisp);
+                    i = 3;
+                }
+            }
+            
             code += "\n";
-            for (long i = 3; i < size(); i++) {
+            for (; i < size(); i++) {
                 index(i)->prettyfying(lisp, code, mx);
             }
             code += ")\n";
@@ -950,7 +972,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                 code += params->toString(lisp);
                 code += "\n";
             }
-            for (long i = 3; i < size(); i++) {
+            for (i = 3; i < size(); i++) {
                 index(i)->prettyfying(lisp, code, mx);
             }
             code += ")\n";
@@ -958,9 +980,8 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                 l->setusermark(false);
             return;
         }
-        
-        long i = 0;
-        
+                
+        i = 0;
         if (type == l_if || type == l_check || type == l_ncheck || type == l_ife) {
             code += "(";
             code += index(i++)->toString(lisp);
@@ -1095,7 +1116,7 @@ string Element::prettify(LispE* lisp, long mx) {
 
 //------------------------------------------------------------------------------------------
 Element* Element::invert_sign(LispE* lisp) {
-    throw new Error("Error: Cannot invert this object");
+    throw new Errorstack(lisp, "Error: Cannot invert this object");
 }
 
 Element* Float::invert_sign(LispE* lisp) {
@@ -1164,7 +1185,7 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
         }
         else {
             last_element->release();
-            throw new Error("Error: dictionary has a different number of key/value");
+            throw new Errorstack(lisp, "Error: dictionary has a different number of key/value");
         }
     }
     else {
@@ -1248,7 +1269,7 @@ void Dictionary_as_buffer::append(LispE* lisp, long v) {
 
 //------------------------------------------------------------------------------------------
 Element* Element::rank(LispE* lisp, vecte<long>& positions) {
-    throw new Error("Error: cannot apply 'rank' to this element");
+    throw new Errorstack(lisp, "Error: cannot apply 'rank' to this element");
 }
 
 //------------------------------------------------------------------------------------------
@@ -1410,7 +1431,7 @@ Element* Rankloop::loop(LispE* lisp, int16_t label, List* code) {
 
 Element* Infiniterangenumber::loop(LispE* lisp, int16_t label, List* code) {
     if (!increment)
-        throw new Error("Error: increment cannot be 0");
+        throw new Errorstack(lisp, "Error: increment cannot be 0");
     long i_loop;
     Element* e = null_;
     long sz = code->liste.size();
@@ -1459,7 +1480,7 @@ Element* Infiniterangenumber::loop(LispE* lisp, int16_t label, List* code) {
 
 Element* Infiniterangeinteger::loop(LispE* lisp, int16_t label, List* code) {
     if (!increment)
-        throw new Error("Error: increment cannot be 0");
+        throw new Errorstack(lisp, "Error: increment cannot be 0");
     
     long i_loop;
     Element* e = null_;
@@ -1535,7 +1556,7 @@ Element* Cyclelist::loop(LispE* lisp, int16_t label, List* code) {
     Element* element = value->eval(lisp);
     if (element->type != t_list) {
         element->release();
-        throw new Error("Error: we can only cycle on list");
+        throw new Errorstack(lisp, "Error: we can only cycle on list");
     }
     List* values = (List*)element;
     long sze = values->liste.size();
@@ -1653,8 +1674,8 @@ Element* Element::insert(LispE* lisp, Element* e, long ix) {
     return null_;
 }
 
-Element* Element::insert_with_compare(LispE*, Element* e, List& comparison) {
-    throw new Error("Error: insertion impossible");
+Element* Element::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    throw new Errorstack(lisp, "Error: insertion impossible");
 }
 
 void String::push_element(LispE* lisp, List* l) {
@@ -2363,7 +2384,7 @@ Element* Stringbyte::value_on_index(LispE* lisp, Element* ix) {
 
 //------------------------------------------------------------------------------------------
 Element* Element::protected_index(LispE* lisp,Element*) {
-    throw new Error("Error: value cannot be access through index");
+    throw new Errorstack(lisp, "Error: value cannot be access through index");
 }
 
 Element* String::protected_index(LispE* lisp, Element* ix) {
@@ -2374,7 +2395,7 @@ Element* String::protected_index(LispE* lisp, Element* ix) {
     
     if (i >= 0 && i < content.size())
         return lisp->provideString(content[i]);
-    throw new Error("Error: index out of bounds");
+    throw new Errorstack(lisp, "Error: index out of bounds");
 }
 
 Element* Stringbyte::protected_index(LispE* lisp, Element* ix) {
@@ -2389,12 +2410,12 @@ Element* Stringbyte::protected_index(LispE* lisp, Element* ix) {
         lisp->handlingutf8->getAtchar(content, res, i);
         return new Stringbyte(res);
     }
-    throw new Error("Error: index out of bounds");
+    throw new Errorstack(lisp, "Error: index out of bounds");
 }
 
 //------------------------------------------------------------------------------------------
 Element* Element::join_in_list(LispE* lisp, u_ustring& sep) {
-    throw new Error("Error: 'join' can only be used for lists");
+    throw new Errorstack(lisp, "Error: 'join' can only be used for lists");
 }
 
 //------------------------------------------------------------------------------------------
@@ -2408,7 +2429,7 @@ Element* Element::chargebin(LispE* lisp, string chemin) {
 
 //------------------------------------------------------------------------------------------
 Element* Element::replace(LispE* lisp, long i, Element* e) {
-    throw new Error("Error: cannot modify this element");
+    throw new Errorstack(lisp, "Error: cannot modify this element");
 }
 
 Element* String::replace(LispE* lisp, Element* idx, Element* e) {
@@ -2427,7 +2448,7 @@ Element* String::replace(LispE* lisp, long i, Element* e) {
     if (i < 0) {
         i += content.size();
         if (i < 0)
-            throw new Error("Error: index out of bounds");
+            throw new Errorstack(lisp, "Error: index out of bounds");
     }
     
     if (i >= content.size()) {
@@ -2458,7 +2479,7 @@ Element* Stringbyte::replace(LispE* lisp, long i, Element* e) {
     if (i < 0) {
         i += content.size();
         if (i < 0)
-            throw new Error("Error: index out of bounds");
+            throw new Errorstack(lisp, "Error: index out of bounds");
     }
 
     if (i >= content.size()) {
@@ -2797,7 +2818,7 @@ Element* Complexe::compare(LispE* lisp, Element* e) {
         return lisp->delegation->_COMPARE_BOOLEANS[test];
     }
     else
-        throw new Error("Error: cannot compare these values");
+        throw new Errorstack(lisp, "Error: cannot compare these values");
 }
 
 Element* Short::lessorequal(LispE* lisp, Element* e) {
@@ -2838,55 +2859,55 @@ Element* Complexe::moreorequal(LispE* lisp, Element* e) {
 
 //------------------------------------------------------------------------------------------
 Element* Element::plus(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '+' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '+' with these operands");
 }
 
 Element* Element::bit_not(LispE* lisp) {
-    throw new Error("Error: cannot evaluate '~' for this operand");
+    throw new Errorstack(lisp, "Error: cannot evaluate '~' for this operand");
 }
 
 Element* Element::bit_and(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '&' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '&' with these operands");
 }
 
 Element* Element::bit_and_not(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '&' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '&' with these operands");
 }
 
 Element* Element::bit_or(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '|' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '|' with these operands");
 }
 
 Element* Element::bit_xor(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '^' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '^' with these operands");
 }
 
 Element* Element::minus(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '-' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '-' with these operands");
 }
 
 Element* Element::multiply(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '*' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '*' with these operands");
 }
 
 Element* Element::divide(LispE* lisp, Element* e)  {
-    throw new Error("Error: cannot evaluate '/' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '/' with these operands");
 }
 
 Element* Element::mod(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '%' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '%' with these operands");
 }
 
 Element* Element::power(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '^^' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '^^' with these operands");
 }
 
 Element* Element::leftshift(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '<<' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '<<' with these operands");
 }
 
 Element* Element::rightshift(LispE* lisp, Element* e) {
-    throw new Error("Error: cannot evaluate '>>' with these operands");
+    throw new Errorstack(lisp, "Error: cannot evaluate '>>' with these operands");
 }
 
 Element* String::plus(LispE* lisp, Element* e) {
@@ -2939,7 +2960,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '-'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '-'");
             break;
         case l_plus:
             e_from = liste->liste[3]->eval(lisp);
@@ -2948,7 +2969,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '+'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '+'");
             break;
         case l_minus_plus:
             e_from = liste->liste[3]->eval(lisp);
@@ -2957,7 +2978,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '-+'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '-+'");
             break;
         default:
             e_from = e_from->eval(lisp);
@@ -3012,7 +3033,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             break;
         default:
             e_from->release();
-            throw new Error("Error: cannot use the first position in 'extract'");
+            throw new Errorstack(lisp, "Error: cannot use the first position in 'extract'");
     }
     
     e_from->release();
@@ -3038,7 +3059,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
                 if (ty == t_string || ty == t_longstring)
                     ty = t_minus_string;
                 else
-                    throw new Error("Error: Wrong value after second operator: '-'");
+                    throw new Errorstack(lisp, "Error: Wrong value after second operator: '-'");
             }
             break;
         case l_plus:
@@ -3047,7 +3068,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
-                throw new Error("Error: Wrong value after second operator: '+'");
+                throw new Errorstack(lisp, "Error: Wrong value after second operator: '+'");
             break;
         case l_minus_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
@@ -3055,7 +3076,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
-                throw new Error("Error: Wrong value after second operator: '-+'");
+                throw new Errorstack(lisp, "Error: Wrong value after second operator: '-+'");
             break;
         default:
             e_upto = e_upto->eval(lisp);
@@ -3122,7 +3143,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             break;
         default:
             e_upto->release();
-            throw new Error("Error: cannot use the second position in 'extract'");
+            throw new Errorstack(lisp, "Error: cannot use the second position in 'extract'");
     }
     
     e_upto->release();
@@ -3150,7 +3171,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '-'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '-'");
             break;
         case l_plus:
             e_from = liste->liste[3]->eval(lisp);
@@ -3159,7 +3180,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '+'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '+'");
             break;
         case l_minus_plus:
             e_from = liste->liste[3]->eval(lisp);
@@ -3168,7 +3189,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '-+'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '-+'");
             break;
         default:
             e_from = e_from->eval(lisp);
@@ -3224,7 +3245,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             break;
         default:
             e_from->release();
-            throw new Error("Error: cannot use the first position in 'extract'");
+            throw new Errorstack(lisp, "Error: cannot use the first position in 'extract'");
     }
     
     e_from->release();
@@ -3250,7 +3271,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
                 if (ty == t_string || ty == t_longstring)
                     ty = t_minus_string;
                 else
-                    throw new Error("Error: Wrong value after second operator: '-'");
+                    throw new Errorstack(lisp, "Error: Wrong value after second operator: '-'");
             }
             break;
         case l_plus:
@@ -3259,7 +3280,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
-                throw new Error("Error: Wrong value after second operator: '+'");
+                throw new Errorstack(lisp, "Error: Wrong value after second operator: '+'");
             break;
         case l_minus_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
@@ -3267,7 +3288,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
-                throw new Error("Error: Wrong value after second operator: '-+'");
+                throw new Errorstack(lisp, "Error: Wrong value after second operator: '-+'");
             break;
         default:
             e_upto = e_upto->eval(lisp);
@@ -3334,7 +3355,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
             break;
         default:
             e_upto->release();
-            throw new Error("Error: cannot use the second position in 'extract'");
+            throw new Errorstack(lisp, "Error: cannot use the second position in 'extract'");
     }
     
     e_upto->release();
@@ -3370,7 +3391,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '-'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '-'");
             break;
         case l_plus:
             e_from = liste->liste[3]->eval(lisp);
@@ -3379,7 +3400,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '+'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '+'");
             break;
         case l_minus_plus:
             e_from = liste->liste[3]->eval(lisp);
@@ -3388,7 +3409,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '-+'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '-+'");
             break;
         default:
             e_from = e_from->eval(lisp);
@@ -3443,7 +3464,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             break;
         default:
             e_from->release();
-            throw new Error("Error: cannot use the first position in 'setrange'");
+            throw new Errorstack(lisp, "Error: cannot use the first position in 'setrange'");
     }
     
     e_from->release();
@@ -3472,7 +3493,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
                 if (ty == t_string || ty == t_longstring)
                     ty = t_minus_string;
                 else
-                    throw new Error("Error: Wrong value after second operator: '-'");
+                    throw new Errorstack(lisp, "Error: Wrong value after second operator: '-'");
             }
             break;
         case l_plus:
@@ -3481,7 +3502,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
-                throw new Error("Error: Wrong value after second operator: '+'");
+                throw new Errorstack(lisp, "Error: Wrong value after second operator: '+'");
             break;
         case l_minus_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
@@ -3489,7 +3510,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
-                throw new Error("Error: Wrong value after second operator: '-+'");
+                throw new Errorstack(lisp, "Error: Wrong value after second operator: '-+'");
             break;
         default:
             e_upto = e_upto->eval(lisp);
@@ -3556,7 +3577,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             break;
         default:
             e_upto->release();
-            throw new Error("Error: cannot use the second position in 'setrange'");
+            throw new Errorstack(lisp, "Error: cannot use the second position in 'setrange'");
     }
     
     e_upto->release();
@@ -3590,7 +3611,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '-'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '-'");
             break;
         case l_plus:
             e_from = liste->liste[3]->eval(lisp);
@@ -3599,7 +3620,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '+'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '+'");
             break;
         case l_minus_plus:
             e_from = liste->liste[3]->eval(lisp);
@@ -3608,7 +3629,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
-                throw new Error("Error: Wrong value after first operator: '-+'");
+                throw new Errorstack(lisp, "Error: Wrong value after first operator: '-+'");
             break;
         default:
             e_from = e_from->eval(lisp);
@@ -3663,7 +3684,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             break;
         default:
             e_from->release();
-            throw new Error("Error: cannot use the first position in 'setrange'");
+            throw new Errorstack(lisp, "Error: cannot use the first position in 'setrange'");
     }
     
     e_from->release();
@@ -3692,7 +3713,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
                 if (ty == t_string || ty == t_longstring)
                     ty = t_minus_string;
                 else
-                    throw new Error("Error: Wrong value after second operator: '-'");
+                    throw new Errorstack(lisp, "Error: Wrong value after second operator: '-'");
             }
             break;
         case l_plus:
@@ -3701,7 +3722,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_plus_string;
             else
-                throw new Error("Error: Wrong value after second operator: '+'");
+                throw new Errorstack(lisp, "Error: Wrong value after second operator: '+'");
             break;
         case l_minus_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
@@ -3709,7 +3730,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             if (ty == t_string || ty == t_longstring)
                 ty = t_minus_plus_string;
             else
-                throw new Error("Error: Wrong value after second operator: '-+'");
+                throw new Errorstack(lisp, "Error: Wrong value after second operator: '-+'");
             break;
         default:
             e_upto = e_upto->eval(lisp);
@@ -3776,7 +3797,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
             break;
         default:
             e_upto->release();
-            throw new Error("Error: cannot use the second position in 'setrange'");
+            throw new Errorstack(lisp, "Error: cannot use the second position in 'setrange'");
     }
     
     e_upto->release();
@@ -3825,13 +3846,13 @@ Element* String::asList(LispE* lisp, List* courant) {
     long index = 0;
     switch (retour) {
         case e_error_brace:
-            throw new Error("Error: braces do not balance");
+            throw new Errorstack(lisp, "Error: braces do not balance");
         case e_error_bracket:
-            throw new Error("Error: brackets do not balance");
+            throw new Errorstack(lisp, "Error: brackets do not balance");
         case e_error_parenthesis:
-            throw new Error("Error: parentheses do not balance");
+            throw new Errorstack(lisp, "Error: parentheses do not balance");
         case e_error_string:
-            throw new Error("Error: missing end of string");
+            throw new Errorstack(lisp, "Error: missing end of string");
         default:
             index = 0;
     }
@@ -3851,13 +3872,13 @@ Element* Stringbyte::asList(LispE* lisp, List* courant) {
     long index = 0;
     switch (retour) {
         case e_error_brace:
-            throw new Error("Error: braces do not balance");
+            throw new Errorstack(lisp, "Error: braces do not balance");
         case e_error_bracket:
-            throw new Error("Error: brackets do not balance");
+            throw new Errorstack(lisp, "Error: brackets do not balance");
         case e_error_parenthesis:
-            throw new Error("Error: parentheses do not balance");
+            throw new Errorstack(lisp, "Error: parentheses do not balance");
         case e_error_string:
-            throw new Error("Error: missing end of string");
+            throw new Errorstack(lisp, "Error: missing end of string");
         default:
             index = 0;
     }
@@ -3869,46 +3890,46 @@ Element* Stringbyte::asList(LispE* lisp, List* courant) {
 //------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
-    throw new Error("Error: No more elements to traverse with 'cad..r'");
+    throw new Errorstack(lisp, "Error: No more elements to traverse with 'cad..r'");
 }
 
 Element* Element::car(LispE* lisp) {
     u_ustring err = U"Error: You cannot apply 'car' to: '";
     err += asUString(lisp);
     err += U"'";
-    throw new Error(err);
+    throw new Errorstack(lisp, err);
 }
 
 Element* Element::cdr(LispE* lisp) {
     u_ustring err = U"Error: You cannot apply 'cdr' to: '";
     err += asUString(lisp);
     err += U"'";
-    throw new Error(err);
+    throw new Errorstack(lisp, err);
 }
 
 Element* String::car(LispE* lisp) {
     if (content.size() == 0)
-        throw new Error("Error: Empty string");
+        throw new Errorstack(lisp, "Error: Empty string");
     return lisp->provideString(content[0]);
 }
 
 Element* String::cdr(LispE* lisp) {
     if (content.size() == 0)
-        throw new Error("Error: Empty string");
+        throw new Errorstack(lisp, "Error: Empty string");
     u_ustring w = content.substr(1, content.size()-1);
     return lisp->provideString(w);
 }
 
 Element* Stringbyte::car(LispE* lisp) {
     if (content.size() == 0)
-        throw new Error("Error: Empty string");
+        throw new Errorstack(lisp, "Error: Empty string");
     long i = 0;
     return new Stringbyte(lisp->handlingutf8->getachar(content, i));
 }
 
 Element* Stringbyte::cdr(LispE* lisp) {
     if (content.size() == 0)
-        throw new Error("Error: Empty string");
+        throw new Errorstack(lisp, "Error: Empty string");
     long i = c_test_utf8(content, 0) + 1;
     string w = content.substr(i, content.size()-i);
     return new Stringbyte(w);
@@ -3918,7 +3939,7 @@ Element* Element::cadr(LispE* lisp, u_ustring& actions) {
     u_ustring err = U"Error: You cannot apply 'car' or 'cdr' to: '";
     err += asUString(lisp);
     err += U"'";
-    throw new Error(err);
+    throw new Errorstack(lisp, err);
 }
 
 //cadr and cdr do not take into account cycles
@@ -3936,13 +3957,13 @@ Element* String::cadr(LispE* lisp, u_ustring& action) {
     for (i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
             if (i)
-                throw new Error("Error: cannot apply 'car/cdr' to one character");
+                throw new Errorstack(lisp, "Error: cannot apply 'car/cdr' to one character");
             u = content[pos];
             return lisp->provideString(u);
         }
         else {
             if (pos == sz)
-                throw new Error("Error: No more elements to traverse with 'cad..r'");
+                throw new Errorstack(lisp, "Error: No more elements to traverse with 'cad..r'");
             pos++;
         }
     }
@@ -3967,13 +3988,13 @@ Element* Stringbyte::cadr(LispE* lisp, u_ustring& action) {
     for (i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
             if (i)
-                throw new Error("Error: cannot apply 'car/cdr' to one character");
+                throw new Errorstack(lisp, "Error: cannot apply 'car/cdr' to one character");
             u = lisp->handlingutf8->getachar(content, pos);
             return new Stringbyte(u);
         }
         else {
             if (pos >= sz)
-                throw new Error("Error: No more elements to traverse with 'cad..r'");
+                throw new Errorstack(lisp, "Error: No more elements to traverse with 'cad..r'");
             pos += c_test_utf8(content, pos) + 1;
         }
     }

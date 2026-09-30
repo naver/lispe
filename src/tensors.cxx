@@ -2508,7 +2508,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
         case t_floats: {
             Floats* n = (Floats*)e;
             if (n->liste.check(0))
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             
             long szl = liste.size();
             long i = n->liste.size();
@@ -2532,21 +2532,21 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
         case t_numbers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Numbers*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Numbers*)e)->liste[i];
             }
             return this;
         case t_shorts:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Shorts*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Shorts*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Integers*)e)->liste[i];
             }
             return this;
@@ -2556,7 +2556,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
         case t_integer: {
             float v = e->asFloat();
             if (!v)
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
 #ifdef INTELINTRINSICS
             long szl = liste.size();
             if (szl >= 24) {
@@ -2581,7 +2581,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     if (n->liste.check(0)) {
                         result->release();
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     }
                     n->liste[i] = liste[i] / n->liste[i];
                 }
@@ -2597,7 +2597,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     if (n->liste.check(0)) {
                         result->release();
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     }
                     n->liste[i] = liste[i] / n->liste[i];
                 }
@@ -2613,7 +2613,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     if (n->liste.check(0)) {
                         result->release();
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     }
                     n->liste[i] = liste[i] / n->liste[i];
                 }
@@ -2628,7 +2628,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 n = (Floats*)result->index(m);
                 if (n->liste.check(0)) {
                     result->release();
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 }
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] = liste[i] / n->liste[i];
@@ -2982,7 +2982,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
         case t_numbers: {
             Numbers* n = (Numbers*)e;
             if (n->liste.check(0))
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             
             long szl = liste.size();
             long i = n->liste.size();
@@ -3006,21 +3006,21 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
         case t_floats:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Floats*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Floats*)e)->liste[i];
             }
             return this;
         case t_shorts:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Shorts*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Shorts*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Integers*)e)->liste[i];
             }
             return this;
@@ -3030,7 +3030,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
         case t_integer: {
             double v = e->asNumber();
             if (!v)
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
 #ifdef INTELINTRINSICS
             long szl = liste.size();
             if (szl >= 20) {
@@ -3055,7 +3055,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     if (n->liste.check(0)) {
                         result->release();
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     }
                     n->liste[i] = liste[i] / n->liste[i];
                 }
@@ -3071,7 +3071,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 n = (Numbers*)result->index(m);
                 if (n->liste.check(0)) {
                     result->release();
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 }
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] = liste[i] / n->liste[i];
@@ -3088,7 +3088,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 n = (Shorts*)result->index(m);
                 if (n->liste.check(0)) {
                     result->release();
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 }
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] = liste[i] / n->liste[i];
@@ -3105,7 +3105,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 n = (Integers*)result->index(m);
                 if (n->liste.check(0)) {
                     result->release();
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 }
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] = liste[i] / n->liste[i];
@@ -3450,7 +3450,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
         case t_numbers: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Numbers*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Numbers*)e)->liste[i];
             }
             return this;
@@ -3458,7 +3458,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
         case t_floats: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Floats*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Floats*)e)->liste[i];
             }
             return this;
@@ -3466,7 +3466,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
         case t_shorts: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Shorts*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Shorts*)e)->liste[i];
             }
             return this;
@@ -3474,7 +3474,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Integers*)e)->liste[i];
             }
             return this;
@@ -3484,7 +3484,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
         case t_integer: {
             long v = e->asInteger();
             if (!v)
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             liste.divide(v);
             return this;
         }
@@ -3495,7 +3495,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Floats*)result->index(m))->liste[i];
                     if (!v)
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     ((Floats*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
@@ -3509,7 +3509,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Numbers*)result->index(m))->liste[i];
                     if (!v)
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     ((Numbers*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
@@ -3524,7 +3524,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Shorts*)result->index(m))->liste[i];
                     if (!v)
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     ((Shorts*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
@@ -3539,7 +3539,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Integers*)result->index(m))->liste[i];
                     if (!v)
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     ((Integers*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
@@ -3795,7 +3795,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
         case t_numbers: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Numbers*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Numbers*)e)->liste[i];
             }
             return this;
@@ -3803,7 +3803,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
         case t_floats: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Floats*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Floats*)e)->liste[i];
             }
             return this;
@@ -3811,7 +3811,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
         case t_shorts: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Shorts*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Shorts*)e)->liste[i];
             }
             return this;
@@ -3819,7 +3819,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 liste[i] /= ((Integers*)e)->liste[i];
             }
             return this;
@@ -3829,7 +3829,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
         case t_integer: {
             int16_t v = e->asShort();
             if (!v)
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             liste.divide(v);
             return this;
         }
@@ -3840,7 +3840,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Floats*)result->index(m))->liste[i];
                     if (!v)
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     ((Floats*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
@@ -3854,7 +3854,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Numbers*)result->index(m))->liste[i];
                     if (!v)
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     ((Numbers*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
@@ -3868,7 +3868,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Shorts*)result->index(m))->liste[i];
                     if (!v)
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     ((Shorts*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
@@ -3882,7 +3882,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Integers*)result->index(m))->liste[i];
                     if (!v)
-                        throw new Error("Error: division by zero");
+                        throw new Errorstack(lisp, "Error: division by zero");
                     ((Integers*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
@@ -3923,7 +3923,7 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
         char t2 = l2->isPureList(sx_2, sy_2);
 
         if (!t1 || !t2 || t1 != t2)
-            throw new Error("Error: arguments for '.' must be compatible lists or matrices");
+            throw new Errorstack(lisp, "Error: arguments for '.' must be compatible lists or matrices");
         
         op1 = liste[1]->eval(lisp);
         if (op1->type == l_equal)
@@ -3934,7 +3934,7 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
 
         if (t1 == a_flat_list) {
             if (sx_1 != sx_2)
-                throw new Error("Error: lists should have the same size for '.'");
+                throw new Errorstack(lisp, "Error: lists should have the same size for '.'");
                                 
             l1->increment();
             l2->increment();
@@ -3950,7 +3950,7 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
 
         if (t1 == a_valuelist) {
             if (sx_1 != sx_2)
-                throw new Error("Error: lists should have the same size for '.'");
+                throw new Errorstack(lisp, "Error: lists should have the same size for '.'");
                                 
             if (l1 == l2) {
                 if (l2->type == t_numbers) {
@@ -3976,7 +3976,7 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
         }
 
         if (sy_1 != sx_2)
-            throw new Error("Error: incompatible matrices");
+            throw new Errorstack(lisp, "Error: incompatible matrices");
 
         Element* l2_transposed;
         long i, j = 0;
@@ -4155,7 +4155,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Matrice_string(lisp, sz1[0], sz1[1], U"");
                 ((Matrice_string*)res)->setvalue((Matrice_string*)first_element);
                 res->concatenate(lisp,second_element);
@@ -4171,7 +4171,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Matrice_stringbyte(lisp, sz1[0], sz1[1], "");
                 ((Matrice_stringbyte*)res)->setvalue((Matrice_stringbyte*)first_element);
                 res->concatenate(lisp,second_element);
@@ -4187,7 +4187,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Matrice_short(lisp, sz1[0], sz1[1], 0.0);
                 ((Matrice_short*)res)->setvalue((Matrice_short*)first_element);
                 res->concatenate(lisp,second_element);
@@ -4203,7 +4203,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Matrice_integer(lisp, sz1[0], sz1[1], 0.0);
                 ((Matrice_integer*)res)->setvalue((Matrice_integer*)first_element);
                 res->concatenate(lisp,second_element);
@@ -4219,7 +4219,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Matrice_number(lisp, sz1[0], sz1[1], 0.0);
                 ((Matrice_number*)res)->setvalue((Matrice_number*)first_element);
                 res->concatenate(lisp,second_element);
@@ -4235,7 +4235,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Matrice_float(lisp, sz1[0], sz1[1], 0.0);
                 ((Matrice_float*)res)->setvalue((Matrice_float*)first_element);
                 res->concatenate(lisp,second_element);
@@ -4251,7 +4251,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Tenseur_string(lisp, sz1, zero_value);
                 ((Tenseur_string*)res)->setvalue((Tenseur_string*)first_element);
                 res->concatenate(lisp, second_element);
@@ -4268,7 +4268,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Tenseur_stringbyte(lisp, sz1, zero_value);
                 ((Tenseur_stringbyte*)res)->setvalue((Tenseur_stringbyte*)first_element);
                 res->concatenate(lisp, second_element);
@@ -4285,7 +4285,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Tenseur_number(lisp, sz1, zero_value);
                 ((Tenseur_number*)res)->setvalue((Tenseur_number*)first_element);
                 res->concatenate(lisp, second_element);
@@ -4302,7 +4302,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Tenseur_float(lisp, sz1, zero_value);
                 ((Tenseur_float*)res)->setvalue((Tenseur_float*)first_element);
                 res->concatenate(lisp, second_element);
@@ -4319,7 +4319,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Tenseur_short(lisp, sz1, zero_value);
                 ((Tenseur_short*)res)->setvalue((Tenseur_short*)first_element);
                 res->concatenate(lisp, second_element);
@@ -4336,7 +4336,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
+                    throw new Errorstack(lisp, "Error: Dimension error");
                 res = new Tenseur_integer(lisp, sz1, zero_value);
                 ((Tenseur_integer*)res)->setvalue((Tenseur_integer*)first_element);
                 res->concatenate(lisp, second_element);
@@ -4387,7 +4387,7 @@ Element* List_tensor_number_eval::eval(LispE* lisp) {
                 return ts;
             }
             if (!e->isList())
-                throw new Error("Error: The first element should be a list");
+                throw new Errorstack(lisp, "Error: The first element should be a list");
 
             if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
@@ -4398,7 +4398,7 @@ Element* List_tensor_number_eval::eval(LispE* lisp) {
                     c = c->index(0);
                 }
                 if (!c->isNumber())
-                    throw new Error("Error: this list should contain numbers");
+                    throw new Errorstack(lisp, "Error: this list should contain numbers");
             }
 
             Numbers l;
@@ -4438,7 +4438,7 @@ Element* List_tensor_short_eval::eval(LispE* lisp) {
                 return ts;
             }
             if (!e->isList())
-                throw new Error("Error: The first element should be a list");
+                throw new Errorstack(lisp, "Error: The first element should be a list");
 
             if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
@@ -4449,7 +4449,7 @@ Element* List_tensor_short_eval::eval(LispE* lisp) {
                     c = c->index(0);
                 }
                 if (!c->isNumber())
-                    throw new Error("Error: this list should contain integers");
+                    throw new Errorstack(lisp, "Error: this list should contain integers");
             }
 
             Shorts l;
@@ -4489,7 +4489,7 @@ Element* List_tensor_string_eval::eval(LispE* lisp) {
                 return ts;
             }
             if (!e->isList())
-                throw new Error("Error: The first element should be a list");
+                throw new Errorstack(lisp, "Error: The first element should be a list");
 
             if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
@@ -4500,7 +4500,7 @@ Element* List_tensor_string_eval::eval(LispE* lisp) {
                     c = c->index(0);
                 }
                 if (!c->isString())
-                    throw new Error("Error: this list should contain strings");
+                    throw new Errorstack(lisp, "Error: this list should contain strings");
             }
 
             Strings l;
@@ -4540,7 +4540,7 @@ Element* List_tensor_stringbyte_eval::eval(LispE* lisp) {
                 return ts;
             }
             if (!e->isList())
-                throw new Error("Error: The first element should be a list");
+                throw new Errorstack(lisp, "Error: The first element should be a list");
 
             if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
@@ -4551,7 +4551,7 @@ Element* List_tensor_stringbyte_eval::eval(LispE* lisp) {
                     c = c->index(0);
                 }
                 if (!c->isString())
-                    throw new Error("Error: this list should contain strings");
+                    throw new Errorstack(lisp, "Error: this list should contain strings");
             }
 
             Stringbytes l;
@@ -4592,7 +4592,7 @@ Element* List_tensor_integer_eval::eval(LispE* lisp) {
                 return ts;
             }
             if (!e->isList())
-                throw new Error("Error: The first element should be a list");
+                throw new Errorstack(lisp, "Error: The first element should be a list");
 
             if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
@@ -4603,7 +4603,7 @@ Element* List_tensor_integer_eval::eval(LispE* lisp) {
                     c = c->index(0);
                 }
                 if (!c->isNumber())
-                    throw new Error("Error: this list should contain integers");
+                    throw new Errorstack(lisp, "Error: this list should contain integers");
             }
 
             Integers l;
@@ -4643,7 +4643,7 @@ Element* List_tensor_float_eval::eval(LispE* lisp) {
                 return ts;
             }
             if (!e->isList())
-                throw new Error("Error: The first element should be a list");
+                throw new Errorstack(lisp, "Error: The first element should be a list");
             if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
             else {
@@ -4653,7 +4653,7 @@ Element* List_tensor_float_eval::eval(LispE* lisp) {
                     c = c->index(0);
                 }
                 if (!c->isNumber())
-                    throw new Error("Error: this list should contain numbers");
+                    throw new Errorstack(lisp, "Error: this list should contain numbers");
             }
             Floats l;
             e->flatten(lisp,&l);
@@ -4681,7 +4681,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
     //First we check if we can guess a list of value lists or of tensors
     if (!values->isList()) {
         values->release();
-        throw new Error("Error: Expecting a list");
+        throw new Errorstack(lisp, "Error: Expecting a list");
     }
 
     if (values->isTensor() || values->isValueList())
@@ -4747,7 +4747,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
             }
             default:
                 values->release();
-                throw new Error("Error: cannot apply to_tensor to this object");
+                throw new Errorstack(lisp, "Error: cannot apply to_tensor to this object");
         }
         switch (shape.size()) {
             case 1:
@@ -4834,7 +4834,7 @@ Element* List_matrix_string_eval::eval(LispE* lisp) {
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
-                throw new Error("Error: Cannot initialize a matrix with this value");
+                throw new Errorstack(lisp, "Error: Cannot initialize a matrix with this value");
 
             long size_x = e->size();
             long size_y = e->index(0)->size();
@@ -4877,7 +4877,7 @@ Element* List_matrix_stringbyte_eval::eval(LispE* lisp) {
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
-                throw new Error("Error: Cannot initialize a matrix with this value");
+                throw new Errorstack(lisp, "Error: Cannot initialize a matrix with this value");
 
             long size_x = e->size();
             long size_y = e->index(0)->size();
@@ -4920,7 +4920,7 @@ Element* List_matrix_number_eval::eval(LispE* lisp) {
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
-                throw new Error("Error: Cannot initialize a matrix with this value");
+                throw new Errorstack(lisp, "Error: Cannot initialize a matrix with this value");
 
             long size_x = e->size();
             long size_y = e->index(0)->size();
@@ -4964,7 +4964,7 @@ Element* List_matrix_short_eval::eval(LispE* lisp) {
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
-                throw new Error("Error: Cannot initialize a matrix with this value");
+                throw new Errorstack(lisp, "Error: Cannot initialize a matrix with this value");
 
             long size_x = e->size();
             long size_y = e->index(0)->size();
@@ -5007,7 +5007,7 @@ Element* List_matrix_integer_eval::eval(LispE* lisp) {
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
-                throw new Error("Error: Cannot initialize a matrix with this value");
+                throw new Errorstack(lisp, "Error: Cannot initialize a matrix with this value");
 
             long size_x = e->size();
             long size_y = e->index(0)->size();
@@ -5050,7 +5050,7 @@ Element* List_matrix_float_eval::eval(LispE* lisp) {
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
-                throw new Error("Error: Cannot initialize a matrix with this value");
+                throw new Errorstack(lisp, "Error: Cannot initialize a matrix with this value");
 
             long size_x = e->size();
             long size_y = e->index(0)->size();
@@ -5117,7 +5117,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
         }
         else {
             if (!e->isList() || listsize != 3)
-                throw new Error("Error: Shape elements are either integers or a list of integers");
+                throw new Errorstack(lisp, "Error: Shape elements are either integers or a list of integers");
             for (long i = 0; i < e->size(); i++)
                 shape.push_back(e->index(i)->asInteger());
             listsize += shape.size()-1;
@@ -5126,7 +5126,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
 
         e = liste.back()->eval(lisp);
         if (!e->isList())
-            throw new Error("Error: last argument should be a list");
+            throw new Errorstack(lisp, "Error: last argument should be a list");
 
         if (listsize == 3) {
             sz1 = shape[0];
@@ -5479,7 +5479,7 @@ Element* List_solve_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         Y = liste[2]->eval(lisp);
         if (element->type != Y->type)
-            throw new Error("Error: solve can only be applied to matrices of same type");
+            throw new Errorstack(lisp, "Error: solve can only be applied to matrices of same type");
         
         switch (element->type) {
             case t_matrix_float:
@@ -5492,7 +5492,7 @@ Element* List_solve_eval::eval(LispE* lisp) {
                 res = ((Matrice_integer*)element)->solve(lisp, (Matrice_integer*)Y);
                 break;
             default:
-                throw new Error("Error: solve can only be applied to matrices");
+                throw new Errorstack(lisp, "Error: solve can only be applied to matrices");
         }
         
         Y->release();
@@ -5523,7 +5523,7 @@ Element* List_ludcmp_eval::eval(LispE* lisp) {
             break;
         default:
             element->release();
-            throw new Error("Error: solve can only be applied to matrices");
+            throw new Errorstack(lisp, "Error: solve can only be applied to matrices");
     }
 
     element->release();
@@ -5540,13 +5540,13 @@ Element* List_lubksb_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         idxs = liste[2]->eval(lisp);
         if (idxs->type != t_integers)
-            throw new Error("Error: the second element should be an integers_ (a list of integers)");
+            throw new Errorstack(lisp, "Error: the second element should be an integers_ (a list of integers)");
         
         element = liste[1]->eval(lisp);
         if (liste.size() == 4) {
             Y = liste[3]->eval(lisp);
             if (element->type != Y->type)
-                throw new Error("Error: solve can only be applied to matrices of same type");
+                throw new Errorstack(lisp, "Error: solve can only be applied to matrices of same type");
         }
 
         switch (element->type) {
@@ -5560,7 +5560,7 @@ Element* List_lubksb_eval::eval(LispE* lisp) {
                 Y = ((Matrice_integer*)element)->lubksb(lisp, (Integers*)idxs, (Matrice_integer*)Y);
                 break;
             default:
-                throw new Error("Error: solve can only be applied to matrices");
+                throw new Errorstack(lisp, "Error: solve can only be applied to matrices");
         }
 
         element->release();
@@ -5582,7 +5582,7 @@ Element* List_invert_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     if (element->type != t_matrix_number) {
         element->release();
-        throw new Error("Error: 'invert' can only be applied to matrices");
+        throw new Errorstack(lisp, "Error: 'invert' can only be applied to matrices");
     }
 
     Element* Y;
@@ -5593,7 +5593,7 @@ Element* List_invert_eval::eval(LispE* lisp) {
         if (liste.size() == 3) {
             Y = liste[2]->eval(lisp);
             if (element->type != Y->type)
-                throw new Error("Error: solve can only be applied to matrices of same type");
+                throw new Errorstack(lisp, "Error: solve can only be applied to matrices of same type");
             
             switch (element->type) {
                 case t_matrix_float:
@@ -5606,7 +5606,7 @@ Element* List_invert_eval::eval(LispE* lisp) {
                     res = ((Matrice_integer*)element)->solve(lisp, (Matrice_integer*)Y);
                     break;
                 default:
-                    throw new Error("Error: solve can only be applied to matrices");
+                    throw new Errorstack(lisp, "Error: solve can only be applied to matrices");
             }
             
             Y->release();
@@ -5623,7 +5623,7 @@ Element* List_invert_eval::eval(LispE* lisp) {
                     res = ((Matrice_integer*)element)->inversion(lisp);
                     break;
                 default:
-                    throw new Error("Error: inversion can only be applied to matrices");
+                    throw new Errorstack(lisp, "Error: inversion can only be applied to matrices");
             }
 
         }

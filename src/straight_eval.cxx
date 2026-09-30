@@ -2421,7 +2421,7 @@ Element* List::scan(LispE* lisp, Element* current_list, long sz) {
                 res->append(zero_value);
             else {
                 if (j >= sz)
-                    throw new Error("Error: List size mismatch");
+                    throw new Errorstack(lisp, "Error: List size mismatch");
                 
                 while (nb > 0) {
                     res->append(current_list->index(j));
@@ -2431,7 +2431,7 @@ Element* List::scan(LispE* lisp, Element* current_list, long sz) {
             }
         }
         if (j >= sz)
-            throw new Error("Error: List size mismatch");
+            throw new Errorstack(lisp, "Error: List size mismatch");
     }
     catch (Error* err) {
         res->release();
@@ -3160,7 +3160,7 @@ Element* List::evall_infix(LispE* lisp) {
             oper = liste[i];
             if (oper->isOperator()) { //10 + -> first operator
                 if (!checkoperator)
-                    throw new Error("Error: Infix expression is malformed");
+                    throw new Errorstack(lisp, "Error: Infix expression is malformed");
                 
                 if (operations->size() == 1) {
                     e = operations->liste[0];
@@ -3205,7 +3205,7 @@ Element* List::evall_infix(LispE* lisp) {
             }
             
             if (checkoperator)
-                throw new Error("Error: Infix expression is malformed");
+                throw new Errorstack(lisp, "Error: Infix expression is malformed");
             
             checkoperator = true;
             e = oper->evall_infix(lisp);
@@ -3217,7 +3217,7 @@ Element* List::evall_infix(LispE* lisp) {
                 operations->append(e);
         }
         if (!checkoperator)
-            throw new Error("Error: Infix expression is malformed");
+            throw new Errorstack(lisp, "Error: Infix expression is malformed");
         
         e = operations->eval(lisp);
         operations->release();

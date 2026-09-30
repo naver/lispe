@@ -457,7 +457,7 @@ Element* Instruction::eval(LispE* lisp) {
     wstring msg =L"Error: cannot evaluate this instruction: '";
     msg += lisp->asString(label());
     msg += L"'";
-    throw new Error(msg);
+    throw new Errorstack(lisp, msg);
 }
 //------------------------------------------------------------------------------
 // This function is called when the 'eval' instruction is executed on a string
@@ -641,7 +641,7 @@ Element* List::eval_error(LispE* lisp) {
         wstring msg = L"Error: unknown instruction: '";
         msg += lisp->asString(liste[0]->type);
         msg += L"'";
-        throw new Error(msg);
+        throw new Errorstack(lisp, msg);
     }
     return this;
 }
@@ -660,7 +660,7 @@ Element* Listreturnelement::eval(LispE* lisp) {
 
 Element* List::evall_toclean(LispE* lisp) {
     if (lisp->current_instance == NULL)
-        throw new Error("Error: this function can only be called from within a class instance");
+        throw new Errorstack(lisp, "Error: this function can only be called from within a class instance");
     Element* e = liste[1]->eval(lisp);
     if (lisp->current_instance->clean != NULL)
         delete lisp->current_instance->clean;
@@ -993,7 +993,7 @@ Element* List::evall_imaginary(LispE* lisp) {
         e->release();
         return lisp->provideNumber(d);
     }
-    throw new Error("Error: expecting a complex value");
+    throw new Errorstack(lisp, "Error: expecting a complex value");
 }
 
 Element* List::evall_converttointeger(LispE* lisp) {
@@ -1044,7 +1044,7 @@ Element* List::evall_data(LispE* lisp) {
 
     long listsize = liste.size();
     if (listsize < 2)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
     Element* second_element = null_;
 
     try {
@@ -1059,10 +1059,10 @@ Element* List::evall_data(LispE* lisp) {
         for (; i < listsize; i++) {
             second_element = liste[i];
             if (!second_element->isList() || !second_element->size())
-                throw new Error(L"Error: A data structure can only contain non empty lists");
+                throw new Errorstack(lisp, L"Error: A data structure can only contain non empty lists");
             lab = second_element->index(0)->label();
             if (lab == v_null)
-                throw new Error(L"Error: Missing definition name in data structure");
+                throw new Errorstack(lisp, L"Error: Missing definition name in data structure");
             lisp->recordingData(second_element, lab, ancestor);
         }
     }
@@ -1078,19 +1078,19 @@ Element* List::evall_data(LispE* lisp) {
 Element* List::evall_deflib(LispE* lisp) {
     // we manage extensions to the language with deflib (see systeme.cxx for an example)
     if (liste._size() != 3)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
     
     int16_t label = liste[1]->label();
     if (label == v_null)
-        throw new Error(L"Error: Missing name in the declaration of a function");
+        throw new Errorstack(lisp, L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
-        throw new Error(L"Error: List of missing parameters in a function declaration");
+        throw new Errorstack(lisp, L"Error: List of missing parameters in a function declaration");
     if (lisp->globalDeclaration()) {
         if (!lisp->delegation->recordingFunction(this, label, lisp->current_space)) {
             wstring nm =L"Error: Function '";
             nm += lisp->asString(label);
             nm += L"' already declared";
-            throw new Error(nm);
+            throw new Errorstack(lisp, nm);
         }
         return this;
     }
@@ -1099,16 +1099,16 @@ Element* List::evall_deflib(LispE* lisp) {
 
 Element* List::evall_deflibpat(LispE* lisp) {
     if (liste._size() != 3)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
     
     int16_t label;
     
     //We declare a function
     label = liste[1]->label();
     if (label == v_null)
-        throw new Error(L"Error: Missing name in the declaration of a function");
+        throw new Errorstack(lisp, L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
-        throw new Error(L"Error: List of missing parameters in a function declaration");
+        throw new Errorstack(lisp, L"Error: List of missing parameters in a function declaration");
     
     Element* arguments = liste[2];
     Element* a;
@@ -1125,13 +1125,13 @@ Element* List::evall_deflibpat(LispE* lisp) {
 
 Element* List::evall_defmacro(LispE* lisp) {
     if (liste._size() < 4)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
     //We declare a function
     int16_t label = liste[1]->label();
     if (label == v_null)
-        throw new Error(L"Error: Missing name in the declaration of a function");
+        throw new Errorstack(lisp, L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
-        throw new Error(L"Error: List of missing parameters in a function declaration");
+        throw new Errorstack(lisp, L"Error: List of missing parameters in a function declaration");
     return lisp->recordingMacro(this, label);
 }
 
@@ -1144,16 +1144,16 @@ Element* List::evall_defpat(LispE* lisp) {
     }
 
     if (liste.size() < 4)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
     
     int16_t label;
     
     //We declare a function
     label = liste[1]->label();
     if (label == v_null)
-        throw new Error(L"Error: Missing name in the declaration of a function");
+        throw new Errorstack(lisp, L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
-        throw new Error(L"Error: List of missing parameters in a function declaration");
+        throw new Errorstack(lisp, L"Error: List of missing parameters in a function declaration");
     last(lisp)->setterminal();
     return lisp->recordingMethod(this, label);
 }
@@ -1167,16 +1167,16 @@ Element* List::evall_defpred(LispE* lisp) {
     }
 
     if (liste.size() < 4)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
     
     int16_t label;
     
     //We declare a function
     label = liste[1]->label();
     if (label == v_null)
-        throw new Error(L"Error: Missing name in the declaration of a function");
+        throw new Errorstack(lisp, L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
-        throw new Error(L"Error: List of missing parameters in a function declaration");
+        throw new Errorstack(lisp, L"Error: List of missing parameters in a function declaration");
     last(lisp)->setterminal();
     return lisp->recordingMethod(this, label);
 }
@@ -1190,16 +1190,16 @@ Element* List::evall_defprol(LispE* lisp) {
     }
 
     if (liste.size() < 4)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
     
     int16_t label;
     
     //We declare a function
     label = liste[1]->label();
     if (label == v_null)
-        throw new Error(L"Error: Missing name in the declaration of a function");
+        throw new Errorstack(lisp, L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
-        throw new Error(L"Error: List of missing parameters in a function declaration");
+        throw new Errorstack(lisp, L"Error: List of missing parameters in a function declaration");
     last(lisp)->setterminal();
     return lisp->recordingMethod(this, label);
 }
@@ -1207,7 +1207,7 @@ Element* List::evall_defprol(LispE* lisp) {
 Element* List::evall_defspace(LispE* lisp) {
     int16_t label = liste[1]->label();
     if (label == l_thread)
-        throw new Error("Error: 'thread' is a reserved space name");
+        throw new Errorstack(lisp, "Error: 'thread' is a reserved space name");
     
     lisp->create_name_space(label);
     return True_;
@@ -1220,20 +1220,20 @@ Element* List::evall_class(LispE* lisp) {
     int16_t label = liste[1]->label();
     if (liste.size() == 2) {
         if (label == l_thread)
-            throw new Error("Error: 'thread' is a reserved space name");
+            throw new Errorstack(lisp, "Error: 'thread' is a reserved space name");
         
         lisp->create_name_space(label);
         return True_;
     }
     if (!liste[2]->isList())
-        throw new Error(L"Error: List of missing parameters in a function declaration");
+        throw new Errorstack(lisp, L"Error: List of missing parameters in a function declaration");
 
     if (lisp->globalDeclaration()) {
         if (lisp->delegation->class_pool.check(label)) {
             wstring nm =L"Error: Function '";
             nm += lisp->asString(label);
             nm += L"' already declared";
-            throw new Error(nm);
+            throw new Errorstack(lisp, nm);
         }
         return this;
     }
@@ -1250,21 +1250,21 @@ Element* List::evall_defun(LispE* lisp) {
     }
 
     if (liste.size() < 4)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
 
     //We declare a function
     int16_t label = liste[1]->label();
     if (label == v_null)
-        throw new Error(L"Error: Missing name in the declaration of a function");
+        throw new Errorstack(lisp, L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
-        throw new Error(L"Error: List of missing parameters in a function declaration");
+        throw new Errorstack(lisp, L"Error: List of missing parameters in a function declaration");
 
     if (lisp->globalDeclaration()) {
         if (!lisp->delegation->recordingFunction(this, label, lisp->current_space)) {
             wstring nm =L"Error: Function '";
             nm += lisp->asString(label);
             nm += L"' already declared";
-            throw new Error(nm);
+            throw new Errorstack(lisp, nm);
         }
         last(lisp)->setterminal();
         return this;
@@ -1392,7 +1392,7 @@ Element* List::eval_infix(LispE* lisp) {
         oper = liste[i];
         if (oper->isOperator()) { //10 + -> first operator
             if (!checkoperator)
-                throw new Error("Error: Infix expression is malformed");
+                throw new Errorstack(lisp, "Error: Infix expression is malformed");
 
             if (operations->size() == 1) {
                 e = operations->liste[0];
@@ -1439,7 +1439,7 @@ Element* List::eval_infix(LispE* lisp) {
         }
     
         if (checkoperator)
-            throw new Error("Error: Infix expression is malformed");
+            throw new Errorstack(lisp, "Error: Infix expression is malformed");
     
         checkoperator = true;
         e = oper->eval_infix(lisp);
@@ -1455,7 +1455,7 @@ Element* List::eval_infix(LispE* lisp) {
     }
 
     if (!checkoperator)
-        throw new Error("Error: Infix expression is malformed");
+        throw new Errorstack(lisp, "Error: Infix expression is malformed");
 
     return operations;
 }
@@ -1480,10 +1480,10 @@ Element* List::evall_input(LispE* lisp) {
 
 Element* List::evall_lambda(LispE* lisp) {
     if (liste.size() < 3)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
 
     if (!liste[1]->isList())
-        throw new Error(L"Error: Missing parameter list in a lambda declaration");
+        throw new Errorstack(lisp, L"Error: Missing parameter list in a lambda declaration");
     last(lisp)->setterminal();
     return this;
 }
@@ -1668,7 +1668,7 @@ Element* List::evall_seth(LispE* lisp) {
         lisp->delegation->thread_stack.storing_variable(element->duplicate_constant(lisp), liste[1]->label());
         return True_;
     }
-    throw new Error("Error: this instruction can only be used in a 'threadspace' block");
+    throw new Errorstack(lisp, "Error: this instruction can only be used in a 'threadspace' block");
 }
 
 
@@ -1720,7 +1720,7 @@ Element* List::evall_switch(LispE* lisp) {
     
     for (i = 2; i < size(); i++) {
         if (!liste[i]->isList() || !liste[i]->size())
-            throw new Error("Error: wrong 'switch statement'");
+            throw new Errorstack(lisp, "Error: wrong 'switch statement'");
         
         if (liste[i]->index(0)->isString() || liste[i]->index(0)->isNumber()) {
             if (key == liste[i]->index(0)->asUString(lisp)) {
@@ -1740,7 +1740,7 @@ Element* List::evall_switch(LispE* lisp) {
         u_ustring msg = U"Error: Unknown 'switch' key: '";
         msg += key;
         msg += U"'";
-        throw new Error(msg);
+        throw new Errorstack(lisp, msg);
     }
 
     long sz = code->liste.size();
@@ -1811,7 +1811,7 @@ Element* List::evall_stop(LispE* lisp) {
 Element* List::evall_throw(LispE* lisp) {
     u_ustring msg;
     evalAsUString(1, lisp, msg);
-    throw new Error(msg);
+    throw new Errorstack(lisp, msg);
 }
 
 
@@ -1876,7 +1876,7 @@ Element* List::evall_keys(LispE* lisp) {
 
 Element* List::evall_force(LispE* lisp) {
     if (!lisp->create_no_pool_element)
-        throw new Error("Error: 'force' can only be used as a thread argument");
+        throw new Errorstack(lisp, "Error: 'force' can only be used as a thread argument");
     Element* e = liste[1]->eval(lisp);
     return new Force(e);
 }
@@ -1909,6 +1909,7 @@ Element* List::evall_resetmark(LispE* lisp) {
     return True_;
 }
 
+
 Element* List::evall_zerop(LispE* lisp) {
     long n;
     evalAsInteger(1, lisp, n);
@@ -1917,12 +1918,12 @@ Element* List::evall_zerop(LispE* lisp) {
 
 Element* List::evall_link(LispE* lisp) {
     if (liste.size() != 3)
-        throw new Error("Error: wrong number of arguments");
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
     
     Element* atome = liste[2]->eval(lisp);
     if (!atome->isAtom()) {
         atome->release();
-        throw new Error("Error: the second argument must be an atom");
+        throw new Errorstack(lisp, "Error: the second argument must be an atom");
     }
     
     u_ustring identifier;

@@ -107,7 +107,13 @@ static const int16_t _getbuffsize = 128;
 char sys_row_column[] = { 27, 91, '0', '0', '0', ';', '0', '0','0', 'H', 0 };
 static const char* localn999[] = { "000","001","002","003","004","005","006","007","008","009","010","011","012","013","014","015","016","017","018","019","020","021","022","023","024","025","026","027","028","029","030","031","032","033","034","035","036","037","038","039","040","041","042","043","044","045","046","047","048","049","050","051","052","053","054","055","056","057","058","059","060","061","062","063","064","065","066","067","068","069","070","071","072","073","074","075","076","077","078","079","080","081","082","083","084","085","086","087","088","089","090","091","092","093","094","095","096","097","098","099","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126","127","128","129","130","131","132","133","134","135","136","137","138","139","140","141","142","143","144","145","146","147","148","149","150","151","152","153","154","155","156","157","158","159","160","161","162","163","164","165","166","167","168","169","170","171","172","173","174","175","176","177","178","179","180","181","182","183","184","185","186","187","188","189","190","191","192","193","194","195","196","197","198","199","200","201","202","203","204","205","206","207","208","209","210","211","212","213","214","215","216","217","218","219","220","221","222","223","224","225","226","227","228","229","230","231","232","233","234","235","236","237","238","239","240","241","242","243","244","245","246","247","248","249","250","251","252","253","254","255","256","257","258","259","260","261","262","263","264","265","266","267","268","269","270","271","272","273","274","275","276","277","278","279","280","281","282","283","284","285","286","287","288","289","290","291","292","293","294","295","296","297","298","299","300","301","302","303","304","305","306","307","308","309","310","311","312","313","314","315","316","317","318","319","320","321","322","323","324","325","326","327","328","329","330","331","332","333","334","335","336","337","338","339","340","341","342","343","344","345","346","347","348","349","350","351","352","353","354","355","356","357","358","359","360","361","362","363","364","365","366","367","368","369","370","371","372","373","374","375","376","377","378","379","380","381","382","383","384","385","386","387","388","389","390","391","392","393","394","395","396","397","398","399","400","401","402","403","404","405","406","407","408","409","410","411","412","413","414","415","416","417","418","419","420","421","422","423","424","425","426","427","428","429","430","431","432","433","434","435","436","437","438","439","440","441","442","443","444","445","446","447","448","449","450","451","452","453","454","455","456","457","458","459","460","461","462","463","464","465","466","467","468","469","470","471","472","473","474","475","476","477","478","479","480","481","482","483","484","485","486","487","488","489","490","491","492","493","494","495","496","497","498","499","500","501","502","503","504","505","506","507","508","509","510","511","512","513","514","515","516","517","518","519","520","521","522","523","524","525","526","527","528","529","530","531","532","533","534","535","536","537","538","539","540","541","542","543","544","545","546","547","548","549","550","551","552","553","554","555","556","557","558","559","560","561","562","563","564","565","566","567","568","569","570","571","572","573","574","575","576","577","578","579","580","581","582","583","584","585","586","587","588","589","590","591","592","593","594","595","596","597","598","599","600","601","602","603","604","605","606","607","608","609","610","611","612","613","614","615","616","617","618","619","620","621","622","623","624","625","626","627","628","629","630","631","632","633","634","635","636","637","638","639","640","641","642","643","644","645","646","647","648","649","650","651","652","653","654","655","656","657","658","659","660","661","662","663","664","665","666","667","668","669","670","671","672","673","674","675","676","677","678","679","680","681","682","683","684","685","686","687","688","689","690","691","692","693","694","695","696","697","698","699","700","701","702","703","704","705","706","707","708","709","710","711","712","713","714","715","716","717","718","719","720","721","722","723","724","725","726","727","728","729","730","731","732","733","734","735","736","737","738","739","740","741","742","743","744","745","746","747","748","749","750","751","752","753","754","755","756","757","758","759","760","761","762","763","764","765","766","767","768","769","770","771","772","773","774","775","776","777","778","779","780","781","782","783","784","785","786","787","788","789","790","791","792","793","794","795","796","797","798","799","800","801","802","803","804","805","806","807","808","809","810","811","812","813","814","815","816","817","818","819","820","821","822","823","824","825","826","827","828","829","830","831","832","833","834","835","836","837","838","839","840","841","842","843","844","845","846","847","848","849","850","851","852","853","854","855","856","857","858","859","860","861","862","863","864","865","866","867","868","869","870","871","872","873","874","875","876","877","878","879","880","881","882","883","884","885","886","887","888","889","890","891","892","893","894","895","896","897","898","899","900","901","902","903","904","905","906","907","908","909","910","911","912","913","914","915","916","917","918","919","920","921","922","923","924","925","926","927","928","929","930","931","932","933","934","935","936","937","938","939","940","941","942","943","944","945","946","947","948","949","950","951","952","953","954","955","956","957","958","959","960","961","962","963","964","965","966","967","968","969","970","971","972","973","974","975","976","977","978","979","980","981","982","983","984","985","986","987","988","989","990","991","992","993","994","995","996","997","998","999" };
 
+static inline long clamp999(long v) {
+    return (v < 0) ? 0 : ((v > 999) ? 999 : v);
+}
+
 static void moveto_row_column(long r, long c) {
+    r = clamp999(r);
+    c = clamp999(c);
 	sys_row_column[2] = localn999[r][0];
 	sys_row_column[3] = localn999[r][1];
 	sys_row_column[4] = localn999[r][2];
@@ -224,43 +230,41 @@ static void scrollingdown(long rowsize) {
 //We check if the buffer ends in an incomplete utf8 character...
 //In that case, we remove the ending and return it as a value to be added later
 bool jag_editor::check_utf8(string& buff, string& buffer) {
-    long sz = buff.size()-1;
-    unsigned char utf[4];
-    utf[2] = buff[sz];
-    utf[1] = buff[sz-1];
-    utf[0] = buff[sz-2];
-
-    if (utf[2] < 0x80)
+    long sz = buff.size();
+    if (!sz)
         return false;
 
-    if ((utf[2] & 0xF0)== 0xF0 || (utf[2] & 0xE0) == 0xE0 || (utf[2] & 0xC0) == 0xC0) {
-        buff = buff.substr(0, sz);
-        buffer = utf[2];
-        return true;
+    //We look for the last lead byte among the last 3 bytes
+    long nb = 0;
+    long i = sz - 1;
+    while (i >= 0 && nb < 3 && (((unsigned char)buff[i]) & 0xC0) == 0x80) {
+        i--;
+        nb++;
     }
 
-    if ((utf[2] & 0xC0) == 0xC0)
+    if (i < 0)
         return false;
 
-    if ((utf[1] & 0xF0) == 0xF0 || (utf[1] & 0xE0) == 0xE0) {
-        buff = buff.substr(0, sz - 1);
-        buffer = utf[1];
-        buffer += utf[2];
-        return true;
-    }
-
-    if ((utf[0] & 0xE0)== 0xE0)
+    unsigned char c = buff[i];
+    long expected;
+    if (c < 0x80)
+        return false;
+    if ((c & 0xF8) == 0xF0)
+        expected = 4;
+    else if ((c & 0xF0) == 0xE0)
+        expected = 3;
+    else if ((c & 0xE0) == 0xC0)
+        expected = 2;
+    else
         return false;
 
-    if ((utf[0] & 0xF0)== 0xF0) {
-        buff = buff.substr(0, sz - 2);
-        buffer = utf[1];
-        buffer += utf[2];
-        buffer += utf[3];
-        return true;
-    }
+    long present = sz - i;
+    if (present >= expected)
+        return false;
 
-    return false;
+    buffer = buff.substr(i, present);
+    buff = buff.substr(0, i);
+    return true;
 }
 
 //------------------------------------------------------------------------------------
@@ -295,8 +299,9 @@ string jag_editor::getch() {
 }
 
 #else
+static volatile sig_atomic_t jag_resize_pending = 0;
 void resizewindow(int theSignal) {
-	JAGEDITOR->resetscreen();
+	jag_resize_pending = 1;
 }
 #endif
 
@@ -400,6 +405,11 @@ void jag_editor::resetscrolling() {
 void jag_editor::selectfound(long l, long r) {
     wstring ln = lines[pos];
 
+    if (l > ln.size())
+        l = ln.size();
+    if (r < l)
+        r = l;
+
     wstring lsub = ln.substr(0,l);
     lsub += L"<!@!<";
 
@@ -440,6 +450,7 @@ void jag_editor::getcursor() {
 }
 
 inline void move_right(long sc) {
+    sc = clamp999(sc);
     m_right[2] = localn999[sc][0];
     m_right[3] = localn999[sc][1];
     m_right[4] = localn999[sc][2];
@@ -650,7 +661,7 @@ void jag_editor::deletechar(bool left) {
                     if (lines.Status(pos) == concat_line)
                         printline(-1, lines[pos], -1);
                     else
-                        printline(p, lines[pos], -1);
+                        printline(lines.numeros[pos], lines[pos], -1);
                     long cl = currentline + 1;
                     while (lines.Status(p) == concat_line) {
                         movetoline(cl++);
@@ -663,7 +674,7 @@ void jag_editor::deletechar(bool left) {
             }
             else {
                 clearline();
-                printline(pos+1, line, -1);
+                printline(lines.numeros[pos], line, -1);
             }
 		}
         else {
@@ -956,7 +967,7 @@ void jag_editor::Scrolldown() {
 	//We simply change the line numbers
 	long i;
 	if (poslines.size() < row_size)
-		poslines.push_back(poslines.size());
+		poslines.push_back(poslines.size() ? poslines.back() + 1 : 0);
 
 	for (i = currentline - 1; i <= row_size && i < poslines.size(); i++) {
 		printline(ps);
@@ -1027,8 +1038,16 @@ void jag_editor::processgo() {
         return;
     }
 
+    if (line == L"" || !lines.size()) {
+        clearline();
+        cout << back << "Unknown line";
+        movetoline(currentline);
+        movetoend();
+        return;
+    }
+
     i = convertinginteger(line);
-    if (i >= 0 && i < lines.size()) {
+    if (i >= 1 && lines.numeros.size() && i <= lines.numeros.back()) {
         pos = lines.getlinenumber(i);
         option = x_none;
         displaylist(pos);
@@ -1092,6 +1111,20 @@ bool jag_editor::search(wstring& l, long& first, long& last, long ps) {
     return true;
 }
 
+//We map a position in a logical line (starting at row i) onto the actual row, using the real row lengths
+static long jag_maprow(editor_lines& lines, long i, long& first, long& last) {
+    long sz;
+    while (i < lines.size() - 1 && lines.Status(i + 1) == concat_line) {
+        sz = lines[i].size();
+        if (first < sz)
+            break;
+        first -= sz;
+        last -= sz;
+        i++;
+    }
+    return i;
+}
+
 bool jag_editor::processfind() {
     long i;
         //Search part...
@@ -1108,15 +1141,9 @@ bool jag_editor::processfind() {
         for (i = pos; i < lines.size(); i++) {
             l = lines.getoneline(i, end);
             if (search(l, first, last, ps)) {
-                pos = i;
-                if (first > col_size) {
-                    ps = first/col_size;
-                    pos += ps;
-                    ps *= col_size;
-                    first -= ps;
-                    last -= ps;
+                pos = jag_maprow(lines, i, first, last);
+                if (pos != i)
                     resetlist(pos);
-                }
 
                 posinstring = first;
                 currentfindpos = last;
@@ -1161,6 +1188,7 @@ void jag_editor::processreplace() {
         long first = 0, last, end;
         wstring ws = lines.getoneline(pos, end);
         if (search(ws, first, last, posinstring)) {
+            long replen = currentreplace.size();
             if (regularexpressionfind != 2) {
                 ws.replace(first, last-first, currentreplace);
             }
@@ -1169,23 +1197,23 @@ void jag_editor::processreplace() {
                 wrep = ws.substr(first, last-first);
                 wrep = regex_replace(wrep, *posixrgx, currentreplace);
                 ws.replace(first, last-first, wrep);
+                replen = wrep.size();
             }
 #endif
             lines.replaceline(pos, end+1, ws);
 
-            if (first > col_size) {
-                long ps = first/col_size;
-                pos += ps;
-                ps *= col_size;
-                first -= ps;
+            //The next search must start after the replacement
+            last = first + replen;
+            long p = jag_maprow(lines, pos, first, last);
+            currentfindpos = last;
+            posinstring = first;
+            if (p != pos) {
+                pos = p;
                 resetlist(pos);
-                posinstring = first;
                 gotoline(pos);
             }
-            else {
-                posinstring = first;
+            else
                 gotoline(poslines[0]);
-            }
 
             if (!findnext())
                 replaceall = false;
@@ -1210,16 +1238,9 @@ bool jag_editor::findnext() {
         for (i = pos; i < lines.size(); i++) {
             l = lines.getoneline(i, end);
             if (search(l, first, last, ps)) {
-                pos = i;
-                if (first > col_size) {
-                    ps = first/col_size;
-                    pos += ps;
-                    ps *= col_size;
-                    first -= ps;
-                    last -= ps;
-                    posinstring = first;
+                pos = jag_maprow(lines, i, first, last);
+                if (pos != i)
                     resetlist(pos);
-                }
 
                 posinstring = first;
                 currentfindpos = last;
@@ -1237,15 +1258,9 @@ bool jag_editor::findnext() {
             for (i = 0; i < lines.size(); i++) {
                 l = lines.getoneline(i, end);
                 if (search(l, first, last, 0)) {
-                    pos = i;
-                    if (first > col_size) {
-                        ps = first/col_size;
-                        pos += ps;
-                        ps *= col_size;
-                        first -= ps;
-                        last -= ps;
+                    pos = jag_maprow(lines, i, first, last);
+                    if (pos != i)
                         resetlist(pos);
-                    }
 
                     posinstring = first;
                     currentfindpos = last;
@@ -1378,17 +1393,30 @@ void jag_editor::handleblock(wstring& bl) {
     }
     else {
         lines[pos++] = line.substr(0, posinstring) + vs[0];
+        long endsz = vs.back().size();
         vs.back() += line.substr(posinstring, line.size());
         for (long i = vs.size() -1; i >= 1; i--) {
             undo(lines[pos],pos, u_ins_linked);
             lines.insert(pos, vs[i]);
         }
-        currentline += vs.size()-1;
-        pos = poslines[currentline];
-        posinstring = 0;
+        lines.numbers();
+        //the cursor is placed at the end of the pasted text
+        pos += vs.size() - 2;
+        posinstring = endsz;
     }
 
-    displaylist(poslines[0]);
+    long top = poslines[0];
+    if (pos < top || pos > top + row_size)
+        top = pos - row_size;
+    if (top < 0)
+        top = 0;
+    displaylist(top);
+    currentline = pos - poslines[0];
+    if (currentline >= (long)poslines.size())
+        currentline = poslines.size() - 1;
+    if (currentline < 0)
+        currentline = 0;
+    line = lines[pos];
     movetoline(currentline);
     movetoposition();
 }
@@ -1548,8 +1576,11 @@ void jag_editor::processredos() {
         }
     }
 
-    if (refact)
+    if (refact) {
+        noundorecord = true;
         lines.refactoring(pos);
+        noundorecord = false;
+    }
 
     displaylist(posfirst);
 
@@ -1606,8 +1637,11 @@ void jag_editor::processundos() {
         return;
     }
 
-    if (refact)
+    if (refact) {
+        noundorecord = true;
         lines.refactoring(pos);
+        noundorecord = false;
+    }
 
     displaylist(posfirst);
 
@@ -1687,15 +1721,20 @@ bool jag_editor::evaluateescape(string& buff) {
 #endif
         //ctrl-up, up 10 lines
     if (buff == c_up || buff == page_up) {
-        if ((pos - row_size) < 0) {
-            pos = 0;
+        long top = poslines.size() ? poslines[0] : 0;
+        top -= row_size;
+        if (top < 0) {
+            top = 0;
             currentline = 0;
         }
-        else
-            pos -= row_size;
         posinstring = 0;
+        displaylist(top);
+        if (currentline >= (long)poslines.size())
+            currentline = poslines.size() - 1;
+        if (currentline < 0)
+            currentline = 0;
+        pos = poslines.size() ? poslines[currentline] : 0;
         line = lines[pos];
-        displaylist(pos);
         movetoline(currentline);
         movetobeginning();
         return true;
@@ -1704,25 +1743,30 @@ bool jag_editor::evaluateescape(string& buff) {
         //ctrl-down, down 10 lines
     if (buff == c_down  || buff == page_down) {
         long mxline = poslines.size() - 1;
+        long top = poslines.size() ? poslines[0] : 0;
 
         posinstring = 0;
-        if ((pos + mxline) == lines.size()) {
+        if ((top + mxline) >= lines.size() - 1) {
+            //last page, we go to the last line
             currentline = mxline;
+            pos = poslines[currentline];
+            line = lines[pos];
             movetoline(currentline);
             movetobeginning();
             return true;
         }
 
-        if ((pos + mxline) > lines.size()) {
-            pos = lines.size()-mxline;
-            if (pos < 0)
-                pos = lines.size()-1;
-        }
-        else
-            pos += mxline;
+        top += mxline;
+        if (top > lines.size() - 1)
+            top = lines.size() - 1;
 
+        displaylist(top);
+        if (currentline >= (long)poslines.size())
+            currentline = poslines.size() - 1;
+        if (currentline < 0)
+            currentline = 0;
+        pos = poslines[currentline];
         line = lines[pos];
-        displaylist(pos);
         movetoline(currentline);
         movetobeginning();
         return true;
@@ -1886,6 +1930,8 @@ bool jag_editor::evaluateescape(string& buff) {
 }
 
 void jag_editor::init() {
+    undos.clear();
+    redos.clear();
     lines.clear();
     lines.push(L"");
     poslines.clear();
@@ -1906,13 +1952,17 @@ void jag_editor::indentplus() {
     tobesaved = true;
     if (selected_pos != -1 && selected_posnext > selected_pos) {
         uchar modif = u_modif;
-        for (long i = selected_posnext - 1; i >= selected_pos; i--) {
+        long lst = selected_posnext;
+        if (lst >= lines.size())
+            lst = lines.size() - 1;
+        for (long i = lst; i >= selected_pos; i--) {
             line = lines[i];
             line = blanks + line;
             undo(lines[i],i, modif);
             modif = u_modif_linked;
             lines[i] = line;
         }
+        line = lines[pos];
 		selectlines(selected_pos, selected_posnext, selected_x, selected_y);
 		return;
     }
@@ -1931,7 +1981,10 @@ void jag_editor::deindentminus() {
     long u = 0;
     if (selected_pos != -1 && selected_posnext > selected_pos) {
         uchar modif = u_modif;
-        for (long i = selected_posnext - 1; i >= selected_pos; i--) {
+        long lst = selected_posnext;
+        if (lst >= lines.size())
+            lst = lines.size() - 1;
+        for (long i = lst; i >= selected_pos; i--) {
             line = lines[i];
             //can we remove nb blanks from the beginning of the line
             u = 0;
@@ -1944,6 +1997,7 @@ void jag_editor::deindentminus() {
                 lines[i] = line;
             }
         }
+        line = lines[pos];
         selectlines(selected_pos, selected_posnext, selected_x, selected_y);
         return;
     }
@@ -2074,6 +2128,14 @@ bool jag_editor::checkcommand(char cmd) {
         case 'n':
             setnoprefix();
             displaylist(poslines[0]);
+            if (currentline >= (long)poslines.size())
+                currentline = poslines.size() - 1;
+            if (currentline < 0)
+                currentline = 0;
+            pos = poslines.size() ? poslines[currentline] : 0;
+            line = lines[pos];
+            if (posinstring > line.size())
+                posinstring = line.size();
             movetoline(currentline);
             movetoposition();
             return true;
@@ -2384,6 +2446,18 @@ bool jag_editor::terminate() {
     return true;
 }
 
+//We translate a displayed logical line number (1-based) into an internal row index
+//If n is beyond the last logical line, we return lines.size()
+static long jag_logicalrow(editor_lines& lines, long n) {
+    if (n < 1)
+        return -1;
+    for (long i = 0; i < lines.numeros.size(); i++) {
+        if (lines.numeros[i] == n)
+            return i;
+    }
+    return lines.size();
+}
+
 bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
     wstring code;
     long i;
@@ -2420,6 +2494,11 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
             checkpath(false);
             return true;
         case 5://ctrl-e, moving to the end of the line...
+            if (emode() && poslines.size()) {
+                //the row may have been re-split since line was last read
+                pos = poslines[currentline];
+                line = lines[pos];
+            }
             posinstring = line.size();
             if (posinstring && !lines.eol(pos))
                 posinstring--;
@@ -2527,12 +2606,13 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     return true;
                 case x_paste: //the pasting
                     copybuffer = L"";
+                    first = jag_logicalrow(lines, first + 1);
                     if (line == L"$")
                         last = lines.size();
                     else
-                        last = convertinginteger(line);
+                        last = jag_logicalrow(lines, convertinginteger(line) + 1);
                     line = L"";
-                    if (first >= 0 && first < last && last < lines.size()) {
+                    if (first >= 0 && first < last && last <= lines.size()) {
                         copybuffer = lines.code(first, last);
                         copy_to_clipboard(convert(copybuffer));
                     }
@@ -2551,66 +2631,69 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     return true;
                 case x_deleting: //delete
                 case x_cutting: //cut
-                    if (line == L"$") {
-                        if (first >= 0 && first < lines.size()) {
-                            last = lines.size() - 1;
-                            if (option == x_cutting) {
-                                copybuffer = lines.code(first, last+1);
-                                copy_to_clipboard(convert(copybuffer));
-                                st << line << " cut";
-                                displayonlast(true);
-                            }
-                            undo(lines[last], last, u_del);
-                            for (i = last-1; i > first; i--)
-                                undo(lines[i], i, u_del_linked);
-                            undo(lines[first], first, u_del_linked);
-                            lines.erase(first, -1);
+                    first = jag_logicalrow(lines, first + 1);
+                    if (line == L"$")
+                        last = lines.size();
+                    else
+                        last = jag_logicalrow(lines, convertinginteger(line) + 1);
+
+                    if (first >= 0 && first < last && last <= lines.size()) {
+                        if (option == x_cutting) {
+                            copybuffer = lines.code(first, last);
+                            copy_to_clipboard(convert(copybuffer));
+                            st << line << " cut";
+                            displayonlast(true);
                         }
-                        else
-                            break;
+                        //undo only records in edit mode, we temporarily reset option
+                        x_option g = option;
+                        option = x_none;
+                        undo(lines[last-1], last-1, u_del);
+                        for (i = last-2; i >= first; i--)
+                            undo(lines[i], i, u_del_linked);
+                        option = g;
+                        lines.erase(first, last);
+                        tobesaved = true;
                     }
-                    else {
-                        last = convertinginteger(line);
-                        if (first >= 0 && first < last && last < lines.size()) {
-                            if (option == x_cutting) {
-                                copybuffer = lines.code(first, last);
-                                copy_to_clipboard(convert(copybuffer));
-                                st << line << " cut";
-                                displayonlast(true);
-                            }
-                            undo(lines[last-1], last-1, u_del);
-                            for (i = last-2; i > first; i--)
-                                undo(lines[i], i, u_del_linked);
-                            undo(lines[first], first, u_del_linked);
-                            lines.erase(first, last);
-                        }
-                        else
-                            break;
-                    }
+                    else
+                        break;
 
                     line = L"";
                     posinstring = 0;
-                    if (lines.size()) {
-                        option = x_none;
-                        displaylist(poslines[0]);
-                        currentline = poslines.size()-1;
-                        pos = poslines[currentline];
-                        line = lines[poslines[currentline]];
-                        displayonlast("", true);
-                        return true;
+                    if (!lines.size())
+                        lines.push(L"");
+                    lines.numbers();
+                    option = x_none;
+                    {
+                        long top = poslines.size() ? poslines[0] : 0;
+                        if (top >= lines.size())
+                            top = lines.size() - 1 - row_size;
+                        if (top < 0)
+                            top = 0;
+                        displaylist(top);
                     }
-                    break;
+                    currentline = poslines.size()-1;
+                    if (currentline < 0)
+                        currentline = 0;
+                    pos = poslines.size() ? poslines[currentline] : 0;
+                    line = lines[pos];
+                    displayonlast("", true);
+                    return true;
                 case x_load:
-                    loadfile(line);
-                    if (!emode()) {
+                    if (loadfile(line)) {
                         option = x_none;
-                        displayonlast("", true);
-                    }
-                    else {
                         noprefix = previous_noprefix;
+                        pos = 0;
+                        currentline = 0;
+                        posinstring = 0;
                         displaylist(0, row_size);
+                        line = lines[0];
                         movetoline(currentline);
                         movetobeginning();
+                    }
+                    else {
+                        //the "Cannot load" message is displayed by loadfile
+                        option = x_none;
+                        line = lines[poslines[currentline]];
                     }
                     return true;
                 default:
@@ -2805,8 +2888,11 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
     modified = true;
     //We are in the middle of a line... Insertion mode...
     if (line.size() && posinstring < line.size()) {
-        if (emode())
+        if (emode()) {
             line = lines[poslines[currentline]];
+            if (posinstring > line.size())
+                posinstring = line.size();
+        }
 
             //We insert the character within our current line...
         code = line.substr(0, posinstring);
@@ -2819,13 +2905,14 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
             lines.refactoring(pos);
 
             line = lines[pos];
-            if (fullsize(code) > col_size) {
+            //same wrapping limit as in splitline: col_size minus the prefix
+            if (fullsize(code) > (col_size - prefixe())) {
                 if (currentline == row_size)
                     displaylist(poslines[0] + 1);
                 else
                     displaylist(poslines[0]);
 
-                if (posinstring >= col_size) {
+                if (posinstring >= (col_size - prefixe())) {
                     currentline++;
                     posinstring = 0;
                     pos++;
@@ -2843,10 +2930,17 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
         displaygo(true);
         if (b[0] == ')' || b[0] == '}' || b[0] == ']') {
             string ln = convert(line);
-            long posmatch = computeparenthesis(ln, b[0], posinstring);
+            //computeparenthesis works on UTF-8 bytes: we convert our character position
+            wstring wprefix = line.substr(0, posinstring);
+            long bytepos = convert(wprefix).size();
+            long posmatch = computeparenthesis(ln, b[0], bytepos);
             if (posmatch != -1) {
-                linematch = pos;
-                lines[pos] = line;
+                if (emode()) {
+                    linematch = pos;
+                    lines[pos] = line;
+                }
+                else
+                    linematch = -2;
                 string res = ln.substr(0, posmatch);
                 res += m_redbold;
                 res += ln[posmatch];
@@ -2919,7 +3013,7 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
         lines.refactoring(pos);
 
             //our line is now too long... we need to split it...
-        if (fullsize(line) > col_size) {
+        if (fullsize(line) > (col_size - prefixe())) {
             currentline++;
 
             if (currentline >= row_size) {
@@ -3092,9 +3186,9 @@ void jag_editor::selectlines(long from_line, long to_line, long from_pos, long t
     if (to_line < from_line)
         return;
 
-    //If we are moving backward, we need to invert the values to correctly select our span of text
+    //If we are moving backward on the same line, we need to invert the values to correctly select our span of text
     //from left to right
-    if (to_pos < from_pos) {
+    if (from_line == to_line && to_pos < from_pos) {
         long val = to_pos;
         to_pos = from_pos;
         from_pos = val;
@@ -3174,9 +3268,12 @@ void jag_editor::computeposition(int& p, long position) {
     wstring s = lines[position];
     p -= prefixe() + 1;
     long i = 0;
-    int pos = 0;
+    long pref = prefixego() + 1;
+    long pos = pref;
+    long sz = s.size();
     UWCHAR c;
-    while (pos < p) {
+    p += pref;
+    while (pos < p && i < sz) {
         if (special_characters.scan_emoji(s, i))
             pos += 2;
         else {
@@ -3185,10 +3282,10 @@ void jag_editor::computeposition(int& p, long position) {
                 pos+=2;
             }
             else {
-                if (c == 9) //tab position
-                    pos += 8;
-                else
-                    pos++;
+                //tab position, same logic as in size_upto
+                if (c == 9)
+                    pos += (8 - (pos%8))%8;
+                pos++;
             }
         }
         i++;
@@ -3345,12 +3442,21 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         }
 
         //a selection
-        selected_pos = pos;
-        selected_posnext = posnext;
+        //we keep the (row, column) pairs ordered: (selected_pos, selected_x) <= (selected_posnext, selected_y)
+        if (posnext < pos || (posnext == pos && r < l)) {
+            selected_pos = posnext;
+            selected_posnext = pos;
+            selected_x = r;
+            selected_y = l;
+        }
+        else {
+            selected_pos = pos;
+            selected_posnext = posnext;
+            selected_x = l;
+            selected_y = r;
+        }
         double_click = 0;
 		nbclicks = 0;
-        selected_x = l;
-        selected_y = r;
         return;
     }
 
@@ -3413,6 +3519,13 @@ void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& 
 
     while (1) {
         buff = getch();
+
+#ifndef WIN32
+        if (jag_resize_pending) {
+            jag_resize_pending = 0;
+            resetscreen();
+        }
+#endif
 
         if (emode()) {
 			while (isMouseAction(buff)) {
@@ -3644,7 +3757,7 @@ long jag_editor::deleteachar(wstring& l, bool last, long pins) {
     }
 
     if (last) {
-        while (mx) {
+        while (mx > 0 && l.size()) {
             if (special_characters.c_is_emojicomp(l.back())) {
                 long sz = l.size() - 2;
                 long i = sz;
@@ -3654,20 +3767,23 @@ long jag_editor::deleteachar(wstring& l, bool last, long pins) {
                 }
                 if (sz >= 0) {
                     pins -= i - sz;
-                    l.erase(i, sz - i + 1);
+                    l.erase(sz, i - sz + 1);
                 }
                 else
                     l.pop_back();
             }
+            else
+                l.pop_back();
             mx--;
         }
-        l.pop_back();
     }
     else {
         long nb = 0;
         long i = pins;
         long j;
-        while (mx) {
+        if (pins < 0 || pins >= l.size())
+            return pins;
+        while (mx > 0 && i < l.size()) {
             j = i;
             if (special_characters.scan_emoji(l, j)) {
                 nb += j - i;

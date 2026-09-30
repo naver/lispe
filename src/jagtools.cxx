@@ -149,6 +149,10 @@ bool ckjchar(wchar_t ucs) {
 
 static inline double power10(long n)
 {
+    if (n > 400)
+        return HUGE_VAL;
+    if (n < -400)
+        return 0;
     if (n > 0)
     {
         long n1(n & 0x1f);   //n1 modulo 32
@@ -177,6 +181,7 @@ static inline double power10(long n)
 }
 //------------------------------------------------------------------------
 #define isadigit(c) (c >= '0' && c <= '9')
+#define ishexadigit(c) ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))
 #define uchar unsigned char
 //------------------------------------------------------------------------
 static wchar_t ponctuations[] = {
@@ -317,7 +322,11 @@ Exporting void s_utf8_to_unicode(wstring& w, string& str , long sz) {
         return;
 
     long ineo = 0;
+#ifdef WIN32
+    wchar_t* neo = new wchar_t[2*sz+1];
+#else
     wchar_t* neo = new wchar_t[sz+1];
+#endif
     neo[0] = 0;
 
     UWCHAR c;
@@ -431,8 +440,8 @@ bool UTF8_Handler::store_emoji(u_ustring& u, u_ustring& res, long& i) {
 
 #ifdef WIN32
 Exporting void concat_to_wstring(wstring& res, UWCHAR code) {
-	if ((code & 0xFF00FF000) == 0xD800D8000) {
-		if ((code & 0xFF00FF000) == 0xDC00D8000) {
+	if ((code & 0xFC00FC00) == 0xD800DC00 || (code & 0xFC00FC00) == 0xDC00D800) {
+		if ((code & 0xFC00FC00) == 0xDC00D800) {
 			res += (wchar_t)(code & 0xFFFF);
 			res += (wchar_t)(code >> 16);
 		}
@@ -484,11 +493,19 @@ long UTF8_Handler::getonchar(u_ustring& w, long position) {
 
 #ifdef WIN32
 UWCHAR getonechar(unsigned char* s, long& i) {
+    //i is left on the last byte of the character (as in the non WIN32 version)
     UWCHAR result, code;
     i += c_utf8_to_unicode(s + i, code);
     if (c_utf16_to_unicode(result, code, false)) {
-        i += c_utf8_to_unicode(s + i, code);
-        c_utf16_to_unicode(result, code,  true);
+        //high surrogate encoded in UTF-8: the low surrogate should follow
+        UWCHAR low;
+        long nb = c_utf8_to_unicode(s + i + 1, low);
+        if ((low & 0xFC00) == 0xDC00) {
+            i += nb + 1;
+            c_utf16_to_unicode(result, low,  true);
+        }
+        else
+            result = code;
     }
     return result;
 }
@@ -1095,38 +1112,46 @@ UTF8_Handler::UTF8_Handler() {
     wvowels[89] = 89;
 }
 
-Exporting unsigned char c_utf8_to_unicode(string& utf, long i, UWCHAR& code) {
-    code = utf[i];
+static inline unsigned char c_utf8_to_unicode_bounded(const unsigned char* utf, long sz, UWCHAR& code) {
+    //utf points to the current byte, sz is the number of bytes available from utf
+    code = utf[0];
 
-    unsigned char check = utf[i] & 0xF0;
-
-    switch (check) {
+    switch (utf[0] & 0xF0) {
         case 0xC0:
-            if ((utf[i + 1] & 0x80)== 0x80) {
-                code = (utf[i] & 0x1F) << 6;
-                code |= (utf[i + 1] & 0x3F);
+        case 0xD0:
+            if (sz > 1 && (utf[1] & 0xC0)== 0x80) {
+                code = (utf[0] & 0x1F) << 6;
+                code |= (utf[1] & 0x3F);
                 return 1;
             }
             break;
         case 0xE0:
-            if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
-                code = (utf[i] & 0xF) << 12;
-                code |= (utf[i + 1] & 0x3F) << 6;
-                code |= (utf[i + 2] & 0x3F);
+            if (sz > 2 && (utf[1] & 0xC0)== 0x80 && (utf[2] & 0xC0)== 0x80) {
+                code = (utf[0] & 0xF) << 12;
+                code |= (utf[1] & 0x3F) << 6;
+                code |= (utf[2] & 0x3F);
                 return 2;
             }
             break;
         case 0xF0:
-            if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
-                code = (utf[i] & 0x7) << 18;
-                code |= (utf[i + 1] & 0x3F) << 12;
-                code |= (utf[i + 2] & 0x3F) << 6;
-                code |= (utf[i + 3] & 0x3F);
+            if (sz > 3 && (utf[1] & 0xC0) == 0x80 && (utf[2] & 0xC0)== 0x80 && (utf[3] & 0xC0)== 0x80) {
+                code = (utf[0] & 0x7) << 18;
+                code |= (utf[1] & 0x3F) << 12;
+                code |= (utf[2] & 0x3F) << 6;
+                code |= (utf[3] & 0x3F);
                 return 3;
             }
             break;
     }
     return 0;
+}
+
+Exporting unsigned char c_utf8_to_unicode(string& utf, long i, UWCHAR& code) {
+    if (i >= (long)utf.size()) {
+        code = 0;
+        return 0;
+    }
+    return c_utf8_to_unicode_bounded((const unsigned char*)utf.c_str() + i, utf.size() - i, code);
 }
 
 unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
@@ -1167,48 +1192,20 @@ unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
 }
 
  unsigned char c_utf8_to_unicode(string* utf, long i, UWCHAR& code) {
-    code = (*utf)[i];
-
-    unsigned char check = (*utf)[i] & 0xF0;
-    
-    switch (check) {
-        case 0xC0:
-            if (((*utf)[i + 1] & 0x80)== 0x80) {
-                code = ((*utf)[i] & 0x1F) << 6;
-                code |= ((*utf)[i + 1] & 0x3F);
-                return 1;
-            }
-            break;
-        case 0xE0:
-            if (((*utf)[i + 1] & 0x80)== 0x80 && ((*utf)[i + 2] & 0x80)== 0x80) {
-                code = ((*utf)[i] & 0xF) << 12;
-                code |= ((*utf)[i + 1] & 0x3F) << 6;
-                code |= ((*utf)[i + 2] & 0x3F);
-                return 2;
-            }
-            break;
-        case 0xF0:
-            if (((*utf)[i + 1] & 0x80) == 0x80 && ((*utf)[i + 2] & 0x80)== 0x80 && ((*utf)[i + 3] & 0x80)== 0x80) {
-                code = ((*utf)[i] & 0x7) << 18;
-                code |= ((*utf)[i + 1] & 0x3F) << 12;
-                code |= ((*utf)[i + 2] & 0x3F) << 6;
-                code |= ((*utf)[i + 3] & 0x3F);
-                return 3;
-            }
-            break;
+    if (i >= (long)utf->size()) {
+        code = 0;
+        return 0;
     }
-    return 0;
+    return c_utf8_to_unicode_bounded((const unsigned char*)utf->c_str() + i, utf->size() - i, code);
 }
 
 
 //--------------------------------------------------------------------
 bool c_is_hexa(wchar_t code) {
-    static const char hexas[]= {'a','b','c','d','e','f','A','B','C','D','E','F'};
-
     if (c_is_digit(code))
         return true;
 
-    if (code <= 'f' && strchr(hexas,(char)code))
+    if ((code >= 'a' && code <= 'f') || (code >= 'A' && code <= 'F'))
         return true;
 
     return false;
@@ -1786,7 +1783,7 @@ wstring s_wreplacestring(wstring& s, wstring reg, wstring rep) {
 double conversiontofloathexa(const char* s, int sign) {
     long v = 0;
     uchar c = *s++;
-    while (digitaction[c]) {
+    while (ishexadigit(c)) {
         v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
         c = *s++;
     }
@@ -1794,16 +1791,18 @@ double conversiontofloathexa(const char* s, int sign) {
     double res = v;
 
     if (c == '.') {
-        uchar mantissa = 0;
+        long mantissa = 0;
         v = 0;
         c = *s++;
-        while (digitaction[c]) {
-            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        while (ishexadigit(c)) {
+            if (mantissa < 60) {
+                v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+                mantissa += 4;
+            }
             c = *s++;
-            mantissa += 4;
         }
 
-        res += (double)v/(double)(1 << mantissa);
+        res += ldexp((double)v, -mantissa);
     }
 
 
@@ -1822,11 +1821,9 @@ double conversiontofloathexa(const char* s, int sign) {
         while (isadigit(*s)) {
             v = (v << 3) + (v << 1) + (*s++ & 15);
         }
-        v = 1 << v;
-        if (sgn)
-            res *= 1 / (double)v;
-        else
-            res *= v;
+        if (v > 2100)
+            v = 2100;
+        res = ldexp(res, sgn ? -v : v);
 
     }
 
@@ -1872,11 +1869,14 @@ double convertingfloathexa(const char* s) {
     if (*s=='.') {
         ++s;
         if (isadigit(*s)) {
-            uchar mantissa = 1;
+            long mantissa = 1;
             v = *s++ & 15;
             while (isadigit(*s)) {
-                v = (v << 3) + (v << 1) + (*s++ & 15);
-                ++mantissa;
+                if (mantissa < 17) {
+                    v = (v << 3) + (v << 1) + (*s & 15);
+                    ++mantissa;
+                }
+                ++s;
             }
             res += (double)v / power10(mantissa);
         }
@@ -1912,7 +1912,7 @@ double conversiontofloathexa(const char* s, int sign, long& l) {
     uchar c = *s++;
     l++;
 
-    while (digitaction[c]) {
+    while (ishexadigit(c)) {
         v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
         c = *s++;
         l++;
@@ -1921,17 +1921,19 @@ double conversiontofloathexa(const char* s, int sign, long& l) {
     double res = v;
 
     if (c == '.') {
-        uchar mantissa = 0;
+        long mantissa = 0;
         v = 0;
         c = *s++;
         l++;
-        while (digitaction[c]) {
-            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        while (ishexadigit(c)) {
+            if (mantissa < 60) {
+                v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+                mantissa += 4;
+            }
             l++;
-            mantissa += 4;
             c = *s++;
         }
-        res += (double)v/(double)(1 << mantissa);
+        res += ldexp((double)v, -mantissa);
     }
 
 
@@ -1955,11 +1957,9 @@ double conversiontofloathexa(const char* s, int sign, long& l) {
             v = (v << 3) + (v << 1) + (*s++ & 15);
             l++;
         }
-        v = 1 << v;
-        if (sgn)
-            res *= 1 / (double)v;
-        else
-            res *= v;
+        if (v > 2100)
+            v = 2100;
+        res = ldexp(res, sgn ? -v : v);
 
     }
 
@@ -2012,13 +2012,16 @@ double convertingfloathexa(const char* s, long& l) {
         ++s;
         l++;
         if (isadigit(*s)) {
-            uchar mantissa = 1;
+            long mantissa = 1;
             v = *s++ & 15;
             l++;
             while (isadigit(*s)) {
-                v = (v << 3) + (v << 1) + (*s++ & 15);
+                if (mantissa < 17) {
+                    v = (v << 3) + (v << 1) + (*s & 15);
+                    ++mantissa;
+                }
+                ++s;
                 l++;
-                ++mantissa;
             }
             res += (double)v / power10(mantissa);
         }
@@ -2060,7 +2063,7 @@ void noconversiontofloathexa(const char* s, int sign, short& l) {
     uchar c = *s++;
     l++;
 
-    while (digitaction[c]) {
+    while (ishexadigit(c)) {
         c = *s++;
         l++;
     }
@@ -2069,7 +2072,7 @@ void noconversiontofloathexa(const char* s, int sign, short& l) {
     if (c == '.') {
         c = *s++;
         l++;
-        while (digitaction[c]) {
+        while (ishexadigit(c)) {
             c = *s++;
             l++;
         }
@@ -2180,7 +2183,7 @@ void noconvertingfloathexa(const char* s, short& l) {
 void noconversiontofloathexa(wchar_t* s, int sign, long& l) {
     wchar_t c = *s++;
     l++;
-    while (digitaction[c]) {
+    while (ishexadigit(c)) {
         c = *s++;
         l++;
     }
@@ -2189,7 +2192,7 @@ void noconversiontofloathexa(wchar_t* s, int sign, long& l) {
     if (c == '.') {
         c = *s++;
         l++;
-        while (digitaction[c]) {
+        while (ishexadigit(c)) {
             c = *s++;
             l++;
         }
@@ -2299,9 +2302,12 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
 
 long convertinginteger(string& number) {
     long ipos=0;
+    long sz = number.size();
 
-    while (number[ipos]<=32) ++ipos;
+    while (ipos < sz && (uchar)number[ipos]<=32) ++ipos;
 
+    if (ipos == sz)
+        return 0;
 
     int sign = 1;
     if (number[ipos] == '-') {
@@ -2312,17 +2318,22 @@ long convertinginteger(string& number) {
         if (number[ipos] == '+')
             ++ipos;
 
+    if (ipos == sz)
+        return 0;
+
     long v = 0;
 
     uchar c = number[ipos++];
-    if (number.size() == ipos)
-        return (c - 48)*sign;
+    if (sz == ipos)
+        return isadigit(c)?(c - 48)*sign:0;
 
-    if (c == '0' || number[ipos] == 'x') {
+    if (c == '0' && (number[ipos] == 'x' || number[ipos] == 'X')) {
         ipos++;
         c = number[ipos++];
-        while (digitaction[c]) {
+        while (ishexadigit(c)) {
             v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            if (ipos >= sz)
+                break;
             c = number[ipos++];
         }
         return v*sign;
@@ -2330,10 +2341,11 @@ long convertinginteger(string& number) {
     else {
         if (isadigit(c)) {
             v = c & 15;
-            c = number[ipos++];
-            while (isadigit(c)) {
-                v = (v << 3) + (v << 1) + (c & 15);
+            while (ipos < sz) {
                 c = number[ipos++];
+                if (!isadigit(c))
+                    break;
+                v = (v << 3) + (v << 1) + (c & 15);
             }
         }
     }
@@ -2342,9 +2354,12 @@ long convertinginteger(string& number) {
 
 long convertinginteger(u_ustring& number) {
     long ipos=0;
+    long sz = number.size();
 
-    while (number[ipos]<=32) ++ipos;
+    while (ipos < sz && (UWCHAR)number[ipos]<=32) ++ipos;
 
+    if (ipos == sz)
+        return 0;
 
     int sign = 1;
     if (number[ipos] == '-') {
@@ -2355,17 +2370,22 @@ long convertinginteger(u_ustring& number) {
         if (number[ipos] == '+')
             ++ipos;
 
+    if (ipos == sz)
+        return 0;
+
     long v = 0;
 
-    uchar c = number[ipos++];
-    if (number.size() == ipos)
-        return (c - 48)*sign;
+    UWCHAR c = number[ipos++];
+    if (sz == ipos)
+        return isadigit(c)?(c - 48)*sign:0;
 
-    if (c == '0' || number[ipos] == 'x') {
+    if (c == '0' && (number[ipos] == 'x' || number[ipos] == 'X')) {
         ipos++;
         c = number[ipos++];
-        while (digitaction[c]) {
+        while (ishexadigit(c)) {
             v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            if (ipos >= sz)
+                break;
             c = number[ipos++];
         }
         return v*sign;
@@ -2373,10 +2393,11 @@ long convertinginteger(u_ustring& number) {
     else {
         if (isadigit(c)) {
             v = c & 15;
-            c = number[ipos++];
-            while (isadigit(c)) {
-                v = (v << 3) + (v << 1) + (c & 15);
+            while (ipos < sz) {
                 c = number[ipos++];
+                if (!isadigit(c))
+                    break;
+                v = (v << 3) + (v << 1) + (c & 15);
             }
         }
     }
@@ -2384,9 +2405,12 @@ long convertinginteger(u_ustring& number) {
 }
 long convertinginteger(wstring& number) {
     long ipos=0;
+    long sz = number.size();
 
-    while (number[ipos]<=32) ++ipos;
+    while (ipos < sz && (UWCHAR)number[ipos]<=32) ++ipos;
 
+    if (ipos == sz)
+        return 0;
 
     int sign = 1;
     if (number[ipos] == '-') {
@@ -2397,17 +2421,22 @@ long convertinginteger(wstring& number) {
         if (number[ipos] == '+')
             ++ipos;
 
+    if (ipos == sz)
+        return 0;
+
     long v = 0;
 
-    uchar c = number[ipos++];
-    if (number.size() == ipos)
-        return (c - 48)*sign;
+    UWCHAR c = number[ipos++];
+    if (sz == ipos)
+        return isadigit(c)?(c - 48)*sign:0;
 
-    if (c == '0' || number[ipos] == 'x') {
+    if (c == '0' && (number[ipos] == 'x' || number[ipos] == 'X')) {
         ipos++;
         c = number[ipos++];
-        while (digitaction[c]) {
+        while (ishexadigit(c)) {
             v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            if (ipos >= sz)
+                break;
             c = number[ipos++];
         }
         return v*sign;
@@ -2415,10 +2444,11 @@ long convertinginteger(wstring& number) {
     else {
         if (isadigit(c)) {
             v = c & 15;
-            c = number[ipos++];
-            while (isadigit(c)) {
-                v = (v << 3) + (v << 1) + (c & 15);
+            while (ipos < sz) {
                 c = number[ipos++];
+                if (!isadigit(c))
+                    break;
+                v = (v << 3) + (v << 1) + (c & 15);
             }
         }
     }
@@ -2430,7 +2460,7 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
     wchar_t c = *s++;
     l++;
 
-    while (digitaction[c]) {
+    while (ishexadigit(c)) {
         v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
         c = *s++;
         l++;
@@ -2439,17 +2469,19 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
     double res = v;
 
     if (c == '.') {
-        uchar mantissa = 0;
+        long mantissa = 0;
         v = 0;
         c = *s++;
         l++;
-        while (digitaction[c]) {
-            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        while (ishexadigit(c)) {
+            if (mantissa < 60) {
+                v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+                mantissa += 4;
+            }
             c = *s++;
             l++;
-            mantissa += 4;
         }
-        res += (double)v/(double)(1 << mantissa);
+        res += ldexp((double)v, -mantissa);
     }
 
 
@@ -2473,11 +2505,9 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
             v = (v << 3) + (v << 1) + (*s++ & 15);
             l++;
         }
-        v = 1 << v;
-        if (sgn)
-            res *= 1 / (double)v;
-        else
-            res *= v;
+        if (v > 2100)
+            v = 2100;
+        res = ldexp(res, sgn ? -v : v);
 
     }
 
@@ -2530,13 +2560,16 @@ double convertingfloathexa(wchar_t* s, long& l) {
         ++s;
         l++;
         if (isadigit(*s)) {
-            uchar mantissa = 1;
+            long mantissa = 1;
             v = *s++ & 15;
             l++;
             while (isadigit(*s)) {
-                v = (v << 3) + (v << 1) + (*s++ & 15);
+                if (mantissa < 17) {
+                    v = (v << 3) + (v << 1) + (*s & 15);
+                    ++mantissa;
+                }
+                ++s;
                 l++;
-                ++mantissa;
             }
             res += (double)v / power10(mantissa);
         }
@@ -2700,7 +2733,16 @@ void s_unicode_to_utf8(string& s, wstring& str) {
             continue;
         }
 
+#ifdef WIN32
+        UWCHAR code;
+        if (c_utf16_to_unicode(code, str[i], false) && i + 1 < sz && (str[i+1] & 0xFC00) == 0xDC00)
+            c_utf16_to_unicode(code, str[++i], true);
+        else
+            code = str[i];
+        nb = c_unicode_to_utf8(code, (uchar*)inter);
+#else
         nb = c_unicode_to_utf8(str[i], (uchar*)inter);
+#endif
         neo = concatstrings(neo,inter,ineo, szo, nb);
         i++;
     }
@@ -2712,6 +2754,11 @@ void s_unicode_to_utf8(string& s, wstring& str) {
 
 //------------------------------------------------------------------------
 void s_split(string& s, string& splitter, vector<string>& vs, bool keepblanks) {
+    if (splitter.empty()) {
+        if (keepblanks || !s.empty())
+            vs.push_back(s);
+        return;
+    }
     size_t pos = 0;
     size_t found = 0;
     string sub;
@@ -2740,6 +2787,11 @@ void s_split(string& s, string& splitter, vector<string>& vs, bool keepblanks) {
 }
 
 void s_split(wstring& s, wstring& splitter, vector<wstring>& vs, bool keepblanks) {
+    if (splitter.empty()) {
+        if (keepblanks || !s.empty())
+            vs.push_back(s);
+        return;
+    }
     long pos = 0;
     long found = 0;
     wstring sub;
@@ -3011,7 +3063,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 while (r < sz) {
                     p = pos[r++];
                     if (codestr[p] == '\\') {
-                        if (codestr[p+1] == codestr[pos[r]])
+                        if (r < sz && codestr[p+1] == codestr[pos[r]])
                             r++;
                         continue;
                     }
@@ -3030,19 +3082,13 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                     while (r < sz) {
                         p = pos[r++];
                         if (codestr[p] == '\\') {
-                            if (codestr[p+1] == codestr[pos[r]])
+                            if (r < sz && codestr[p+1] == codestr[pos[r]])
                                 r++;
                             continue;
                         }
                         if (codestr[p] == '\'' || codestr[p] == '\n')
                             break;
                     }
-                }
-                p = i;
-                while (r < sz) {
-                    p = pos[r++];
-                    if (codestr[p] == '\'' || codestr[p] == '\n')
-                        break;
                 }
                 p++;
                 i = p;
@@ -3059,7 +3105,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
             case '9':
                 noconvertingfloathexa((const char*)STR(codestr)+i-1, l);
                 p =  i + l - 1;
-                while (pos[r] < p) r++;
+                while (r < sz && pos[r] < p) r++;
                 i = p;
                 break;
             case '{':
@@ -3277,9 +3323,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                 if (addspace)
                     iblank += blanksize*addspace;
                 if (iblank) {
-                    blanks[iblank] = 0;
-                    codeindente += blanks;
-                    blanks[iblank] = 32;
+                    codeindente.append(iblank, ' ');
                 }
                 iblank = l;
                 consumeblanks = false;
@@ -3424,7 +3468,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                 while (r < sz) {
                     p = pos[r++];
                     if (codestr[p] == '\\') {
-                        if (codestr[p+1] == codestr[pos[r]])
+                        if (r < sz && codestr[p+1] == codestr[pos[r]])
                             r++;
                         continue;
                     }
@@ -3455,7 +3499,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                 while (r < sz) {
                     p = pos[r++];
                     if (codestr[p] == '\\') {
-                        if (codestr[p+1] == codestr[pos[r]])
+                        if (r < sz && codestr[p+1] == codestr[pos[r]])
                             r++;
                         continue;
                     }
@@ -3481,7 +3525,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
             case '9':
                 noconvertingfloathexa((const char*)codestr+i-1, l);
                 p =  i + l - 1;
-                while (pos[r] < p) r++;
+                while (r < sz && pos[r] < p) r++;
                 c = codestr[p];
                 codestr[p] = 0;
                 codeindente += (char*)codestr+i-1;
@@ -3535,9 +3579,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                     if (addspace)
                         iblank += blanksize*addspace;
                     if (iblank) {
-                        blanks[iblank] = 0;
-                        codeindente += blanks;
-                        blanks[iblank] = 32;
+                        codeindente.append(iblank, ' ');
                     }
                     addspace = 0;
                     iblank = l;
@@ -3562,9 +3604,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                     if (addspace)
                         iblank += blanksize*addspace;
                     if (iblank) {
-                        blanks[iblank] = 0;
-                        codeindente += blanks;
-                        blanks[iblank] = 32;
+                        codeindente.append(iblank, ' ');
                     }
                     addspace = 0;
                     iblank = l;
@@ -3612,6 +3652,17 @@ void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bo
 
 //---------------------------------------------------------------------------------------
 
+static void append_bounded(char* dest, const char* src, long len, long buffersz) {
+    long ldest = strlen(dest);
+    long room = buffersz - 1 - ldest;
+    if (room <= 0)
+        return;
+    if (len > room)
+        len = room;
+    memcpy(dest + ldest, src, len);
+    dest[ldest + len] = 0;
+}
+
 void NormalizeFileName(char* fileName, char* buffer, long buffersz) {
     //All paths to UNIX are first brought back to UNIX
     //We normalize the paths
@@ -3619,40 +3670,43 @@ void NormalizeFileName(char* fileName, char* buffer, long buffersz) {
     char* vari = strchr(buffer, '$');
     fileName[0] = 0;
     while (vari) {
-        char* reper = getenv(vari + 1);
         char* pt = strchr(vari + 1, '/');
 
         if (pt != NULL)
             *pt = 0;
 
+        //The variable name stops at the '/'
+        char* reper = getenv(vari + 1);
+
         //We copy the part preceding the variable
-        long lvar = vari - buffer;
-        long lnom = strlen(fileName);
-        memcpy(fileName + lnom, buffer, lvar);
-        fileName[lvar + lnom] = 0;
+        append_bounded(fileName, buffer, vari - buffer, buffersz);
 
         if (reper != NULL)
-            strcat_s(fileName, buffersz, reper);
+            append_bounded(fileName, reper, strlen(reper), buffersz);
 
         if (pt != NULL) {
             *pt = '/';
-            static char inter[1000];
-            strcpy_s(inter,1000, pt);
-            strcpy_s(buffer, buffersz, inter);
+            string inter(pt);
+            strncpy(buffer, inter.c_str(), buffersz - 1);
+            buffer[buffersz - 1] = 0;
         }
         else
             buffer[0] = 0;
         vari = strchr(buffer, '$');
     }
 
-    strcat_s(fileName, buffersz, buffer);
+    append_bounded(fileName, buffer, strlen(buffer), buffersz);
     char localpath[4096];
+    localpath[0] = 0;
 #ifdef WIN32
-    _fullpath(localpath, fileName, 4096);
+    if (_fullpath(localpath, fileName, 4096) == NULL)
+        return;
 #else
-    realpath(fileName, localpath);
+    if (realpath(fileName, localpath) == NULL)
+        return;
 #endif
-    strcpy_s(fileName, buffersz, localpath);
+    strncpy(fileName, localpath, buffersz - 1);
+    fileName[buffersz - 1] = 0;
 }
 
 string NormalizePathname(string n) {
@@ -3661,7 +3715,8 @@ string NormalizePathname(string n) {
 
     char buff[4096];
     char name[4096];
-    strcpy_s(name, 4096, STR(n));
+    strncpy(name, STR(n), 4095);
+    name[4095] = 0;
 
     NormalizeFileName(buff, name, 4096);
     return buff;
@@ -3688,6 +3743,10 @@ void replacemetas(wstring& sub) {
     long sz = sub.size();
     for (long i=0;i<sz;i++) {
         if (sub[i]=='\\') {
+            if (i + 1 >= sz) {
+                thestr += sub[i];
+                break;
+            }
             switch(sub[++i]) {
                 case 'n':
                     thestr+=L"\n";
@@ -3740,8 +3799,8 @@ Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second) {
         return false;
     }
 
-    //if the first byte is  0xD8000000 then it is a four bytes coding
-    if ((code & 0xFF00) == 0xD800) {
+    //high surrogate (0xD800-0xDBFF): four bytes coding
+    if ((code & 0xFC00) == 0xD800) {
         //first we extract w
         r = ((((code & 0x03C0) >> 6) + 1) << 16) | ((code & 0x3F) << 10);
         return true;
@@ -3852,7 +3911,7 @@ typedef enum {
 
 static bool is_keyword(string s) {
     static std::unordered_map<string, bool> words;
-    bool initial = true;
+    static bool initial = true;
     if (initial) {
         for (int i = 0; _keywords[i][0] != 0; i++)
         words[_keywords[i]]=true;
@@ -3996,7 +4055,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                         }
                     }
                     else {
-                        if (filetype == c_like_type && code[idx] == '/') {
+                        if (code[idx] == '/') {
                             idx++;
                             infos.append(jt_finalcomment, last_i, idx);
                             i = idx;
@@ -4009,8 +4068,20 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 if (filetype == c_like_type) {
                     idx = i + 1;
                     if (code[idx] == '/' || code[idx] == '*') {
+                        bool longcomment = (code[idx] == '*');
                         idx++;
-                        while (idx < sz && code[idx] != '\n') idx++;
+                        while (idx < sz && code[idx] != '\n') {
+                            if (longcomment && code[idx] == '*' && idx + 1 < sz && code[idx + 1] == '/')
+                                break;
+                            idx++;
+                        }
+                        if (longcomment && idx < sz && code[idx] == '*') {
+                            //the comment is closed on the same line
+                            idx += 2;
+                            infos.append(jt_comment, i, idx);
+                            i = idx - 1;
+                            break;
+                        }
                         infos.append(jt_comment, i, idx);
                         i = idx;
                         line_number++;
@@ -4021,8 +4092,20 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                     if (filetype == tamgu_type) {
                         idx = i + 1;
                         if (code[idx] == '/' || code[idx] == '@') {
+                            bool longcomment = (code[idx] == '@');
                             idx++;
-                            while (idx < sz && code[idx] != '\n') idx++;
+                            while (idx < sz && code[idx] != '\n') {
+                                if (longcomment && code[idx] == '@' && idx + 1 < sz && code[idx + 1] == '/')
+                                    break;
+                                idx++;
+                            }
+                            if (longcomment && idx < sz && code[idx] == '@') {
+                                //the comment is closed on the same line
+                                idx += 2;
+                                infos.append(jt_comment, i, idx);
+                                i = idx - 1;
+                                break;
+                            }
                             infos.append(jt_comment, i, idx);
                             i = idx;
                             line_number++;
@@ -4076,6 +4159,8 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 continue;
             case '\'': { // a string containing what we want...
                 point = false;
+                if (filetype == lisp_type) //in Lisp, ' is the quote operator, not a string delimiter
+                    break;
                 idx = i + 1;
                 tampon = "";
                 while (idx < sz && code[idx] != '\'') {
@@ -4113,16 +4198,24 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 i = idx;
                 break;            }
             case '`':
-                string_end = '`';
             case 171: { // a string containing what we want...
                 point = false;
                 if (filetype == lisp_type) {
                     idx = i + 1;
                     tampon = "";
-                    while (idx < sz && code[idx] != string_end) {
-                        idx++;
+                    if (c == '`') {
+                        while (idx < sz && code[idx] != '`')
+                            idx++;
+                        tampon = code.substr(i+1, idx-i-1);
                     }
-                    tampon = code.substr(i+1, idx-i-1);
+                    else {
+                        //closing: » is encoded as C2 BB in UTF-8
+                        while (idx < sz && !((uchar)code[idx] == 0xC2 && idx + 1 < sz && (uchar)code[idx + 1] == 0xBB))
+                            idx++;
+                        tampon = code.substr(i+1, idx-i-1);
+                        if (idx < sz)
+                            idx++; //we position on the last byte of »
+                    }
                     if (tampon == "")
                         infos.append(jt_emptystring, i, idx);
                     else
@@ -4211,7 +4304,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
 
                 idx = i + 1;
                 nxt = c;
-                while (idx <= sz && nxt > 32 && !special_characters.c_is_punctuation(nxt) && !isspace(nxt)) {
+                while (idx <= sz && nxt > 32 && !special_characters.c_is_punctuation(nxt) && !(nxt < 256 && isspace(nxt))) {
                     i = idx;
                     nxt = getonechar(USTR(code), idx);
                     idx++;
@@ -4736,17 +4829,17 @@ void tokenizer_node::remove_epsilon_nodes(std::unordered_map<long,
     
     if (sz) {
         //We merge the arcs that share the same definition
-        long key;
-        std::unordered_map<long, tokenizer_node*> commons;
+        int64_t key;
+        std::unordered_map<int64_t, tokenizer_node*> commons;
         vector<tokenizer_node*> nds;
         for (i = 0; i < sz; i++) {
             n = arcs[i];
             if (n->pure_arc()) {
-                key = n->action*256 + n->label;
+                key = ((int64_t)n->action << 32) | (uint32_t)n->label;
                 if (commons.count(key)) {
                     tokenizer_node* nbase = commons[key];
-                    for (key = 0; key < n->size(); key++)
-                        nbase->arcs.push_back(n->arcs[key]);
+                    for (long k = 0; k < n->size(); k++)
+                        nbase->arcs.push_back(n->arcs[k]);
                 }
                 else {
                     commons[key] = n;
@@ -5348,7 +5441,7 @@ void tokenizer_automaton::compile() {
                     break;
                 }
                 case ']':
-                    if (brackets.size()) {
+                    if (brackets.size() >= 2 && brackets.back() != NULL && brackets[brackets.size() - 2] != NULL) {
                         anode = brackets.back();
                         brackets.pop_back();
                         current = brackets.back();
@@ -5361,14 +5454,22 @@ void tokenizer_automaton::compile() {
                         }
                         
                         root = current;
-                        current->append(anode->arcs[0]);
-                        currentbracket.pop_back();
-                        if (currentbracket.back() == '^') {
+                        if (anode->arcs.size())
+                            current->append(anode->arcs[0]);
+                        else
+                            if (!current->check_negation()) {
+                                //empty sequence: []
+                                error = 5;
+                                break;
+                            }
+                        if (currentbracket.size())
+                            currentbracket.pop_back();
+                        if (currentbracket.size() && currentbracket.back() == '^') {
                             //we were in a disjunction, we need to put first_value back to true
                             currentbracket.pop_back();
                             first_value = true;
                         }
-                        disjunction = (currentbracket.back() == '{');
+                        disjunction = (currentbracket.size() && currentbracket.back() == '{');
                     }
                     else
                         error = 5;

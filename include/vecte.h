@@ -180,6 +180,10 @@ public:
 		last--;
 	}
 
+    inline void pop_protect() {
+        if (last) last--;
+    }
+
 	inline void insert(long pos, Z val) {
         resize(last);
 

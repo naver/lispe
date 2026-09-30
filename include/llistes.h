@@ -1011,7 +1011,7 @@ public:
     
     Element* replace(LispE* lisp, long i, Element* e) {
         if (i < 0)
-            throw new Error("Error: position does not exist");
+            throw new Errorstack(lisp, "Error: position does not exist");
         u_link*  it = at(i);
         if (it == NULL)
             liste.push_back(e);

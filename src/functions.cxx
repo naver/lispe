@@ -55,9 +55,11 @@ Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long
     
     if (function->isList()) {
         switch(function->function_label(lisp)) {
-            case l_defpred:
+            case l_defprederr:
+            case l_defpred: {
                 function = new List_predicate_eval((List*)function);
                 break;
+            }
             case l_defprol:
                 function = new List_prolog_eval((List*)function);
                 break;
@@ -80,7 +82,7 @@ Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long
                     function = new Atomefonction(function, t_lambda);
                 break;
             default:
-                throw new Error("Error: wrong function call");
+                throw new Errorstack(lisp, "Error: wrong function call");
         }
         
     }
@@ -1282,7 +1284,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
         
         bool success = true;
         element = true_;
-        current_error->release();
+        lisp->delegation->reset_error();
         current_error = null_;
         try {
             i = 3;
@@ -1325,8 +1327,15 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             return lisp->pop(element);
         }
         element->release();
-        if (current_error != null_)
-            break;
+        if (current_error != null_) {
+            if (current_body->index(0)->label() == l_defprederr) {
+                lisp->delegation->reset_error();
+                current_error = null_;
+            }
+            else
+                break;
+        }
+        
         current_body = NULL;
         if (ilabel < sz) {
             lisp->clear_top_stack();
@@ -1546,7 +1555,7 @@ Element* List_prolog_eval::eval(LispE* lisp) {
             }
         }
         catch (Error* err) {
-        err->release();
+            err->release();
             success = false;
         }
         if (success)
@@ -1599,7 +1608,7 @@ Element* List::eval_pattern(LispE* lisp, List* body) {
  ------------------------------------------------------------------------
 */
 
-Element* List::eval_predicate(LispE* lisp, List* body) {
+Element* List::eval_predicate(LispE* lisp, List* body, bool e) {
     List_predicate_eval lpe(this, body);
     return lpe.eval(lisp);
 }
@@ -1687,7 +1696,7 @@ Element* List::eval_thread(LispE* lisp, List* body) {
         message += L" ";
         message += body->liste[2]->asString(lisp);
         message += L"...)'";
-        throw new Error(message);
+        throw new Errorstack(lisp, message);
     }
     
     if (defaultarguments == parameters->size())
@@ -1704,7 +1713,7 @@ Element* List::eval_thread(LispE* lisp, List* body) {
     the->thid = new std::thread(launchthread, the);
     if (the->thid == NULL) {
         delete the;
-        throw new Error("Error: Too many threads created. Cannot execute it...");
+        throw new Errorstack(lisp, "Error: Too many threads created. Cannot execute it...");
     }
     
     lisp->delegation->clean_threads(the);
@@ -1779,7 +1788,7 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, Element* data, List* paramet
         if (into_stack) {
             for (long i = 0; i < sz; i++) {
                 if (!s->check_with_instance(parameters->liste[i]->label()))
-                    throw new Error("Error: missing arguments");
+                    throw new Errorstack(lisp, "Error: missing arguments");
             }
         }
     }
@@ -1825,7 +1834,7 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
         if (into_stack) {
             for (long i = 0; i < sz; i++) {
                 if (!thread_lisp->checkvariable(parameters->liste[i]->label()))
-                    throw new Error("Error: missing arguments");
+                    throw new Errorstack(lisp, "Error: missing arguments");
             }
         }
     }
@@ -1902,7 +1911,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
             if (into_stack) {
                 if (data != NULL) {
                     data->release();
-                    throw new Error("Error: illegal argument.");
+                    throw new Errorstack(lisp, "Error: illegal argument.");
                 }
                 continue;
             }
@@ -1913,7 +1922,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
                 case 0:
                     label = element->label();
                     if (data == NULL)
-                        throw new Error(L"Error: Wrong parameter description");
+                        throw new Errorstack(lisp, L"Error: Wrong parameter description");
                     break;
                 case 1:
                     label = element->index(0)->label();
@@ -1946,7 +1955,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
 
             if (label <= l_final) {
                 data->release();
-                throw new Error(L"Error: Wrong parameter description");
+                throw new Errorstack(lisp, L"Error: Wrong parameter description");
             }
 
 
@@ -1964,7 +1973,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
                     case 0:
                         label = element->label();
                         if (!vars.check(label))
-                            throw new Error("Error: missing argument");
+                            throw new Errorstack(lisp, "Error: missing argument");
                         continue;
                     case 1:
                         label = element->index(0)->label();
@@ -1979,12 +1988,12 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
                             data = element->index(1)->eval(lisp);
                             break;
                         }
-                        throw new Error("Error: Illegal argument");
+                        throw new Errorstack(lisp, "Error: Illegal argument");
                 }
 
                 if (label <= l_final) {
                     data->release();
-                    throw new Error(L"Error: Wrong parameter description");
+                    throw new Errorstack(lisp, L"Error: Wrong parameter description");
                 }
 
                 //if we are dealing with a new thread, variables will be stored onto
@@ -2044,7 +2053,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
             if (into_stack) {
                 if (data != NULL) {
                     data->release();
-                    throw new Error("Error: illegal argument.");
+                    throw new Errorstack(lisp, "Error: illegal argument.");
                 }
                 continue;
             }
@@ -2055,7 +2064,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
                 case 0:
                     label = element->label();
                     if (data == NULL)
-                        throw new Error(L"Error: Wrong parameter description");
+                        throw new Errorstack(lisp, L"Error: Wrong parameter description");
                     data = data->duplicate_for_thread();
                     break;
                 case 1:
@@ -2089,7 +2098,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
 
             if (label <= l_final) {
                 data->release();
-                throw new Error(L"Error: Wrong parameter description");
+                throw new Errorstack(lisp, L"Error: Wrong parameter description");
             }
 
             vars.push_back(label);
@@ -2107,7 +2116,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
                     case 0:
                         label = element->label();
                         if (!vars.check(label))
-                            throw new Error("Error: missing argument");
+                            throw new Errorstack(lisp, "Error: missing argument");
                         continue;
                     case 1:
                         label = element->index(0)->label();
@@ -2122,11 +2131,11 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
                             data = element->index(1)->eval(lisp);
                             break;
                         }
-                        throw new Error("Error: Illegal argument");
+                        throw new Errorstack(lisp, "Error: Illegal argument");
                 }
 
                 if (label <= l_final) {
-                    throw new Error(L"Error: Wrong parameter description");
+                    throw new Errorstack(lisp, L"Error: Wrong parameter description");
                 }
 
                 //if we are dealing with a new thread, variables will be stored onto
@@ -2172,7 +2181,7 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
             if (into_stack) {
                 if (data != NULL) {
                     data->release();
-                    throw new Error("Error: illegal argument.");
+                    throw new Errorstack(lisp, "Error: illegal argument.");
                 }
                 continue;
             }
@@ -2184,7 +2193,7 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
                 case 0:
                     label = element->label();
                     if (data == NULL)
-                        throw new Error(L"Error: Wrong parameter description");
+                        throw new Errorstack(lisp, L"Error: Wrong parameter description");
                     break;
                 case 1:
                     label = element->index(0)->label();
@@ -2216,7 +2225,7 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
 
             if (label <= l_final) {
                 data->release();
-                throw new Error(L"Error: Wrong parameter description");
+                throw new Errorstack(lisp, L"Error: Wrong parameter description");
             }
 
             vars.push_back(label);
@@ -2231,7 +2240,7 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
                     case 0:
                         label = element->label();
                         if (!vars.check(label))
-                            throw new Error("Error: missing argument");
+                            throw new Errorstack(lisp, "Error: missing argument");
                         continue;
                     case 1:
                         label = element->index(0)->label();
@@ -2246,11 +2255,11 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
                             data = element->index(1)->eval(lisp);
                             break;
                         }
-                        throw new Error("Error: Illegal argument");
+                        throw new Errorstack(lisp, "Error: Illegal argument");
                 }
 
                 if (label <= l_final) {
-                    throw new Error(L"Error: Wrong parameter description");
+                    throw new Errorstack(lisp, L"Error: Wrong parameter description");
                 }
 
                 //if we are dealing with a new thread, variables will be stored onto
@@ -2286,7 +2295,7 @@ Element* List::eval_function(LispE* lisp, List* body) {
         message += L" ";
         message += body->liste[2]->asString(lisp);
         message += L"...)'";
-        throw new Error(message);
+        throw new Errorstack(lisp, message);
     }
     
     //We calculate our values in advance, in the case of a recursive call, we must
@@ -2445,7 +2454,7 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
         wstring message = L"Error: Wrong number of arguments in: '(lambda ";
         message += parameters->asString(lisp);
         message += L"...)'";
-        throw new Error(message);
+        throw new Errorstack(lisp, message);
     }
         
     
@@ -2565,12 +2574,12 @@ Element* List::eval_data(LispE* lisp, Element* data) {
         values->clear();
         delete values;
         if (res == check_mismatch)
-            throw new Error(L"Error: Size mismatch between argument list and data structure definition");
+            throw new Errorstack(lisp, L"Error: Size mismatch between argument list and data structure definition");
         else {
             std::wstringstream message;
             message << L"Error: Mismatch on argument: " << (int)res;
             message << " (" << lisp->asString(data->index((int)res)->label()) << " required)";
-            throw new Error(message.str());
+            throw new Errorstack(lisp, message.str());
         }
     }
     values->type = t_data;
@@ -2584,9 +2593,11 @@ Element* List::evalfunction(LispE* lisp, Element* body) {
         case l_defpat:
             return eval_pattern(lisp, (List*)body);
         case l_defpred:
-            return eval_predicate(lisp, (List*)body);
+            return eval_predicate(lisp, (List*)body, false);
         case l_defprol:
             return eval_prolog(lisp, (List*)body);
+        case l_defprederr:
+            return eval_predicate(lisp, (List*)body, true);
         case l_dethread:
             return eval_thread(lisp, (List*)body);
         case l_deflib:
@@ -2604,7 +2615,7 @@ Element* List::evalfunction(LispE* lisp, Element* body) {
         case t_class_instance:
             return execute_instance_function(lisp, (List_instance*)body);
         default:
-            throw new Error("Unknown function call");
+            throw new Errorstack(lisp, "Unknown function call");
     }
 }
 
@@ -2671,10 +2682,12 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     
     int16_t label = body->function_label(lisp);
     switch(label) {
-        case l_defpred:
+        case l_defprederr:
+        case l_defpred: {
             liste[0] = new List_predicate_eval(this, (List*)body);
             lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
+        }
         case l_defprol:
             liste[0] = new List_prolog_eval(this, (List*)body);
             lisp->storeforgarbage(liste[0]);
@@ -3127,7 +3140,7 @@ Element* List::backscan(LispE* lisp, Element* current_list, long sz) {
                 res->append(zero_value);
             else {
                 if (j <= -1)
-                    throw new Error("Error: List size mismatch");
+                    throw new Errorstack(lisp, "Error: List size mismatch");
 
                 while (nb > 0) {
                     res->append(current_list->index(j));
@@ -3137,7 +3150,7 @@ Element* List::backscan(LispE* lisp, Element* current_list, long sz) {
             }
         }
         if (j <= -1)
-            throw new Error("Error: List size mismatch");
+            throw new Errorstack(lisp, "Error: List size mismatch");
     }
     catch (Error* err) {
         res->release();
@@ -3388,7 +3401,7 @@ Element* List::reduce(LispE* lisp, Element* current_list, long sz) {
             }
             
             if (j >= sz)
-                throw new Error("Error: List size mismatch");
+                throw new Errorstack(lisp, "Error: List size mismatch");
             
             while (nb > 0) {
                 res->append(current_list->index(j));
@@ -3652,7 +3665,7 @@ Element* List::backreduce(LispE* lisp, Element* current_list, long sz) {
                 continue;
             }
             if (j <= -1)
-                throw new Error("Error: List size mismatch");
+                throw new Errorstack(lisp, "Error: List size mismatch");
             while (nb > 0) {
                 res->append(current_list->index(j));
                 nb--;

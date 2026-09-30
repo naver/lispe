@@ -64,7 +64,7 @@ Element* range(LispE* lisp, long init, long limit, long inc) {
         }
         return range_list;
     }
-    throw new Error("Error: Exceeding range");
+    throw new Errorstack(lisp, "Error: Exceeding range");
 }
 
 Element* range(LispE* lisp, double init, double limit, double inc) {
@@ -92,7 +92,7 @@ Element* range(LispE* lisp, double init, double limit, double inc) {
         }
         return range_list;
     }
-    throw new Error("Error: Exceeding range");
+    throw new Errorstack(lisp, "Error: Exceeding range");
 }
 
 Element* range(LispE* lisp, u_ustring& init, u_ustring& limit, long inc) {
@@ -132,7 +132,7 @@ Element* range(LispE* lisp, u_ustring& init, u_ustring& limit, long inc) {
         }
         return range_list;
     }
-    throw new Error("Error: Exceeding range");
+    throw new Errorstack(lisp, "Error: Exceeding range");
 }
 
 
@@ -262,28 +262,28 @@ float Element::checkFloat(LispE* lisp) {
     wstring s = L"Error: cannot use this element in an arithmetic expression: '";
     s += asString(lisp);
     s += L"'";
-    throw new Error(s);
+    throw new Errorstack(lisp, s);
 }
 
 double Element::checkNumber(LispE* lisp) {
     wstring s = L"Error: cannot use this element in an arithmetic expression: '";
     s += asString(lisp);
     s += L"'";
-    throw new Error(s);
+    throw new Errorstack(lisp, s);
 }
 
 long Element::checkInteger(LispE* lisp) {
     wstring s = L"Error: cannot use this element in an arithmetic expression: '";
     s += asString(lisp);
     s += L"'";
-    throw new Error(s);
+    throw new Errorstack(lisp, s);
 }
 
 int16_t Element::checkShort(LispE* lisp) {
     wstring s = L"Error: cannot use this element in an arithmetic expression: '";
     s += asString(lisp);
     s += L"'";
-    throw new Error(s);
+    throw new Errorstack(lisp, s);
 }
 //------------------------------------------------------------------------------------------
 Element* Float::plus_direct(LispE* lisp, Element* e) {
@@ -363,7 +363,7 @@ Element* Float::multiply_direct(LispE* lisp, Element* e) {
 
 Element* Float::divide_direct(LispE* lisp, Element* e) {
     if (e->isEmpty())
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     switch (e->type) {
         case t_float: {
@@ -446,7 +446,7 @@ Element* Float::divide(LispE* lisp, Element* e) {
     }
     float v = e->checkFloat(lisp);
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     if (status != s_constant) {
         content /= v;
         return this;
@@ -463,7 +463,7 @@ Element* Float::mod(LispE* lisp, Element* e) {
     
     long v = e->checkInteger(lisp);
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
         content = (long)content % v;
@@ -713,7 +713,7 @@ Element* Number::multiply_direct(LispE* lisp, Element* e) {
 
 Element* Number::divide_direct(LispE* lisp, Element* e) {
     if (e->isEmpty())
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     switch (e->type) {
         case t_float: {
@@ -796,7 +796,7 @@ Element* Number::divide(LispE* lisp, Element* e) {
     }
     double v = e->checkNumber(lisp);
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     if (status != s_constant) {
         content /= v;
         return this;
@@ -813,7 +813,7 @@ Element* Number::mod(LispE* lisp, Element* e) {
     
     long v = e->checkInteger(lisp);
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
         content = (long)content % v;
@@ -1062,7 +1062,7 @@ Element* Integer::multiply_direct(LispE* lisp, Element* e) {
 
 Element* Integer::divide_direct(LispE* lisp, Element* e) {
     if (e->isEmpty())
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     switch (e->type) {
         case t_float: {
@@ -1150,7 +1150,7 @@ Element* Integer::divide(LispE* lisp, Element* e) {
     }
     double v =  e->checkNumber(lisp);
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     release();
     return lisp->provideNumber((double)content/v);
 }
@@ -1164,7 +1164,7 @@ Element* Integer::mod(LispE* lisp, Element* e) {
     }
     long v =  e->checkInteger(lisp);
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
         content %= v;
@@ -1353,7 +1353,7 @@ Element* Short::multiply_direct(LispE* lisp, Element* e) {
 
 Element* Short::divide_direct(LispE* lisp, Element* e) {
     if (e->isEmpty())
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     switch (e->type) {
         case t_float: {
@@ -1442,7 +1442,7 @@ Element* Short::divide(LispE* lisp, Element* e) {
     }
     double v =  e->checkNumber(lisp);
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     double vv = (double)content;
     release();
     return lisp->provideNumber(vv/v);
@@ -1457,7 +1457,7 @@ Element* Short::mod(LispE* lisp, Element* e) {
     }
     long v =  e->checkShort(lisp);
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
         content %= v;
@@ -1687,7 +1687,7 @@ Element* Complexe::multiply_direct(LispE* lisp, Element* e) {
 
 Element* Complexe::divide_direct(LispE* lisp, Element* e) {
     if (e->isEmpty())
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     switch (e->type) {
         case t_number: {
@@ -1719,7 +1719,7 @@ Element* Complexe::divide(LispE* lisp, Element* e) {
     
     double v = e->asNumber();
     if (!v)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
         content /= v;
@@ -2417,7 +2417,7 @@ Element* Floats::divide(LispE* lisp, Element* e) {
         double d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             d /= liste[i];
         }
         return lisp->provideFloat(d);
@@ -2445,7 +2445,7 @@ Element* Floats::divide(LispE* lisp, Element* e) {
     }
     float d = e->asFloat();
     if (d == 0)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     liste.divide(d);
     return this;
 }
@@ -2456,7 +2456,7 @@ Element* Floats::mod(LispE* lisp, Element* e) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (liste[i] == 0)
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             d %= (long)liste[i];
         }
         return lisp->provideFloat(d);
@@ -2882,7 +2882,7 @@ Element* Numbers::divide(LispE* lisp, Element* e) {
         double d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             d /= liste[i];
         }
         return lisp->provideNumber(d);
@@ -2911,7 +2911,7 @@ Element* Numbers::divide(LispE* lisp, Element* e) {
     
     double d = e->asNumber();
     if (d == 0)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     liste.divide(d);
     return this;
 }
@@ -2922,7 +2922,7 @@ Element* Numbers::mod(LispE* lisp, Element* e) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (liste[i] == 0)
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             d %= (long)liste[i];
         }
         return lisp->provideNumber(d);
@@ -3329,7 +3329,7 @@ Element* Integers::divide(LispE* lisp, Element* e) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             d /= liste[i];
         }
         return lisp->provideInteger(d);
@@ -3357,7 +3357,7 @@ Element* Integers::divide(LispE* lisp, Element* e) {
     
     long d = e->asInteger();
     if (d == 0)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     liste.divide(d);
     return this;
 }
@@ -3367,7 +3367,7 @@ Element* Integers::mod(LispE* lisp, Element* e) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             d %= liste[i];
         }
         return lisp->provideInteger(d);
@@ -3775,7 +3775,7 @@ Element* Shorts::divide(LispE* lisp, Element* e) {
         int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             d /= liste[i];
         }
         return lisp->provideShort(d);
@@ -3802,7 +3802,7 @@ Element* Shorts::divide(LispE* lisp, Element* e) {
     }
     int16_t d = e->asShort();
     if (d == 0)
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     liste.divide(d);
     return this;
 }
@@ -3812,7 +3812,7 @@ Element* Shorts::mod(LispE* lisp, Element* e) {
         int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             d %= liste[i];
         }
         return lisp->provideShort(d);
@@ -4111,7 +4111,7 @@ Element* Set_i::divide(LispE* lisp, Element* e) {
             }
             else {
                 if (!a)
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 d /= a;
             }
         }
@@ -4128,7 +4128,7 @@ Element* Set_i::divide(LispE* lisp, Element* e) {
             }
             if (!*nxt) {
                 delete res;
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             }
             
             d = a / *nxt;
@@ -4149,7 +4149,7 @@ Element* Set_i::divide(LispE* lisp, Element* e) {
             w = e->index(i)->asNumber();
             if (!w) {
                 delete res;
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             }
             d = a / w ;
             res->add(d);
@@ -4161,7 +4161,7 @@ Element* Set_i::divide(LispE* lisp, Element* e) {
     w = e->asNumber();
     if (!w) {
         delete res;
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     }
     
     for (const auto& a: ensemble) {
@@ -4185,7 +4185,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
             }
             else {
                 if (!a)
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 d %= (long)a;
             }
         }
@@ -4204,7 +4204,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
             }
             if (!*nxt) {
                 delete res;
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             }
             
             d = (long)a % (long)*nxt;
@@ -4225,7 +4225,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
             w = e->index(i)->asInteger();
             if (!w) {
                 delete res;
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             }
             d = (long)a % w ;
             res->add(d);
@@ -4237,7 +4237,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
     w = e->asInteger();
     if (!w) {
         delete res;
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     }
     
     for (const auto& a: ensemble) {
@@ -4299,7 +4299,7 @@ Element* Set_i::power(LispE* lisp, Element* e) {
     w = e->asNumber();
     if (!w) {
         delete res;
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     }
     
     for (const auto& a: ensemble) {
@@ -4808,7 +4808,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
             }
             else {
                 if (!a)
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 d /= a;
             }
         }
@@ -4825,7 +4825,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
             }
             if (!*nxt) {
                 delete res;
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             }
             
             d = a / *nxt;
@@ -4846,7 +4846,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
             w = e->index(i)->asNumber();
             if (!w) {
                 delete res;
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             }
             d = a / w ;
             res->add(d);
@@ -4858,7 +4858,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
     w = e->asNumber();
     if (!w) {
         delete res;
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     }
     
     for (const auto& a: ensemble) {
@@ -4882,7 +4882,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
             }
             else {
                 if (!a)
-                    throw new Error("Error: division by zero");
+                    throw new Errorstack(lisp, "Error: division by zero");
                 d %= (long)a;
             }
         }
@@ -4901,7 +4901,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
             }
             if (!*nxt) {
                 delete res;
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             }
             
             d = (long)a % (long)*nxt;
@@ -4922,7 +4922,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
             w = e->index(i)->asInteger();
             if (!w) {
                 delete res;
-                throw new Error("Error: division by zero");
+                throw new Errorstack(lisp, "Error: division by zero");
             }
             d = (long)a % w ;
             res->add(d);
@@ -4934,7 +4934,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
     w = e->asInteger();
     if (!w) {
         delete res;
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     }
     
     for (const auto& a: ensemble) {
@@ -4996,7 +4996,7 @@ Element* Set_n::power(LispE* lisp, Element* e) {
     w = e->asNumber();
     if (!w) {
         delete res;
-        throw new Error("Error: division by zero");
+        throw new Errorstack(lisp, "Error: division by zero");
     }
     
     for (const auto& a: ensemble) {
@@ -5416,12 +5416,12 @@ Element* List::evall_divide(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '/' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '/' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '/' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '/' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -5618,12 +5618,12 @@ Element* List::evall_minus(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '-' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '-' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '-' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '-' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -5818,12 +5818,12 @@ Element* List::evall_multiply(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '*' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '*' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '*' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '*' to a string");
                 case t_floats: {
                     float v = ((Floats*)lst)->liste.product();
                     first_element->release();
@@ -6038,7 +6038,7 @@ Element* List::evall_plus(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '+' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '+' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
@@ -6313,12 +6313,12 @@ Element* List::evall_power(LispE* lisp) {
         
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '^^' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '^^' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '^^' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '^^' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6522,7 +6522,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -6540,7 +6540,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -6552,12 +6552,12 @@ Element* List::evall_bitandequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '&' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '&' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '&' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '&' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6642,7 +6642,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -6660,7 +6660,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -6672,12 +6672,12 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '&~' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '&~' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '&~' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '&~' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6762,7 +6762,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -6780,7 +6780,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -6792,12 +6792,12 @@ Element* List::evall_bitorequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '|' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '|' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '|' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '|' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -6884,7 +6884,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -6902,7 +6902,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -6914,12 +6914,12 @@ Element* List::evall_bitxorequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '^' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '^' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '^' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '^' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7004,7 +7004,7 @@ Element* List::evall_divideequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -7022,7 +7022,7 @@ Element* List::evall_divideequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -7034,12 +7034,12 @@ Element* List::evall_divideequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '/' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '/' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '/' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '/' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7313,7 +7313,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -7331,7 +7331,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -7343,12 +7343,12 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '<<' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '<<' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '<<' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '<<' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7433,7 +7433,7 @@ Element* List::evall_minusequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -7451,7 +7451,7 @@ Element* List::evall_minusequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -7463,12 +7463,12 @@ Element* List::evall_minusequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '-' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '-' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '-' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '-' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7742,7 +7742,7 @@ Element* List::evall_modequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -7760,7 +7760,7 @@ Element* List::evall_modequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -7772,12 +7772,12 @@ Element* List::evall_modequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '%' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '%' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
                 case t_strings:
-                    throw new Error("Error: cannot apply '%' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '%' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -7863,7 +7863,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -7881,7 +7881,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -7893,12 +7893,12 @@ Element* List::evall_multiplyequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '*' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '*' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '*' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '*' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -8173,7 +8173,7 @@ Element* List::evall_plusequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -8191,7 +8191,7 @@ Element* List::evall_plusequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -8203,7 +8203,7 @@ Element* List::evall_plusequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '+' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '+' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_stringbytes:
@@ -8503,7 +8503,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -8521,7 +8521,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -8533,12 +8533,12 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '>>' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '>>' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '>>' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '>>' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -8623,7 +8623,7 @@ Element* List::evall_powerequal(LispE* lisp) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
-                throw new Error("Error: Expecting a variable in embedded '@'");
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
             exec->append(liste[1]->index(1));
@@ -8641,7 +8641,7 @@ Element* List::evall_powerequal(LispE* lisp) {
             }
         }
         else
-            throw new Error("Error: Missing variable");
+            throw new Errorstack(lisp, "Error: Missing variable");
     }
     
     listsize = liste.size();
@@ -8653,12 +8653,12 @@ Element* List::evall_powerequal(LispE* lisp) {
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
             if (!first_element->isList())
-                throw new Error("Error: cannot apply '^^' to one element");
+                throw new Errorstack(lisp, "Error: cannot apply '^^' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
                 case t_stringbytes:
-                    throw new Error("Error: cannot apply '^^' to a string");
+                    throw new Errorstack(lisp, "Error: cannot apply '^^' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
@@ -9180,7 +9180,7 @@ public:
             case math_cosine: {
                 Element* valb = lisp->get_variable(U"valb");
                 if (valb->label() != val_v->label() || valb->size() != val_v->size())
-                    throw new Error("Error: expected 'floats' or 'numbers' or same size lists");
+                    throw new Errorstack(lisp, "Error: expected 'floats' or 'numbers' or same size lists");
                 if (valb->label() == t_floats) {
                     float v = cosine_similarity(((Floats*)val_v)->liste, ((Floats*)valb)->liste);
                     return lisp->provideFloat(v);
@@ -9189,7 +9189,7 @@ public:
                     double v = cosine_similarity(((Numbers*)val_v)->liste, ((Numbers*)valb)->liste);
                     return lisp->provideNumber(v);
                 }
-                throw new Error("Error: Incompatible types, expected 'floats' or 'numbers'");
+                throw new Errorstack(lisp, "Error: Incompatible types, expected 'floats' or 'numbers'");
             }
         }
         return zero_value;

@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
         
         if (cmd == "-syncolor") {
             if (i < argc) {
-                string args = argv[i + 1];
+                string args = argv[i];
                 if (args == "no") {
                     for (long j = 0; j < nbdenomination - 1; j++)
                         newcolors.push_back(m_current);
@@ -96,12 +96,11 @@ int main(int argc, char *argv[]) {
                 }
             }
             long nb = 3*nbdenomination;
-            if ((i + nb) >= argc) {
+            if ((i + nb) > argc) {
                 cerr << "There should be: "<< nb << " values, 3 digits for each denomination: string, definition, instruction, quote, comments, call, selection" << endl;
                 JAGEDITOR->mouseoff();
                 exit(-1);
             }
-            i++;
             nb += i;
             long col;
             char cp = 0;
@@ -123,7 +122,6 @@ int main(int argc, char *argv[]) {
                 else
                     color << ";";
             }
-            i--;
             continue;
         }
         

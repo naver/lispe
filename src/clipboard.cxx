@@ -18,22 +18,21 @@ bool copyToClipboard(const std::string& text) {
     @autoreleasepool {
         // Get the pasteboard (clipboard)
         NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-        
-        // Clear the pasteboard
-        [pasteboard clearContents];
-        
-        // Convert std::string to NSString
+
+        // Convert std::string to NSString (nil if text is not valid UTF-8)
         NSString *nsString = [NSString stringWithUTF8String:text.c_str()];
-        
-        // Write to pasteboard
-        NSArray *types = @[NSPasteboardTypeString];
-        [pasteboard declareTypes:types owner:nil];
-        
+        if (nsString == nil)
+            return false;
+
+        // Clear the pasteboard and write to it
+        [pasteboard clearContents];
+
         return [pasteboard setString:nsString forType:NSPasteboardTypeString];
     }
 }
 #else
 bool copyToClipboard(const std::string& text) {
-    return true;
+    //No system clipboard available on this platform
+    return false;
 }
 #endif

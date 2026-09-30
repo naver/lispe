@@ -1392,7 +1392,7 @@ Element* Dictionary::protected_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
     auto it = dictionary.find(k);
     if (it == dictionary.end())
-        throw new Error("Error: index out of bounds");
+        throw new Errorstack(lisp, "Error: index out of bounds");
     return it->second;
 }
 
@@ -1748,7 +1748,7 @@ Element* Dictionary_i::protected_index(LispE* lisp, Element* ix) {
     long v = ix->checkInteger(lisp);
     auto it = dictionary.find(v);
     if (it == dictionary.end())
-        throw new Error("Error: index out of bounds");
+        throw new Errorstack(lisp, "Error: index out of bounds");
     return it->second;
 }
 
@@ -2031,7 +2031,7 @@ Element* Dictionary_n::protected_index(LispE* lisp, Element* ix) {
     double v = ix->checkNumber(lisp);
     auto it = dictionary.find(v);
     if (it == dictionary.end())
-        throw new Error("Error: index out of bounds");
+        throw new Errorstack(lisp, "Error: index out of bounds");
     return it->second;
 }
 
@@ -2757,7 +2757,7 @@ Element* Tree::protected_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
     auto it = tree.find(k);
     if (it == tree.end())
-        throw new Error("Error: index out of bounds");
+        throw new Errorstack(lisp, "Error: index out of bounds");
     return it->second;
 }
 
@@ -3083,7 +3083,7 @@ Element* Tree_i::protected_index(LispE* lisp, Element* ix) {
     long v = ix->checkInteger(lisp);
     auto it = tree.find(v);
     if (it == tree.end())
-        throw new Error("Error: index out of bounds");
+        throw new Errorstack(lisp, "Error: index out of bounds");
     return it->second;
 }
 
@@ -3366,7 +3366,7 @@ Element* Tree_n::protected_index(LispE* lisp, Element* ix) {
     double v = ix->checkNumber(lisp);
     auto it = tree.find(v);
     if (it == tree.end())
-        throw new Error("Error: index out of bounds");
+        throw new Errorstack(lisp, "Error: index out of bounds");
     return it->second;
 }
 

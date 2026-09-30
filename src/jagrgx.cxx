@@ -88,6 +88,10 @@ static bool tokenize(u_ustring& rg, vector<u_ustring>& stack, vector<aut_actions
                         }
                     type = aut_reg;
                 }
+                else { //trailing '\\': literal character
+                    sub = U"\\";
+                    type = aut_reg;
+                }
                 break;
             case '%':
                 sub = U"%";
@@ -96,6 +100,8 @@ static bool tokenize(u_ustring& rg, vector<u_ustring>& stack, vector<aut_actions
                     i++;
                     sub += rg[i];
                 }
+                else //trailing '%': literal character
+                    type = aut_reg;
                 break;
             case '~': // negation of the next character
                 sub = L'~';
@@ -134,7 +140,7 @@ static bool tokenize(u_ustring& rg, vector<u_ustring>& stack, vector<aut_actions
                 inbracket--;
                 break;
             case '-':
-                if (inbracket && i < sz-1 && vtypes.back() == aut_reg) {
+                if (inbracket && i < sz-1 && rg[i+1] != ']' && rg[i+1] != '}' && vtypes.size() && vtypes.back() == aut_reg) {
                     //{a-z} or [a-z]
                     //in that case, we build the character list between the current character and the next one...
                     sub = stack.back();
@@ -153,7 +159,8 @@ static bool tokenize(u_ustring& rg, vector<u_ustring>& stack, vector<aut_actions
                 type = aut_reg;
         }
 
-        if ((i + 1) < sz) {
+        //a '+' or a '*' after '[', '{', '(' or '~' is a literal character
+        if ((i + 1) < sz && type != aut_obrk && type != aut_ocrl_brk && type != aut_opar && type != aut_negation) {
             if (rg[i + 1] == L'+') {
                 i++;
                 type += 1;
@@ -223,6 +230,25 @@ void Au_state::addrule(Au_arc* r) {
 }
 
 //----------------------------------------------------------------
+//Epsilon transitions do not consume any character. To avoid infinite recursions
+//on epsilon cycles, we keep track of the states visited through epsilon arcs
+//at a given position. Since positions only grow when a character is consumed,
+//any entry with the same position belongs to the current epsilon chain.
+static thread_local vector<std::pair<Au_state*, long> > epsilon_visited;
+
+static bool epsilon_enter(Au_state* s, long i) {
+    for (long k = epsilon_visited.size() - 1; k >= 0; k--) {
+        if (epsilon_visited[k].second == i && epsilon_visited[k].first == s)
+            return false;
+    }
+    epsilon_visited.push_back(std::pair<Au_state*, long>(s, i));
+    return true;
+}
+
+static void epsilon_leave() {
+    epsilon_visited.pop_back();
+}
+
 bool Au_state::match(u_ustring& w, long i) {
     if ((status&an_error) == an_error)
         return false;
@@ -233,18 +259,25 @@ bool Au_state::match(u_ustring& w, long i) {
         return false;
     }
 
-    UWCHAR c = Au_meta::met->getachar(w,i);
+    //getachar moves i onto the last character of an emoji sequence
+    long ic = i;
+    UWCHAR c = Au_meta::met->getachar(w,ic);
+    bool r;
 
     for (long j=0;j<arcs.last;j++) {
         switch(arcs[j]->action->compare(c)) {
             case 0:
                 break;
             case 1:
-                if (arcs[j]->state->match(w,i+1))
+                if (arcs[j]->state->match(w,ic+1))
                     return true;
                 break;
             case 2:
-                if (arcs[j]->state->match(w,i))
+                if (!epsilon_enter(arcs[j]->state, i))
+                    break;
+                r = arcs[j]->state->match(w,i);
+                epsilon_leave();
+                if (r)
                     return true;
         }
     }
@@ -253,6 +286,8 @@ bool Au_state::match(u_ustring& w, long i) {
 }
 
 bool Au_automaton::match(u_ustring& w) {
+    if (first == NULL)
+        return false;
     return first->match(w,0);
 }
 
@@ -291,7 +326,9 @@ long Au_state::loop(u_ustring& w, long i) {
     long l = au_error;
     long j;
 
-    UWCHAR c = Au_meta::met->getachar(w,i);
+    //getachar moves i onto the last character of an emoji sequence
+    long ic = i;
+    UWCHAR c = Au_meta::met->getachar(w,ic);
 
     for (j=0;j<arcs.last;j++) {
         switch(arcs[j]->action->compare(c)) {
@@ -299,10 +336,15 @@ long Au_state::loop(u_ustring& w, long i) {
                 l = au_error;
                 continue;
             case 1:
-                l = arcs[j]->state->loop(w,i+1);
+                l = arcs[j]->state->loop(w,ic+1);
                 break;
             case 2:
+                if (!epsilon_enter(arcs[j]->state, i)) {
+                    l = au_error;
+                    continue;
+                }
                 l = arcs[j]->state->loop(w, i);
+                epsilon_leave();
         }
         if (l != au_error) {
             if (l == au_stop)
@@ -323,6 +365,8 @@ long Au_state::loop(u_ustring& w, long i) {
 }
 
 long Au_automaton::find(u_ustring& w) {
+    if (first == NULL)
+        return au_error;
     long sz = w.size();
     for (long d=0;d<sz;d++) {
         if (first->loop(w,d) != au_error) {
@@ -333,6 +377,8 @@ long Au_automaton::find(u_ustring& w) {
 }
 
 long Au_automaton::find(u_ustring& w, long i) {
+    if (first == NULL)
+        return au_error;
     long sz = w.size();
     for (long d = i ; d < sz; d++) {
         if (first->loop(w,d) != au_error) {
@@ -343,6 +389,8 @@ long Au_automaton::find(u_ustring& w, long i) {
 }
 
 bool Au_automaton::search(u_ustring& w) {
+    if (first == NULL)
+        return false;
     long sz = w.size();
     for (long d=0;d<sz;d++) {
         if (first->loop(w,d) != au_error)
@@ -352,6 +400,10 @@ bool Au_automaton::search(u_ustring& w) {
 }
 
 bool Au_automaton::search(u_ustring& w, long& b, long& e, long init) {
+    if (first == NULL) {
+        b=au_error;
+        return false;
+    }
     long sz = w.size();
     for (b=init;b<sz;b++) {
         e=first->loop(w,b);
@@ -365,6 +417,8 @@ bool Au_automaton::search(u_ustring& w, long& b, long& e, long init) {
 
 bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
     b=au_error;
+    if (first == NULL)
+        return false;
     long f;
     long sz = w.size();
     for (long d=init;d<sz;d++) {
@@ -372,7 +426,9 @@ bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
         if (f!=au_error) {
             b=d;
             e=f;
-            d=f-1;
+            //an empty match should not block the progression
+            if (f > d)
+                d=f-1;
         }
     }
 
@@ -385,6 +441,8 @@ bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
 
 //----------------------------------------------------------------
 void Au_automaton::searchall(u_ustring& w, vecte_a<long>& res, long init) {
+    if (first == NULL)
+        return;
     long f;
     long sz = w.size();
 
@@ -393,7 +451,9 @@ void Au_automaton::searchall(u_ustring& w, vecte_a<long>& res, long init) {
         if (f!=au_error) {
             res.push_back(d);
             res.push_back(f);
-            d=f-1;
+            //an empty match should not block the progression
+            if (f > d)
+                d=f-1;
         }
     }
 }
@@ -403,17 +463,23 @@ bool Au_arc::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
     if (i==w.size())
         return false;
 
-    UWCHAR c = Au_meta::met->getachar(w,i);
+    long ic = i;
+    UWCHAR c = Au_meta::met->getachar(w,ic);
+    bool r;
 
     switch(action->compare(c)) {
         case 0:
             return false;
         case 1:
             if (c == wsep[0])
-                res.push_back(i+1);
-            return state->find(w, wsep, i+1, res);
+                res.push_back(ic+1);
+            return state->find(w, wsep, ic+1, res);
         case 2:
-            return state->find(w, wsep, i, res);
+            if (!epsilon_enter(state, i))
+                return false;
+            r = state->find(w, wsep, i, res);
+            epsilon_leave();
+            return r;
     }
     return false;
 }
@@ -455,6 +521,10 @@ bool Au_state::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
 //The next two methods return raw indexes... No conversion needed
 //This is used in LispEregularexpression::in
 bool Au_automaton::bytesearch(u_ustring& w, long& b, long& e) {
+    if (first == NULL) {
+        b=au_error;
+        return false;
+    }
     long sz = w.size();
     for (b=0; b<sz; b++) {
         e=first->loop(w,b);
@@ -467,6 +537,8 @@ bool Au_automaton::bytesearch(u_ustring& w, long& b, long& e) {
 
 
 void Au_automaton::bytesearchall(u_ustring& w, vecte_a<long>& res) {
+    if (first == NULL)
+        return;
     long f;
     long sz = w.size();
     for (long d=0; d<sz; d++) {
@@ -474,7 +546,9 @@ void Au_automaton::bytesearchall(u_ustring& w, vecte_a<long>& res) {
         if (f!=au_error) {
             res.push_back(d);
             res.push_back(f);
-            d=f-1;
+            //an empty match should not block the progression
+            if (f > d)
+                d=f-1;
         }
     }
 }
@@ -760,10 +834,22 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
             }
             if (i==toks.size() || !ltoks.size())
                 return NULL;
-            ret=build(aus, 0,ltoks,ltypes,NULL);
-            if (ret==NULL)
-                return NULL;
+            {
+                bool wasend = isend();
+                long firststate = aus->states.size();
+                ret=build(aus, 0,ltoks,ltypes,NULL);
+                if (ret==NULL)
+                    return NULL;
 
+                //A trailing x* in the group can mark this state or any inner state as an end
+                //The group is not the end of the expression, we remove these marks...
+                if (!wasend)
+                    removeend();
+                for (long k = firststate; k < aus->states.size(); k++) {
+                    if (aus->states.vecteur[k] != NULL)
+                        aus->states.vecteur[k]->removeend();
+                }
+            }
             ret->removeend();
             //We jump...
             ar=aus->arc(new Au_epsilon(), ret);
@@ -846,6 +932,8 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
 
     if (toks[i] == U"$") {
         ret = build(aus, i+1,toks,types,common);
+        if (ret == NULL)
+            return NULL;
         ret->status |= an_ending;
         return ret;
     }

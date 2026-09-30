@@ -92,7 +92,7 @@ public:
         if (myfile.fail()) {
             string msg = "Error: cannot open file: ";
             msg += path;
-            throw new Error(msg);
+            throw new Errorstack(lisp, msg);
         }
         readsignature();
         open = true;
@@ -106,7 +106,7 @@ public:
         if (myfile.fail()) {
             string msg = "Error: cannot open file: ";
             msg += path;
-            throw new Error(msg);
+            throw new Errorstack(lisp, msg);
         }
         open = true;
         return this;
@@ -119,7 +119,7 @@ public:
         if (myfile.fail()) {
             string msg = "Error: cannot open file: ";
             msg += path;
-            throw new Error(msg);
+            throw new Errorstack(lisp, msg);
         }
         open = true;
         return this;
@@ -366,7 +366,7 @@ public:
         string ch = line->toString(lisp);
         myfile << ch;
         if (myfile.fail())
-            throw new Error("Error: 'write' operation did fail");
+            throw new Errorstack(lisp, "Error: 'write' operation did fail");
         return True_;
     }
     
@@ -377,7 +377,7 @@ public:
         string ch = line->toString(lisp);
         myfile << ch << std::endl;
         if (myfile.fail())
-            throw new Error("Error: 'writeln' operation did fail");
+            throw new Errorstack(lisp, "Error: 'writeln' operation did fail");
         return True_;
     }
     
@@ -431,7 +431,7 @@ public:
     Element* getstream(LispE* lisp) {
         Element* a_stream = lisp->get_variable(U"stream");
         if (a_stream->type != type)
-            throw new Error("Erreur: missing 'file' stream");
+            throw new Errorstack(lisp, "Erreur: missing 'file' stream");
         return a_stream;
     }
     
@@ -450,7 +450,7 @@ public:
                 if (mode == a)
                     return str->open_append(lisp, pathname);
                 delete str;
-                throw new Error("Error: could not open a file");
+                throw new Errorstack(lisp, "Error: could not open a file");
             }
             case file_close: {
                 Element* a_stream = getstream(lisp);
@@ -682,7 +682,7 @@ public:
         struct tm* ladate = localtime(&the_time);
         size_t sz = strftime(buffer, 1000, fmt.c_str(), ladate);
         if (sz == 0) {
-            throw new Error("Error: Invalid date format");
+            throw new Errorstack(lisp, "Error: Invalid date format");
         }
         string b(buffer);
         return lisp->provideString(b);
@@ -798,7 +798,7 @@ public:
     Element* year(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: wrong type for 'year'");
+            throw new Errorstack(lisp, "Error: wrong type for 'year'");
         Dateitem* dt = (Dateitem*)e;
         int vl = extract_value(lisp, v_d);
         return dt->year(lisp, vl);
@@ -807,7 +807,7 @@ public:
     Element* month(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: wrong type for 'month'");
+            throw new Errorstack(lisp, "Error: wrong type for 'month'");
         Dateitem* dt = (Dateitem*)e;
         int vl = extract_value(lisp, v_d);
         return dt->month(lisp, vl);
@@ -816,7 +816,7 @@ public:
     Element* day(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: wrong type for 'day'");
+            throw new Errorstack(lisp, "Error: wrong type for 'day'");
         Dateitem* dt = (Dateitem*)e;
         int vl = extract_value(lisp, v_d);
         return dt->day(lisp, vl);
@@ -825,7 +825,7 @@ public:
     Element* hour(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: wrong type for 'hour'");
+            throw new Errorstack(lisp, "Error: wrong type for 'hour'");
         Dateitem* dt = (Dateitem*)e;
         int vl = extract_value(lisp, v_d);
         return dt->hour(lisp, vl);
@@ -834,7 +834,7 @@ public:
     Element* minute(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: Wrong type for 'minute'");
+            throw new Errorstack(lisp, "Error: Wrong type for 'minute'");
         Dateitem* dt = (Dateitem*)e;
         int vl = extract_value(lisp, v_d);
         return dt->minute(lisp, vl);
@@ -843,7 +843,7 @@ public:
     Element* second(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: wrong type for 'second'");
+            throw new Errorstack(lisp, "Error: wrong type for 'second'");
         Dateitem* dt = (Dateitem*)e;
         int vl = extract_value(lisp, v_d);
         return dt->second(lisp, vl);
@@ -852,7 +852,7 @@ public:
     Element* weekday(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: wrong type for 'weekday'");
+            throw new Errorstack(lisp, "Error: wrong type for 'weekday'");
         Dateitem* dt = (Dateitem*)e;
         return dt->weekday(lisp);
     }
@@ -860,7 +860,7 @@ public:
     Element* yearday(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: wrong type for 'yearday'");
+            throw new Errorstack(lisp, "Error: wrong type for 'yearday'");
         Dateitem* dt = (Dateitem*)e;
         return dt->yearday(lisp);
     }
@@ -880,7 +880,7 @@ public:
     Element* format(LispE* lisp) {
         Element* e = lisp->get_variable(v_date);
         if (e->type != type)
-            throw new Error("Error: wrong type for 'format'");
+            throw new Errorstack(lisp, "Error: wrong type for 'format'");
         Dateitem* dt = (Dateitem*)e;
         string fmt = lisp->get_variable(v_frm)->toString(lisp);
         return dt->format(lisp, fmt);
@@ -1211,7 +1211,7 @@ public:
                 fp = popen(STR(cmd), "r");
 #endif                
                 if (fp == NULL)
-                    throw new Error("Error: the pipe did not open properly");
+                    throw new Errorstack(lisp, "Error: the pipe did not open properly");
                 
                 Strings* resultat = lisp->provideStrings();
                 while (fgets(res, PATH_MAX, fp) != NULL) {
@@ -1226,7 +1226,7 @@ public:
 #endif
                 if (status == -1) {
                     resultat->release();
-                    throw new Error("Error: when closing the pipe");
+                    throw new Errorstack(lisp, "Error: when closing the pipe");
                 }
                 
                 return resultat;

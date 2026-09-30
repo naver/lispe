@@ -107,7 +107,7 @@ bool c_utf16_to_unicode(char32_t& r, char32_t code, bool second) {
     }
 
     //If the first byte is 0xD8000000 then it is a 4 byte encoding
-    if ((code & 0xFF00) == 0xD800) {
+    if ((code & 0xFC00) == 0xD800) {
         //First of all we extract the first part of the code
         //I know it's horrible... And again we don't take into account the Endian here
         //c it's just for Windows and Mac OS GUIs

@@ -139,9 +139,9 @@ public:
         //LispEThreadLock _lock(general);
         //In our example, we have only two parameters
         if (hp != NULL)
-            throw new Error("Error: SOCKET(831): Server already launched on this socket");
+            throw new Errorstack(lisp, "Error: SOCKET(831): Server already launched on this socket");
         if (server_name.size() >= MAXHOSTNAME)
-            throw new Error("Error: SOCKET(850): Wrong server name");
+            throw new Errorstack(lisp, "Error: SOCKET(850): Wrong server name");
         strcpy(servername, (char*)server_name.c_str());
         port = kport;
         Element* ret = createSocket(lisp);
@@ -152,19 +152,19 @@ public:
         if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
             string errmessage = "Error: SOCKET(872): Error on reuse addess";
             errmessage += Msgerror();
-            throw new Error(errmessage);
+            throw new Errorstack(lisp, errmessage);
         }
 #endif
         servAddr.sin_addr.s_addr = INADDR_ANY;
         if (BIND(sock, (struct sockaddr*)&servAddr, len) < 0) {
             string errmessage = "Error: SOCKET(853): Error on bind ";
             errmessage += Msgerror();
-            throw new Error(errmessage);
+            throw new Errorstack(lisp, errmessage);
         }
         if (listen(sock, nbclients) < 0) {
             string errmessage = "Error: SOCKET(854): Error on listen ";
             errmessage += Msgerror();
-            throw new Error(errmessage);
+            throw new Errorstack(lisp, errmessage);
         }
         server = true;
         return this;
@@ -172,7 +172,7 @@ public:
     
     Element* methodCreateClient(LispE* lisp, string& kserver, int kport) {
         if (hp != NULL)
-            throw new Error("Error: SOCKET(831): Server already launched on this socket");
+            throw new Errorstack(lisp, "Error: SOCKET(831): Server already launched on this socket");
         //0 is the first parameter and so on...
         strcpy(servername, STR(kserver));
         port = kport;
@@ -184,7 +184,7 @@ public:
         if (connect(sock, (struct sockaddr*)&servAddr, sizeof(servAddr)) < 0) {
             string errmessage = "Error: SOCKET(857): Error on connection ";
             errmessage += Msgerror();
-            throw new Error(errmessage);
+            throw new Errorstack(lisp, errmessage);
         }
         return this;
     }
@@ -197,7 +197,7 @@ public:
             if ((socketclient = accept(sock, (struct sockaddr*)&cliAddr, &len)) < 0) {
                 string errmessage = "Error: SOCKET(855): Error on read ";
                 errmessage += Msgerror();
-                throw new Error(errmessage);
+                throw new Errorstack(lisp, errmessage);
             }
             
             socketclients[socketclient] = true;
@@ -216,18 +216,18 @@ public:
         else
             currentsock = sock;
         if (currentsock == SOCKET_ERROR)
-            throw new Error("Error: SOCKET(858): No client connected");
+            throw new Errorstack(lisp, "Error: SOCKET(858): No client connected");
         char inputstr[MAXSIZEINPUT + 1];
         long nbcharread = 0;
         long nbloc;
         while (nbcharread < POSSIGNATURE) {
             if (testTimeOutRead(currentsock) == false)
-                throw new Error("Error: timeout");
+                throw new Errorstack(lisp, "Error: timeout");
             nbloc = readsock(currentsock, inputstr + nbcharread, POSSIGNATURE - nbcharread);
             if (validstream(nbloc) == false) {
                 string errmessage = "Error: SOCKET(861): Error on read";
                 errmessage += Msgerror();
-                throw new Error(errmessage);
+                throw new Errorstack(lisp, errmessage);
             }
             nbcharread += nbloc;
         }
@@ -238,7 +238,7 @@ public:
         while (ssz > 0) {
             inputstr[0] = 0;
             if (testTimeOutRead(currentsock) == false)
-                throw new Error("Error: timeout");
+                throw new Errorstack(lisp, "Error: timeout");
             maxtoread = ssz;
             if (maxtoread > MAXSIZEINPUT)
                 maxtoread = MAXSIZEINPUT;
@@ -246,7 +246,7 @@ public:
             if (validstream(nbcharread) == false) {
                 string errmessage = "Error: SOCKET(861): Error on read";
                 errmessage += Msgerror();
-                throw new Error(errmessage);
+                throw new Errorstack(lisp, errmessage);
             }
             inputstr[nbcharread] = 0;
             ssz -= nbcharread;
@@ -262,7 +262,7 @@ public:
         bool decrement = false;
         if (server == true) {
             if (currentsock == SOCKET_ERROR)
-                throw new Error("Error: SOCKET(824): Non connected socket");
+                throw new Errorstack(lisp, "Error: SOCKET(824): Non connected socket");
         }
         else {
             currentsock = sock;
@@ -271,9 +271,9 @@ public:
         decrement = (nbbytes == MAXSIZEINPUT);
         
         if (currentsock == SOCKET_ERROR)
-            throw new Error("Error: SOCKET(858): No client connected");
+            throw new Errorstack(lisp, "Error: SOCKET(858): No client connected");
         if (testTimeOutRead(currentsock) == false)
-            throw new Error("Error: timeout");
+            throw new Errorstack(lisp, "Error: timeout");
         
         char inputstr[MAXSIZEINPUT + 1];
         if (nbbytes >= MAXSIZEINPUT)
@@ -283,7 +283,7 @@ public:
         if (validstream(nb) == false) {                        //In the case of non blocking socket, we simply return the empty string
             string errmessage = "Error: SOCKET(860): Error on RECEIVE";
             errmessage += Msgerror();
-            throw new Error(errmessage);
+            throw new Errorstack(lisp, errmessage);
         }
         if (nb != 0) {
             inputstr[nb] = 0;
@@ -293,7 +293,7 @@ public:
             nbbytes -= nb;
         while (nb != 0 && nbbytes > 0) {
             if (testTimeOutRead(currentsock) == false)
-                throw new Error("Error: timeout");
+                throw new Errorstack(lisp, "Error: timeout");
             if (nbbytes >= MAXSIZEINPUT)
                 nb = readsock(currentsock, inputstr, MAXSIZEINPUT);
             else
@@ -307,7 +307,7 @@ public:
             if (validstream(nb) == false) {
                 string errmessage = "Error: SOCKET(860): Error on RECEIVE";
                 errmessage += Msgerror();
-                throw new Error(errmessage);
+                throw new Errorstack(lisp, errmessage);
             }
         }
         return lisp->provideString(res);
@@ -319,16 +319,16 @@ public:
             currentsock = sock;
         
         if (currentsock == SOCKET_ERROR)
-            throw new Error("Error: SOCKET(858): No client connected");
+            throw new Errorstack(lisp, "Error: SOCKET(858): No client connected");
         if (testTimeOutRead(currentsock) == false)
-            throw new Error("Error: timeout");
+            throw new Errorstack(lisp, "Error: timeout");
         
         char rd[] = { 0, 0, 0 };
         nb = readsock(currentsock, rd, 1);
         if (validstream(nb) == false) {                        //In the case of non blocking socket, we simply return the empty string
             string errmessage = "Error: SOCKET(860): Error on RECEIVE ";
             errmessage += Msgerror();
-            throw new Error(errmessage);
+            throw new Errorstack(lisp, errmessage);
         }
         if (!nb)
             return null_;
@@ -340,7 +340,7 @@ public:
             currentsock = sock;
         
         if (testTimeOutWrite(currentsock) == false)
-            throw new Error("Error: timeout");
+            throw new Errorstack(lisp, "Error: timeout");
         
         char* buff;
         buff = STR(strc);
@@ -352,7 +352,7 @@ public:
             if (writesock(currentsock, buff, nbsz) < 0) {
                 string errmessage = "Error: SOCKET(859): Error sending";
                 errmessage += Msgerror();
-                throw new Error(errmessage);
+                throw new Errorstack(lisp, errmessage);
             }
             buff += MAXSIZEINPUT;
             sz -= MAXSIZEINPUT;
@@ -440,7 +440,7 @@ public:
     Element* methodGetpeername(LispE* lisp, int socketclient) {
         if (server == true) {
             if (socketclient == SOCKET_ERROR)
-                throw new Error("Error: SOCKET(824): Non connected socket");
+                throw new Errorstack(lisp, "Error: SOCKET(824): Non connected socket");
             struct sockaddr cliAddr;
 #ifdef WIN32
             int len = sizeof(struct sockaddr);
@@ -458,14 +458,14 @@ public:
             kmap->recording(key2, lisp->provideString(nms));
             return kmap;
         }
-        throw new Error("Error: SOCKET(852): You cannot use GETPEERNAME on the client side");
+        throw new Errorstack(lisp, "Error: SOCKET(852): You cannot use GETPEERNAME on the client side");
     }
         
     Element* createSocket(LispE* lisp) {
         
         sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock == SOCKET_ERROR)
-            throw new Error("Error: SOCKET(856): Socket error");
+            throw new Errorstack(lisp, "Error: SOCKET(856): Socket error");
 #ifdef WIN32
         memset((char *)&servAddr, '\0', sizeof(servAddr));
 #else
@@ -475,7 +475,7 @@ public:
         if (checkipaddres(servername) == false) {
             hp = gethostbyname(servername);                  /* get our address info */
             if (hp == NULL)                             /* we don't exist !? */
-                throw new Error("Error: SOCKET(851): Cannot find host by name on this machine");
+                throw new Errorstack(lisp, "Error: SOCKET(851): Cannot find host by name on this machine");
             memcpy((char *)&servAddr.sin_addr, hp->h_addr, hp->h_length);     /* set address */
             servAddr.sin_family = hp->h_addrtype;              /* this is our host address */
             /* this is our port number */
@@ -549,7 +549,7 @@ public:
             currentsock = sock;
         
         if (currentsock == SOCKET_ERROR)
-            throw new Error("Error: SOCKET(858): No client connected");
+            throw new Errorstack(lisp, "Error: SOCKET(858): No client connected");
         
         char* buff;
         bool written = false;
@@ -561,12 +561,12 @@ public:
             //cout<<"Writing:"<<sz<<":"<<padding<<endl;
             
             if (testTimeOutWrite(currentsock) == false)
-                throw new Error("Error: timeout");
+                throw new Errorstack(lisp, "Error: timeout");
                 
                 if (writesock(currentsock, padding, POSSIGNATURE)<0) {
                     string errmessage = "Error: SOCKET(859): Error sending";
                     errmessage += Msgerror();
-                    throw new Error(errmessage);
+                    throw new Errorstack(lisp, errmessage);
                 }
             buff = STR(strc);
             while (sz>0) {
@@ -575,12 +575,12 @@ public:
                     nbsz = MAXSIZEINPUT;
                 
                 if (testTimeOutWrite(currentsock) == false)
-                    throw new Error("Error: timeout");
+                    throw new Errorstack(lisp, "Error: timeout");
                     
                     if (writesock(currentsock, buff, nbsz) < 0) {
                         string errmessage = "Error: SOCKET(859): Error sending";
                         errmessage += Msgerror();
-                        throw new Error(errmessage);
+                        throw new Errorstack(lisp, errmessage);
                     }
                 buff += MAXSIZEINPUT;
                 sz -= MAXSIZEINPUT;
@@ -592,12 +592,12 @@ public:
             sprintf_s(padding + 1, POSSIGNATURE, FORMATSIGNATURE, 0);
             padding[0] = act[0];
             if (testTimeOutWrite(currentsock) == false)
-                throw new Error("Error: timeout");
+                throw new Errorstack(lisp, "Error: timeout");
                 
                 if (writesock(currentsock, padding, POSSIGNATURE) < 0) {
                     string errmessage = "Error: SOCKET(859): Error sending";
                     errmessage += Msgerror();
-                    throw new Error(errmessage);
+                    throw new Errorstack(lisp, errmessage);
                 }
         }
         return True_;
@@ -684,14 +684,14 @@ public:
             case sock_wait: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 return ((Socketelement*)sock)->methodWait(lisp);
             }
             case sock_read: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodRead(lisp, socketClientId);
@@ -700,7 +700,7 @@ public:
                 Element* sock = lisp->get_variable(id_sock);
 
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 string s = lisp->get_variable(U"str")->toString(lisp);
                 SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
@@ -709,7 +709,7 @@ public:
             case sock_receive: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 int nb = (int)lisp->get_variable(U"nb")->asInteger();
@@ -718,7 +718,7 @@ public:
             case sock_get: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodGet(lisp, socketClientId);
@@ -727,7 +727,7 @@ public:
                 Element* sock = lisp->get_variable(id_sock);
 
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 string s = lisp->get_variable(U"str")->toString(lisp);
                 SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
@@ -736,7 +736,7 @@ public:
             case sock_close: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodClose(lisp, socketClientId);
@@ -744,7 +744,7 @@ public:
             case sock_blocking: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 bool flag = lisp->get_variable(U"flag")->Boolean();
                 return ((Socketelement*)sock)->methodBlocking(lisp, flag);
@@ -752,7 +752,7 @@ public:
             case sock_timeout: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 
                 int timeout = (int)lisp->get_variable(U"tm")->asInteger();
                 return ((Socketelement*)sock)->methodTimeout(lisp, timeout);
@@ -760,20 +760,20 @@ public:
             case sock_gethostname: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 return ((Socketelement*)sock)->methodGethostname(lisp);
             }
             case sock_port: {
                 Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 return ((Socketelement*)sock)->methodPort(lisp);
             }
             case sock_getpeername: {
                 Element* sock = lisp->get_variable(id_sock);
 
                 if (sock->type != type_socket_element)
-                    throw new Error("Error: expecting a 'socket' object");
+                    throw new Errorstack(lisp, "Error: expecting a 'socket' object");
                 SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodGetpeername(lisp, socketClientId);
             }
