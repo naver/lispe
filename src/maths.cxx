@@ -19,6 +19,7 @@
 #include "tools.h"
 #include "vecte.h"
 #include <algorithm>
+#include <climits>
 
 #ifdef WIN32
 #define _USE_MATH_DEFINES
@@ -5539,6 +5540,91 @@ Element* List_divideintegers::eval(LispE* lisp) {
     return lisp->provideInteger(nom);
 }
 
+// Modulo with Python semantics: the result has the sign of the divisor.
+// In C++ (since C++11) a % b has the sign of a, so a non-zero remainder
+// whose sign differs from b must be shifted by b.
+static inline long floormodulo(long a, long b) {
+    // a % -1 is always 0, and evaluating LONG_MIN % -1 would trap on x86
+    if (b == -1)
+        return 0;
+    long r = a % b;
+    if (r != 0 && ((r ^ b) < 0))
+        r += b;
+    return r;
+}
+
+Element* List_pymodintegers::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+
+    int16_t listsize = liste.size();
+    Element* second_element = null_;
+    long nom = first_element->asInteger();
+    long quotient;
+    try {
+        lisp->checkState(this);
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            quotient = second_element->asInteger();
+            if (!quotient)
+                throw new Errorstack(lisp, "Error: modulo by zero");
+            nom = floormodulo(nom, quotient);
+            _releasing(second_element);
+        }
+    }
+    catch (Error* err) {
+        second_element->release();
+        first_element->release();
+        lisp->resetStack();
+        return lisp->check_error(this, err, idxinfo);
+    }
+
+    lisp->resetStack();
+    return lisp->provideInteger(nom);
+}
+
+// Floor division with Python semantics: the quotient is rounded towards minus infinity.
+// In C++ (since C++11) a % b has the sign of a, so a non-zero remainder
+// whose sign differs from b means that truncation rounded the wrong way.
+static inline long floordivide(long a, long b) {
+    long q = a / b;
+    long r = a % b;
+    if (r != 0 && ((r ^ b) < 0))
+        --q;
+    return q;
+}
+
+Element* List_floordivideintegers::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+
+    int16_t listsize = liste.size();
+    Element* second_element = null_;
+    long nom = first_element->asInteger();
+    long quotient;
+    try {
+        lisp->checkState(this);
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            quotient = second_element->asInteger();
+            if (!quotient)
+                throw new Errorstack(lisp, "Error: division by zero");
+            if (quotient == -1 && nom == LONG_MIN)
+                throw new Errorstack(lisp, "Error: integer overflow");
+            nom = floordivide(nom, quotient);
+            _releasing(second_element);
+        }
+    }
+    catch (Error* err) {
+        second_element->release();
+        first_element->release();
+        lisp->resetStack();
+        return lisp->check_error(this, err, idxinfo);
+    }
+
+    lisp->resetStack();
+    return lisp->provideInteger(nom);
+}
 
 Element* List_divide2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
@@ -7201,7 +7287,7 @@ Element* List::evall_divideintegersequal(LispE* lisp) {
                     Element* l = lst;
                     lst = lisp->provideIntegers();
                     for (long idx = 0; idx < l->size(); idx++)
-                        lst->append(lst->index(idx));
+                        lst->append(l->index(idx));
                     l->release();
                 }
                 case t_integers:
@@ -7360,6 +7446,256 @@ Element* List_divideequal_list::eval(LispE* lisp) {
     first_element->decrementkeep();
     lisp->resetStack();
     return first_element;
+}
+
+// Modulo with Python semantics: the result has the sign of the divisor.
+// Shared helper: define it once, next to floordivide.
+Element* List::evall_floormoduloequal(LispE* lisp) {
+    List* exec = NULL;
+    int16_t label = liste[1]->label();
+    long i;
+    int16_t listsize;
+    Element* first_element = liste[1];
+
+    if (label < l_final) {
+        label = -1;
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
+            exec = lisp->provideList();
+            exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
+            listsize = liste[1]->size();
+            try {
+                for (i = 2; i < listsize; i++) {
+                    first_element = liste[1]->index(i)->eval(lisp);
+                    exec->append(first_element);
+                }
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
+            }
+            catch (Error* err) {
+                exec->release();
+                throw err;
+            }
+        }
+        else
+            throw new Errorstack(lisp, "Error: Missing variable");
+    }
+
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Errorstack(lisp, "Error: cannot apply '_%' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_stringbytes:
+                case t_strings:
+                    throw new Errorstack(lisp, "Error: cannot apply '_%' to a string");
+                case t_llist:
+                case t_list:
+                case t_floats:
+                case t_shorts:
+                case t_numbers: {
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_value;
+                    }
+                    Element* l = lst;
+                    lst = lisp->provideIntegers();
+                    for (long idx = 0; idx < l->size(); idx++)
+                        lst->append(l->index(idx));   // was lst->index(idx), same fix as for _/=
+                    l->release();
+                }
+                case t_integers: {
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_value;
+                    }
+                    // Python modulo folded from the left over the list
+                    long v = lst->index(0)->asInteger();
+                    long q;
+                    for (long idx = 1; idx < lst->size(); idx++) {
+                        q = lst->index(idx)->asInteger();
+                        if (q == 0)
+                            throw new Errorstack(lisp, "Error: modulo by zero");
+                        v = floormodulo(v, q);
+                    }
+                    first_element->release();
+                    first_element = lisp->provideInteger(v);
+                    lst = this;
+                    break;
+                }
+            }
+        }
+        else {
+            long value = first_element->asInteger();
+            long quotient;
+
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                quotient = second_element->asInteger();
+                if (quotient == 0)
+                    throw new Errorstack(lisp, "Error: modulo by zero");
+                value = floormodulo(value, quotient);
+                _releasing(second_element);
+            }
+            first_element->release();
+            first_element = lisp->provideInteger(value);
+        }
+    }
+    catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    if (exec != NULL) {
+        exec->append(first_element->quoting());
+        exec->evall_set_at(lisp);
+        first_element->increment();
+        exec->release();
+        first_element->decrementkeep();
+        return first_element;
+    }
+    return lisp->recording_back(first_element, label);
+}
+
+Element* List::evall_floordivideintegersequal(LispE* lisp) {
+    List* exec = NULL;
+    int16_t label = liste[1]->label();
+    long i;
+    int16_t listsize;
+    Element* first_element = liste[1];
+
+    if (label < l_final) {
+        label = -1;
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
+            exec = lisp->provideList();
+            exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
+            listsize = liste[1]->size();
+            try {
+                for (i = 2; i < listsize; i++) {
+                    first_element = liste[1]->index(i)->eval(lisp);
+                    exec->append(first_element);
+                }
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
+            }
+            catch (Error* err) {
+                exec->release();
+                throw err;
+            }
+        }
+        else
+            throw new Errorstack(lisp, "Error: Missing variable");
+    }
+
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Errorstack(lisp, "Error: cannot apply '_/' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_stringbytes:
+                case t_strings:
+                    throw new Errorstack(lisp, "Error: cannot apply '_/' to a string");
+                case t_llist:
+                case t_list:
+                case t_floats:
+                case t_shorts:
+                case t_numbers: {
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_value;
+                    }
+                    Element* l = lst;
+                    lst = lisp->provideIntegers();
+                    for (long idx = 0; idx < l->size(); idx++)
+                        lst->append(l->index(idx));   // was lst->index(idx), see note 1
+                    l->release();
+                }
+                case t_integers: {
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_value;
+                    }
+                    // Python floor division folded from the left over the list
+                    long v = lst->index(0)->asInteger();
+                    long q;
+                    for (long idx = 1; idx < lst->size(); idx++) {
+                        q = lst->index(idx)->asInteger();
+                        if (q == 0)
+                            throw new Errorstack(lisp, "Error: division by zero");
+                        if (q == -1 && v == LONG_MIN)
+                            throw new Errorstack(lisp, "Error: integer overflow");
+                        v = floordivide(v, q);
+                    }
+                    first_element->release();
+                    first_element = lisp->provideInteger(v);
+                    lst = this;
+                    break;
+                }
+            }
+        }
+        else {
+            long value = first_element->asInteger();
+            long quotient;
+
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                quotient = second_element->asInteger();
+                if (quotient == 0)
+                    throw new Errorstack(lisp, "Error: division by zero");
+                if (quotient == -1 && value == LONG_MIN)
+                    throw new Errorstack(lisp, "Error: integer overflow");
+                value = floordivide(value, quotient);
+                _releasing(second_element);
+            }
+            first_element->release();
+            first_element = lisp->provideInteger(value);
+        }
+    }
+    catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    if (exec != NULL) {
+        exec->append(first_element->quoting());
+        exec->evall_set_at(lisp);
+        first_element->increment();
+        exec->release();
+        first_element->decrementkeep();
+        return first_element;
+    }
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List_divideequal_var::eval(LispE* lisp) {

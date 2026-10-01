@@ -1447,6 +1447,8 @@ public:
     Element* evall_lambda(LispE* lisp);
     Element* evall_last(LispE* lisp);
     Element* evall_leftshiftequal(LispE* lisp);
+    Element* evall_floordivideintegersequal(LispE* lisp);
+    Element* evall_floormoduloequal(LispE* lisp);
     Element* evall_link(LispE* lisp);
     Element* evall_load(LispE* lisp);
     Element* evall_let(LispE* lisp);
@@ -9260,6 +9262,58 @@ public:
     
     List* cloning() {
         return new List_divideintegers();
+    }
+    
+    Element* eval(LispE*);
+};
+
+class List_pymodintegers : public Listincode {
+public:
+    List_pymodintegers(Listincode* l) : Listincode(l) {}
+    List_pymodintegers(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_pymodintegers() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_pymodintegers(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_pymodintegers(e);
+    }
+    
+    List* cloning() {
+        return new List_pymodintegers();
+    }
+    
+    Element* eval(LispE*);
+};
+
+class List_floordivideintegers : public Listincode {
+public:
+    List_floordivideintegers(Listincode* l) : Listincode(l) {}
+    List_floordivideintegers(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_floordivideintegers() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_floordivideintegers(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_floordivideintegers(e);
+    }
+    
+    List* cloning() {
+        return new List_floordivideintegers();
     }
     
     Element* eval(LispE*);
