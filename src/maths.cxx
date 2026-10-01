@@ -5509,6 +5509,35 @@ Element* List_dividen::eval(LispE* lisp) {
     return first_element;
 }
 
+Element* List_divideintegers::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    
+    int16_t listsize = liste.size();
+    Element* second_element = null_;
+    long nom = first_element->asInteger();
+    long quotient;
+    try {
+        lisp->checkState(this);
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            quotient = second_element->asInteger();
+            if (!quotient)
+                throw new Errorstack(lisp, "Error: division by zero");
+            nom /= quotient;
+            _releasing(second_element);
+        }
+    }
+    catch (Error* err) {
+        second_element->release();
+        first_element->release();
+        lisp->resetStack();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    
+    lisp->resetStack();
+    return lisp->provideInteger(nom);
+}
 
 
 Element* List_divide2::eval(LispE* lisp) {
@@ -7088,6 +7117,119 @@ Element* List::evall_divideequal(LispE* lisp) {
                 if (first_element != second_element)
                     _releasing(second_element);
             }
+        }
+    }
+    catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    if (exec != NULL) {
+        exec->append(first_element->quoting());
+        exec->evall_set_at(lisp);
+        first_element->increment();
+        exec->release();
+        first_element->decrementkeep();
+        return first_element;
+    }
+    return lisp->recording_back(first_element, label);
+}
+
+Element* List::evall_divideintegersequal(LispE* lisp) {
+    List* exec = NULL;
+    int16_t label = liste[1]->label();
+    long i;
+    int16_t listsize;
+    Element* first_element = liste[1];
+    
+    if (label < l_final) {
+        label = -1;
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Errorstack(lisp, "Error: Expecting a variable in embedded '@'");
+            exec = lisp->provideList();
+            exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
+            listsize = liste[1]->size();
+            try {
+                for (i = 2; i < listsize; i++) {
+                    first_element = liste[1]->index(i)->eval(lisp);
+                    exec->append(first_element);
+                }
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
+            }
+            catch (Error* err) {
+                exec->release();
+                throw err;
+            }
+        }
+        else
+            throw new Errorstack(lisp, "Error: Missing variable");
+    }
+    
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+    
+    try {
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Errorstack(lisp, "Error: cannot apply '/' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_stringbytes:
+                case t_strings:
+                    throw new Errorstack(lisp, "Error: cannot apply '/' to a string");
+                case t_llist:
+                case t_list:
+                case t_floats:
+                case t_shorts:
+                case t_numbers: {
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_value;
+                    }
+                    Element* l = lst;
+                    lst = lisp->provideIntegers();
+                    for (long idx = 0; idx < l->size(); idx++)
+                        lst->append(lst->index(idx));
+                    l->release();
+                }
+                case t_integers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_value;
+                    }
+                    lst = lst->divide(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+            }
+        }
+        else {
+            long value = first_element->asInteger();
+            long quotient;
+
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                quotient = second_element->asInteger();
+                if (quotient == 0)
+                    throw new Errorstack(lisp, "Error: division by zero");
+                value /= second_element->asInteger();
+                _releasing(second_element);
+            }
+            first_element->release();
+            first_element = lisp->provideInteger(value);
         }
     }
     catch (Error* err) {

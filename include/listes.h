@@ -1430,6 +1430,7 @@ public:
     Element* evall_defun(LispE* lisp);
     Element* evall_divide(LispE* lisp);
     Element* evall_divideequal(LispE* lisp);
+    Element* evall_divideintegersequal(LispE* lisp);
     Element* evall_clone(LispE* lisp);
     Element* evall_emptyp(LispE* lisp);
     Element* evall_emptylist(LispE* lisp);
@@ -9233,6 +9234,32 @@ public:
     
     List* cloning() {
         return new List_dividen();
+    }
+    
+    Element* eval(LispE*);
+};
+
+class List_divideintegers : public Listincode {
+public:
+    List_divideintegers(Listincode* l) : Listincode(l) {}
+    List_divideintegers(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_divideintegers() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_divideintegers(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_divideintegers(e);
+    }
+    
+    List* cloning() {
+        return new List_divideintegers();
     }
     
     Element* eval(LispE*);
