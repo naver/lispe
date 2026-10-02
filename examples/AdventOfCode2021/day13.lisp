@@ -7,7 +7,7 @@
 (setq values (fread (+ _current "data/codes_day13.txt")))
 
 (setq positions (trim (@@ values 0 "fold")))
-(setq instructions (split (trim (@@ values +"fold" 0)) "\n"))
+(setq instructions (split (trim (@@ values +"fold")) "\n"))
 
 (setq coords (maplist (\(x) (integers (split x ","))) (split positions "\n")))
 (setq mmx (+ 1 (max (maplist (\(x) (car x)) coords))))
@@ -78,6 +78,7 @@
    )
    (println (trimright ligne))
 )
+
 
 
 

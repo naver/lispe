@@ -97,7 +97,7 @@ A normal night in the hotel is 50€, a breakfast is 10€, and there is a tax o
             (setq last_logits (tensor_select last_logits 0 0))
             
             ; Appliquer répétition penalty pour éviter les boucles
-            (setq recent_tokens (@@ generated_tokens (max 0 (- (size generated_tokens) 20)) 0))
+            (setq recent_tokens (@@ generated_tokens (max 0 (- (size generated_tokens) 20))))
             (loop token recent_tokens
                (setq token_logit (tensor_select last_logits 0 token))
                (setq penalized_logit (tensor_mul_scalar token_logit 0.85))
@@ -133,7 +133,7 @@ A normal night in the hotel is 50€, a breakfast is 10€, and there is a tax o
             
             ; Détecter les boucles de répétition
             (check (> (size generated_tokens) 10)
-               (setq last_5_tokens (@@ generated_tokens (- (size generated_tokens) 5) 0))
+               (setq last_5_tokens (@@ generated_tokens (- (size generated_tokens) 5)))
                (setq prev_5_tokens (@@ generated_tokens (- (size generated_tokens) 10) (- (size generated_tokens) 5)))
                (check (eq last_5_tokens prev_5_tokens)
                   (println "\n⚠ Boucle de répétition détectée, arrêt de la génération")
@@ -146,7 +146,7 @@ A normal night in the hotel is 50€, a breakfast is 10€, and there is a tax o
    )
 
    (println)
-   ;(printerrln (tiktoken_decode tokenizer (@@ generated_tokens 1 0)))
+   ;(printerrln (tiktoken_decode tokenizer (@@ generated_tokens 1)))
 
 
    (setq tokens_generated_cache (- (size generated_tokens) (size prompt_tokens)))
@@ -163,4 +163,5 @@ A normal night in the hotel is 50€, a breakfast is 10€, and there is a tax o
 
 (kv-avec-cache model_path prompt_tokens max_tokens temperature (@ tok 'eos_id) kv_cache)
 (println (fill "=" 60))
+
 

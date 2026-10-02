@@ -153,9 +153,9 @@
       )
       (block 
          (check (eq (@ val 0) "$")
-            (push keywords (lower (@@ val 1 0)))
+            (push keywords (lower (@@ val 1)))
          )
-         (list 'compare 'tokens (@@ val 1 0) var (results idx) keep)
+         (list 'compare 'tokens (@@ val 1) var (results idx) keep)
       )
       ; otherwise it is a call to a function
       (list (atom (+ "C_" val)) 'tokens var (results idx))
@@ -463,6 +463,7 @@
 
 ; We check if the code is well-formed LispE program.
 ;(eval the_code)
+
 
 
 

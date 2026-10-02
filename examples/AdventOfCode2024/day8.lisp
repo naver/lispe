@@ -40,7 +40,7 @@
    (setq l (to_list (@ positions c)))
    (loop p (irange 0 (- (size l) 1) 1)
       (setq e (@ l p))
-      (setq suite (@@ l (+ p 1) 0))
+      (setq suite (@@ l (+ p 1)))
       (setq d (maplist (\(x) (- x e)) suite))
       (setq a (+ suite d))
       (nconc a (maplist (\(x) (- e x)) d))
@@ -61,7 +61,7 @@
    (setq l (to_list (@ positions c)))
    (loop p (irange 0 (- (size l) 1) 1)
       (setq e (@ l p))
-      (setq suite (@@ l (+ p 1) 0))
+      (setq suite (@@ l (+ p 1)))
       (setq dt (maplist (\(x) (- x e)) suite))
       (mloop (s d) suite dt
          (setq bas (+ s d))
@@ -85,6 +85,7 @@
       )
    )
 )
+
 
 
 

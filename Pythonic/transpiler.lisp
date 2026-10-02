@@ -710,7 +710,7 @@
       (+ (replace (@ lsp 1) "> > >" ":\n>> ") " <<")
       (setq r (@@ (trim . prettify (cdr lsp) 100) 1 -1))
       (if (= (@ r 0) "\n")
-         (join (maplist (\(x) (@@ x 3 0)) (split r "\n")) "\n")
+         (join (maplist (\(x) (@@ x 3)) (split r "\n")) "\n")
          r)))
 
 ; ------------------------------------------------------------------------
@@ -812,7 +812,8 @@
       (+ (replace (@ lsp 1) "> > >" ":\n>> ") " <<")
       (setq r (@@ (trim . prettify (cdr lsp) 100) 1 -1))
       (if (= (@ r 0) "\n")
-         (join (maplist (\(x) (@@ x 3 0)) (split r "\n")) "\n")
+         (join (maplist (\(x) (@@ x 3)) (split r "\n")) "\n")
          r)))
+
 
 

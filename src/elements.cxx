@@ -3041,12 +3041,14 @@ Element* String::extraction(LispE* lisp, List* liste) {
     if (from < 0 || from >= content.size())
         return emptystring_;
     
+    Element* e_upto;
     if (nxt == liste->size()) {
-        //Only one element is returned
-        return lisp->provideString(content[from]);
+        e_upto = terminal_;
+        ty = l_terminal;
     }
+    else
+        e_upto = liste->liste[nxt];
     
-    Element* e_upto = liste->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
             if (nxt == liste->size() - 1) {
@@ -3077,6 +3079,8 @@ Element* String::extraction(LispE* lisp, List* liste) {
                 ty = t_minus_plus_string;
             else
                 throw new Errorstack(lisp, "Error: Wrong value after second operator: '-+'");
+            break;
+        case l_terminal:
             break;
         default:
             e_upto = e_upto->eval(lisp);
@@ -3132,7 +3136,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
                 upto += from + firstisString;
             }
             else {
-                if (upto <= 0) {
+                if (upto < 0) {
                     //We start from the end...
                     upto = content.size() + upto;
                 }
@@ -3253,12 +3257,14 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
     if (from < 0 || from >= content.size())
         return emptystring_;
     
+    Element* e_upto;
     if (nxt == liste->size()) {
-        //Only one element is returned
-        return new Stringbyte(lisp->handlingutf8->getachar(content, from));
+        e_upto = terminal_;
+        ty = l_terminal;
     }
+    else
+        e_upto = liste->liste[nxt];
     
-    Element* e_upto = liste->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
             if (nxt == liste->size() - 1) {
@@ -3289,6 +3295,8 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
                 ty = t_minus_plus_string;
             else
                 throw new Errorstack(lisp, "Error: Wrong value after second operator: '-+'");
+            break;
+        case l_terminal:
             break;
         default:
             e_upto = e_upto->eval(lisp);
@@ -3344,7 +3352,7 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
                 upto += from + firstisString;
             }
             else {
-                if (upto <= 0) {
+                if (upto < 0) {
                     //We start from the end...
                     upto = content.size() + upto;
                 }
@@ -3472,15 +3480,14 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     if (from < 0 || from >= content.size())
         return this;
     
+    Element* e_upto;
     if (nxt == liste->size() - 1) {
-        //Only one element is returned
-        u_ustring result = content.substr(0, from);
-        result += last;
-        result += content.substr(from+1, content.size());
-        return lisp->provideString(result);
+        e_upto = terminal_;
+        ty = l_terminal;
     }
+    else
+        e_upto = liste->liste[nxt];
     
-    Element* e_upto = liste->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
             if (nxt == liste->size() - 1) {
@@ -3511,6 +3518,8 @@ Element* String::replace_in(LispE* lisp, List* liste) {
                 ty = t_minus_plus_string;
             else
                 throw new Errorstack(lisp, "Error: Wrong value after second operator: '-+'");
+            break;
+        case l_terminal:
             break;
         default:
             e_upto = e_upto->eval(lisp);
@@ -3566,7 +3575,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
                 upto += from + firstisString;
             }
             else {
-                if (upto <= 0) {
+                if (upto < 0) {
                     //We start from the end...
                     upto = content.size() + upto;
                 }
@@ -3692,15 +3701,14 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
     if (from < 0 || from >= content.size())
         return this;
     
+    Element* e_upto;
     if (nxt == liste->size() - 1) {
-        //Only one element is returned
-        string result = content.substr(0, from);
-        result += last;
-        result += content.substr(from+1, content.size());
-        return new Stringbyte(result);
+        e_upto = terminal_;
+        ty = l_terminal;
     }
+    else
+        e_upto = liste->liste[nxt];
     
-    Element* e_upto = liste->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
             if (nxt == liste->size() - 1) {
@@ -3731,6 +3739,8 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
                 ty = t_minus_plus_string;
             else
                 throw new Errorstack(lisp, "Error: Wrong value after second operator: '-+'");
+            break;
+        case l_terminal:
             break;
         default:
             e_upto = e_upto->eval(lisp);
@@ -3786,7 +3796,7 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
                 upto += from + firstisString;
             }
             else {
-                if (upto <= 0) {
+                if (upto < 0) {
                     //We start from the end...
                     upto = content.size() + upto;
                 }

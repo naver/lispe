@@ -17,7 +17,7 @@
    (setq inters "")
    (loop i (range d (size c) 5)
       (setq v (@@ c i (+ i 5)))
-      (+= inters (@@ v 1 0))
+      (+= inters (@@ v 1))
       (check (eq (@ v 0) "0")
          (break)
       )
@@ -108,6 +108,7 @@
 
 (println "part 1:" (sum partie1))
 (println "part 2:" (évalue (car r)))
+
 
 
 

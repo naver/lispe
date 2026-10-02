@@ -154,9 +154,9 @@
       )
       (block 
          (check (eq (@ val 0) "$")
-            (push keywords (lower (@@ val 1 0)))
+            (push keywords (lower (@@ val 1)))
          )
-         (list 'compare 'tokens (@@ val 1 0) var (results idx) keep)
+         (list 'compare 'tokens (@@ val 1) var (results idx) keep)
       )
       ; otherwise it is a call to a function
       (list (atom (+ "C_" val)) 'tokens var (results idx))
@@ -254,7 +254,7 @@
       (check 
             (and
                (eq (@@ m 0 3) "\"\"\"")
-               (eq (@@ m -3 0) "\"\"\"")
+               (eq (@@ m -3) "\"\"\"")
             )
          (+= i 1)
          (push v (list 'longstring (@@ m 3 -3)))
@@ -263,7 +263,7 @@
       (check 
             (and
                (eq (@@ m 0 3) "'''")
-               (eq (@@ m -3 0) "'''")
+               (eq (@@ m -3) "'''")
             )
          (+= i 1)
          (push v (list 'longstring (@@ m 3 -3)))
@@ -561,6 +561,7 @@ f"{[\-"] ~%r}*"=34
 
 ; We check if the code is well-formed LispE program.
 ;(eval the_code)
+
 
 
 

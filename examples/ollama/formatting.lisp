@@ -17,7 +17,7 @@
 
    (if r
       (loop e r
-         (setq s (replace s e . chr . integer . + "0x" (@@ e 1 0)))
+         (setq s (replace s e . chr . integer . + "0x" (@@ e 1)))
       )
    )
 
@@ -88,6 +88,7 @@
    (setq msg (replace msg "\t" "%09"))
    (return msg)
 )
+
 
 
 
