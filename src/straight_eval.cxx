@@ -1621,6 +1621,24 @@ Element* List_or_eval::eval(LispE* lisp) {
     return booleans_[test];
 }
 
+Element* List_orvalue_eval::eval(LispE* lisp) {
+    bool test = false;
+    Element* element = null_;
+    try {
+        lisp->checkState(this);
+        for (long i = 1; i < size() && !test; i++) {
+            _releasing(element);
+            element = liste[i]->eval(lisp);
+            test = element->Boolean();
+        }
+    }
+    catch (Error* err) {
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return element;
+}
+
 Element* List_pop_eval::eval(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     if (container->isString()) {

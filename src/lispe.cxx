@@ -33,7 +33,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.10.2.14.13";
+static std::string version = "1.2026.10.3.11.31";
 string LispVersion() {
     return version;
 }
@@ -597,6 +597,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_floats, "floats", P_ATLEASTONE,  new List_floats_eval());
     set_instruction(l_numbers, "numbers", P_ATLEASTONE,  new List_numbers_eval());
     set_instruction(l_or, "or", P_ATLEASTTHREE,  new List_or_eval());
+    set_instruction(l_orvalue, "orvalue", P_ATLEASTTHREE,  new List_orvalue_eval());
     set_instruction(l_over, "over", P_THREE,  new List_over_eval());
     set_instruction(l_pattern, "pattern@", P_THREE,  new List_extractpattern_eval());
     set_instruction(l_pipe, "pipe", P_ONE,  new List_pipe_eval());
@@ -3879,6 +3880,7 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
 
 
 

@@ -112,7 +112,7 @@ typedef enum {
     l_bitandequal, l_bitandnotequal, l_bitorequal, l_bitxorequal,
     l_divideequal,l_divideintegersequal, l_modequal, l_floordivideintegersequal, l_floormoduloequal,
     l_concatenate, l_sum, l_product, l_stringf, l_size, l_tally,
-    l_andvalue, l_and, l_or, l_xor, l_not, l_eq, l_neq,
+    l_andvalue, l_and, l_or, l_orvalue, l_xor, l_not, l_eq, l_neq,
     l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max, l_compare,
     
     l_innerproduct, 
