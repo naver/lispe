@@ -4999,7 +4999,6 @@ Element* List_catch_eval::eval(LispE* lisp) {
         //This error is converted into a non-blocking error message .
         element = new Maybe(lisp, err);
         lisp->delegation->reset_context();
-        err->release();
     }
     lisp->resetStack();
     return element;

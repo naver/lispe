@@ -5502,7 +5502,6 @@ Element* List_dividen::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -5532,7 +5531,6 @@ Element* List_divideintegers::eval(LispE* lisp) {
     catch (Error* err) {
         second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -5575,7 +5573,6 @@ Element* List_pymodintegers::eval(LispE* lisp) {
     catch (Error* err) {
         second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
 
@@ -5618,7 +5615,6 @@ Element* List_floordivideintegers::eval(LispE* lisp) {
     catch (Error* err) {
         second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
 
@@ -5684,7 +5680,6 @@ Element* List_divide2::eval(LispE* lisp) {
         if (lst != first_element)
             lst->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
@@ -5705,7 +5700,6 @@ Element* List_divide3::eval(LispE* lisp) {
     catch (Error* err) {
         second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
@@ -5819,7 +5813,6 @@ Element* List_minusn::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -5885,7 +5878,6 @@ Element* List_minus2::eval(LispE* lisp) {
         if (lst != first_element)
             lst->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
@@ -5903,7 +5895,6 @@ Element* List_minus3::eval(LispE* lisp) {
             second_element->release();
     }
     catch (Error* err) {
-        lisp->resetStack();
         first_element->release();
         return lisp->check_error(this, err, idxinfo);
     }
@@ -6028,7 +6019,6 @@ Element* List_multiplyn::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -6105,7 +6095,6 @@ Element* List_multiply2::eval(LispE* lisp) {
         if (lst != first_element)
             lst->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -6125,7 +6114,6 @@ Element* List_multiply3::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -6270,7 +6258,6 @@ Element* List_plus_python::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -6299,7 +6286,6 @@ Element* List_plusn::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -6380,7 +6366,6 @@ Element* List_plus2::eval(LispE* lisp) {
         if (lst != first_element)
             lst->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
@@ -6399,7 +6384,6 @@ Element* List_plus3::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -6578,7 +6562,6 @@ Element* List_powern::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -6619,7 +6602,6 @@ Element* List_power2::eval(LispE* lisp) {
         }
     }
     catch(Error* err) {
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
 }
@@ -7360,7 +7342,6 @@ Element* List_divideequal_list::eval(LispE* lisp) {
     }
     catch (Error* err) {
         exec->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -7435,7 +7416,6 @@ Element* List_divideequal_list::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -7772,7 +7752,6 @@ Element* List_divideequal_var::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -8038,7 +8017,6 @@ Element* List_minusequal_list::eval(LispE* lisp) {
         first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
     }
     catch (Error* err) {
-        lisp->resetStack();
         exec->release();
         return lisp->check_error(this, err, idxinfo);
     }
@@ -8114,7 +8092,6 @@ Element* List_minusequal_list::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -8201,7 +8178,6 @@ Element* List_minusequal_var::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -8469,7 +8445,6 @@ Element* List_multiplyequal_list::eval(LispE* lisp) {
     }
     catch (Error* err) {
         exec->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -8544,7 +8519,6 @@ Element* List_multiplyequal_list::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -8631,7 +8605,6 @@ Element* List_multiplyequal_var::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -8785,7 +8758,6 @@ Element* List_plusequal_list::eval(LispE* lisp) {
     }
     catch (Error* err) {
         exec->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -8867,7 +8839,6 @@ Element* List_plusequal_list::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     
@@ -8962,7 +8933,6 @@ Element* List_plusequal_var::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
     

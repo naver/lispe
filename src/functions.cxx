@@ -1172,7 +1172,6 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         arguments->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
 
@@ -1182,7 +1181,6 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     int16_t space = lisp->delegation->getPatternMethods(function_label, lisp->current_space);
     if (space == -1) {
         arguments->release();
-        lisp->resetStack();
         lisp->check_end_trace(tr, localtrace);
         wstring message = L"Error: Could not find a match for function: '";
         message += lisp->asString(function_label);
@@ -1206,7 +1204,6 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     
     if (current_body == NULL) {
         arguments->release();
-        lisp->resetStack();
         lisp->check_end_trace(tr, localtrace);
         wstring message = L"Error: Could not find a match for function: '";
         message += lisp->asString(function_label);
@@ -1271,7 +1268,6 @@ Element* List_predicate_eval::eval(LispE* lisp) {
         if (!match) {
             lisp->pop();
             arguments->release();
-            lisp->resetStack();
             lisp->check_end_trace(tr, localtrace);
             if (current_error == null_) {
                 wstring message = L"Error: Could not find a match for function: '";
@@ -1358,7 +1354,6 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     }
     arguments->release();
     lisp->pop(null_);
-    lisp->resetStack();
     lisp->check_end_trace(tr, localtrace);
     if (current_error == null_) {
         wstring message = L"Error: Could not find a match for function: '";
@@ -1428,7 +1423,6 @@ Element* List_prolog_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         arguments->release();
-        lisp->resetStack();
         return lisp->check_error(this, err, idxinfo);
     }
 
