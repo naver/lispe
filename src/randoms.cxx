@@ -76,9 +76,16 @@ long unaryfunc(double v) {
 }
 #endif
 
+//A single generator, shared by all the random functions:
+//random_seed then sets the seed for random, shuffle, the distributions...
+static std::mt19937& common_generator() {
+    static std::mt19937 g(std::random_device{}());
+    return g;
+}
+
 class Aleatoire : public Element {
 public:
-    std::mt19937 gen;
+    std::mt19937& gen;
     bool seeded;
     aleatoire rnd;
     int16_t v_nb;
@@ -88,9 +95,7 @@ public:
     int16_t v_initial;
     int16_t v_inter;
     
-    Aleatoire(LispE* lisp, aleatoire r) : rnd(r), Element(l_lib) {
-        std::random_device rd;
-        gen.seed(rd());
+    Aleatoire(LispE* lisp, aleatoire r) : Element(l_lib), gen(common_generator()), rnd(r) {
         seeded = false;
         u_ustring nom(U"nb");
         v_nb = lisp->encode(nom);
@@ -190,7 +195,7 @@ public:
             }
             case  t_integers: {
                 Integers* liste = lisp->provideIntegers();
-                long vlispe;
+                li_long vlispe;
                 for (i = 0; i < nb; i++) {
                     v = d(gen);
                     vlispe = ((Integers*)valuevect)->liste[v];
@@ -277,7 +282,7 @@ public:
         
         std::binomial_distribution<long> dis(alpha, beta);
         if (nb == 1)
-            return lisp->provideInteger((long)dis(gen));
+            return lisp->provideInteger((li_long)dis(gen));
 
         
         Integers* iv = lisp->provideIntegers();

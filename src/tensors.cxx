@@ -453,8 +453,8 @@ long LUDCMP(long n, vecte<long>& indexes, long& d, Matrice_integer* m) {
     
 } // subroutine LUDCMP
 
-void LUBKSB(long n, vecte<long>& indexes, vecte<long>& b_values, Matrice_integer* m)  {
-    long thesum;
+void LUBKSB(long n, vecte<long>& indexes, vecte<li_long>& b_values, Matrice_integer* m)  {
+    li_long thesum;
     long  i, ii, j, ll;
     
     ii = -1;
@@ -508,7 +508,7 @@ template<> string Matrice_stringbyte::zeroValue() {
     return "";
 }
 
-template<> long Matrice_integer::zeroValue() {
+template<> li_long Matrice_integer::zeroValue() {
     return 0;
 }
 //------------------------------------------------------------
@@ -532,7 +532,7 @@ template<> string Matrice_stringbyte::asValue(Element* e) {
     return e->toString(NULL);
 }
 
-template<> long Matrice_integer::asValue(Element* e) {
+template<> li_long Matrice_integer::asValue(Element* e) {
     return e->asInteger();
 }
 //------------------------------------------------------------
@@ -556,7 +556,7 @@ template<> Element* Matrice_stringbyte::provideValue(LispE* lisp, string v) {
     return new Stringbyte(v);
 }
 
-template<> Element* Matrice_integer::provideValue(LispE* lisp, long v) {
+template<> Element* Matrice_integer::provideValue(LispE* lisp, li_long v) {
     return lisp->provideInteger(v);
 }
 //------------------------------------------------------------
@@ -588,7 +588,7 @@ template<> Shorts* Matrice_short::provide(long nb, short val) {
     return new Shorts(nb, val);
 }
 
-template<> Integers* Matrice_integer::provide(long nb, long val) {
+template<> Integers* Matrice_integer::provide(long nb, li_long val) {
     return new Integers(nb, val);
 }
 
@@ -651,7 +651,7 @@ template<> Stringbytes* Matrice_stringbyte::provide(LispE* lisp, long nb, string
     return new Stringbytes(nb, v);
 }
 
-template<> Integers* Matrice_integer::provide(LispE* lisp, long nb, long v) {
+template<> Integers* Matrice_integer::provide(LispE* lisp, long nb, li_long v) {
     return lisp->provideIntegers(nb, v);
 }
 
@@ -1017,7 +1017,13 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
         return emptylist_;
     }
     Integers* lst = lisp->provideIntegers();
+#ifdef LISPE_WASM
+    //indexes are long, the values of an Integers list are li_long (int64_t)
+    for (long i = 0; i < indexes.size(); i++)
+        lst->liste.push_back(indexes[i]);
+#else
     lst->liste = indexes;
+#endif
     return lst;
 }
 
@@ -1141,7 +1147,7 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
     
     for (long i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
-            e = e->protected_index(lisp, pos);
+            e = e->protected_index(lisp, (li_long)pos);
             if (e == null_)
                 sent_error("Error: No more elements to traverse with 'cad..r'");
             
@@ -1170,6 +1176,7 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
     Element* e = null_;
     lisp->recording(null_, label);
     long sz = code->liste.size();
+    increment();
     for (long i = 0; i < size_x; i++) {
         lisp->replacestackvalue(liste[i], label);
         _releasing(e);
@@ -1179,11 +1186,13 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -1279,7 +1288,7 @@ template<> float Tenseur_float::asValue(Element* e) {
     return e->asFloat();
 }
 
-template<> long Tenseur_integer::asValue(Element* e) {
+template<> li_long Tenseur_integer::asValue(Element* e) {
     return e->asInteger();
 }
 
@@ -1312,7 +1321,7 @@ template<> string Tenseur_stringbyte::zeroValue() {
     return "";
 }
 
-template<> long Tenseur_integer::zeroValue() {
+template<> li_long Tenseur_integer::zeroValue() {
     return 0;
 }
 //----------------------------------------------------------------------------
@@ -1355,7 +1364,7 @@ template<> Stringbytes* Tenseur_stringbyte::provide(long nb, string v) {
     return new Stringbytes(nb, v);
 }
 
-template<> Integers* Tenseur_integer::provide(long nb, long val) {
+template<> Integers* Tenseur_integer::provide(long nb, li_long val) {
     return new Integers(nb, val);
 }
 
@@ -1376,7 +1385,7 @@ template<> Stringbytes* Tenseur_stringbyte::provide(LispE* lisp, long nb, string
     return new Stringbytes(nb, val);
 }
 
-template<> Integers* Tenseur_integer::provide(LispE* lisp, long nb, long val) {
+template<> Integers* Tenseur_integer::provide(LispE* lisp, long nb, li_long val) {
     return lisp->provideIntegers(nb, val);
 }
 
@@ -1518,7 +1527,7 @@ template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::cadr(Lis
     
     for (long i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
-            e = e->protected_index(lisp, pos);
+            e = e->protected_index(lisp, (li_long)pos);
             if (e == null_)
                 sent_error("Error: No more elements to traverse with 'cad..r'");
             
@@ -1824,6 +1833,7 @@ template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::loop(Lis
     Element* e = null_;
     lisp->recording(null_, label);
     long sz = code->liste.size();
+    increment();
     for (long i = 0; i < shape[0]; i++) {
         lisp->replacestackvalue(liste[i], label);
         _releasing(e);
@@ -1833,11 +1843,13 @@ template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::loop(Lis
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -3171,7 +3183,7 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
         case t_short:
         case t_float:
         case t_integer: {
-            long v = e->asInteger();
+            li_long v = e->asInteger();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
             if (szl >= 20) {
@@ -3291,7 +3303,7 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
         case t_short:
         case t_float:
         case t_integer: {
-            long v = e->asInteger();
+            li_long v = e->asInteger();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
             if (szl >= 20) {
@@ -3352,7 +3364,7 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
         }
         case t_matrix_integer: {
             Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
-            long v;
+            li_long v;
             
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
@@ -3482,7 +3494,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
         case t_float:
         case t_short:
         case t_integer: {
-            long v = e->asInteger();
+            li_long v = e->asInteger();
             if (!v)
                 throw new Errorstack(lisp, "Error: division by zero");
             liste.divide(v);
@@ -3533,7 +3545,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
         }
         case t_matrix_integer: {
             Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
-            long v;
+            li_long v;
             
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
@@ -3700,7 +3712,7 @@ Element* Shorts::minus_direct(LispE* lisp, Element* e) {
         }
         case t_matrix_integer: {
             Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
-            long v;
+            li_long v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Integers*)result->index(m))->liste[i];
@@ -3877,7 +3889,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
         }
         case t_matrix_integer: {
             Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
-            long v;
+            li_long v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Integers*)result->index(m))->liste[i];
@@ -5092,7 +5104,12 @@ Element* List_rho_eval::eval(LispE* lisp) {
             if (e->isList()) {
                 vecte<long> shape;
                 e->getShape(shape);
+#ifdef LISPE_WASM
+                for (long i = 0; i < shape.size(); i++)
+                    ((Integers*)res)->liste.push_back(shape[i]);
+#else
                 ((Integers*)res)->liste = shape;
+#endif
             }
             else
                 ((Integers*)res)->liste.push_back(e->size());
@@ -5199,7 +5216,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     res = lisp->provideIntegers();
                     res->reserve(sz1);
                     if (listsize <= 1) {
-                        long v = 0;
+                        li_long v = 0;
                         if (listsize == 1)
                             v = e->index(0)->asInteger();
                         for (long i = 0; i < sz1; i++) {

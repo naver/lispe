@@ -23,7 +23,7 @@
 #define APPLE 1
 #endif
 
-Element* range(LispE* lisp, long init, long limit, long inc);
+Element* range(LispE* lisp, li_long init, li_long limit, li_long inc);
 Element* range(LispE* lisp, double init, double limit, double inc);
 Element* range(LispE* lisp, u_ustring& init, u_ustring& limit, long inc);
 
@@ -532,7 +532,7 @@ Element* List_key_eval::eval(LispE* lisp) {
                 }
                 case t_treei:
                 case t_dictionaryi: {
-                    long a_key;
+                    li_long a_key;
                     evalAsInteger(2, lisp, a_key);
                     second_element = first_element->protected_index(lisp, a_key);
                     first_element->release();
@@ -584,7 +584,7 @@ Element* List_key_eval::eval(LispE* lisp) {
             }
             case t_treei:
             case t_dictionaryi: {
-                long a_key;
+                li_long a_key;
                 for (long i = 2; i < listsize; i+=2) {
                     evalAsInteger(i, lisp, a_key);
                     second_element = liste[i+1]->eval(lisp);
@@ -626,7 +626,7 @@ Element* List_keyi_eval::eval(LispE* lisp) {
 
     try {
         lisp->checkState(this);
-        long a_key;
+        li_long a_key;
         if (listsize == 3 && first_element->isDictionary()) {
             if (first_element->type != t_dictionaryi && first_element->type != t_treei)
                 return lisp->check_error(this, new Error("Error: wrong dictionary type for 'keyi'"), idxinfo);
@@ -907,7 +907,7 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
     
     try {
         lisp->checkState(this);
-        long a_key;
+        li_long a_key;
         //We store values
         for (long i = 1; i < listsize; i+=2) {
             element = liste[i]->eval(lisp);
@@ -1119,7 +1119,7 @@ Element* List_treei_eval::eval(LispE* lisp) {
     
     try {
         lisp->checkState(this);
-        long a_key;
+        li_long a_key;
         //We store values
         for (long i = 1; i < listsize; i+=2) {
             element = liste[i]->eval(lisp);
@@ -1902,10 +1902,18 @@ Element* List_while_eval::eval(LispE* lisp) {
     condition->release();
         
     Element* result = null_;
-    
+#ifdef LISPE_WASM
+    int64_t nb_iterations = 0;
+#endif
     try {
         lisp->checkState(this);
         while (test) {
+#ifdef LISPE_WASM
+            nb_iterations++;
+            if (nb_iterations > 10000000)
+                throw new Error("Error: too many iterations in a while");
+#endif
+
             for (long i = 2; i < listsize && result->type != l_return && result->type != l_continue; i++) {
                 _releasing(result);
                 result = liste[i]->eval(lisp);
@@ -2623,7 +2631,7 @@ Element* Integers::comparison(LispE* lisp, Element* l) {
         return res;
     }
     
-    long v = l->asInteger();
+    li_long v = l->asInteger();
     Integers* res = lisp->provideIntegers();
     for (long i = 0; i < size(); i++) {
         if (liste[i] == v)
@@ -4966,10 +4974,10 @@ Element* List_converttoatom_eval::eval(LispE* lisp) {
 
 Element* List_bodies_eval::eval(LispE* lisp) {
     Element* function = liste[1]->eval(lisp);
-    int16_t ty = function->protected_index(lisp, (long)0)->type;
+    int16_t ty = function->protected_index(lisp, (li_long)0)->type;
     if (ty == l_defpat || ty == l_defpred || ty == l_defprol) {
         List* functions =  lisp->provideList();
-        int16_t label = function->protected_index(lisp, (long)1)->label();
+        int16_t label = function->protected_index(lisp, (li_long)1)->label();
         lisp->checkState(this);
         const auto& am = lisp->delegation->method_pool[lisp->current_space]->find(label);
         if (am != lisp->delegation->method_pool[lisp->current_space]->end()) {
@@ -5136,8 +5144,8 @@ Element* List_factorial_eval::eval(LispE* lisp) {
     Element* e = liste[1]->eval(lisp);
 
     Element* r = null_;
-    long value = 0;
-    unsigned long res = 1;
+    li_long value = 0;
+    li_ulong res = 1;
     try {
         lisp->checkState(this);
         if (e->isList()) {
@@ -5151,11 +5159,13 @@ Element* List_factorial_eval::eval(LispE* lisp) {
                 if (value <= 20)
                     ((Numbers*)r)->liste.push_back(factorials[value]);
                 else {
-                    res = (long)factorials[20];
+                    //beyond 20!, the value no longer fits in 64 bits: the list holds
+                    //numbers (double), so we compute in double (the table only goes up to 20)
+                    double d_res = (double)factorials[20];
                     for (long i = 21; i <= value; i++) {
-                        res *= i;
+                        d_res *= i;
                     }
-                    ((Numbers*)r)->liste.push_back(factorials[value]);
+                    ((Numbers*)r)->liste.push_back(d_res);
                 }
             }
             e->release();
@@ -5169,9 +5179,9 @@ Element* List_factorial_eval::eval(LispE* lisp) {
         e->release();
         if (value <= 20) {
             lisp->resetStack();
-            return lisp->provideInteger((long)factorials[value]);
+            return lisp->provideInteger((li_long)factorials[value]);
         }
-        res = (long)factorials[20];
+        res = (li_ulong)factorials[20];
         for (long i = 21; i <= value; i++)
         res *= i;
     }
@@ -5538,7 +5548,7 @@ Element* List_irange_eval::eval(LispE* lisp) {
     double init;
     evalAsNumber(1, lisp, init);
     if (sz == 2) {
-        if (init == (long)init)
+        if (init == (li_long)init)
             return lisp->providerange_Integer(0, 1, init);
         return lisp->providerange_Number(0, 1, init);
     }
@@ -5548,13 +5558,13 @@ Element* List_irange_eval::eval(LispE* lisp) {
         double bound;
         evalAsNumber(2, lisp, bound);
         evalAsNumber(3, lisp, inc);
-        if (init == (long)init && inc == (long)inc)
+        if (init == (li_long)init && inc == (li_long)inc)
             return lisp->providerange_Integer(init, inc, bound);
         return lisp->providerange_Number(init, inc, bound);
     }
     
     evalAsNumber(2, lisp, inc);
-    if (init == (long)init && inc == (long)inc)
+    if (init == (li_long)init && inc == (li_long)inc)
         return lisp->providerange_Integer(init, inc);
     return lisp->providerange_Number(init, inc);
 }
@@ -5567,7 +5577,7 @@ Element* List_irangein_eval::eval(LispE* lisp) {
     evalAsNumber(1, lisp, init);
 
     if (sz == 2) {
-        if (init == (long)init)
+        if (init == (li_long)init)
             return lisp->providerange_Integer(0, 1, init + 1);
         return lisp->providerange_Number(0, 1, init + 1);
     }
@@ -5577,13 +5587,13 @@ Element* List_irangein_eval::eval(LispE* lisp) {
         double bound;
         evalAsNumber(2, lisp, bound);
         evalAsNumber(3, lisp, inc);
-        if (init == (long)init && inc == (long)inc)
+        if (init == (li_long)init && inc == (li_long)inc)
             return lisp->providerange_Integer(init, inc, bound + inc);
         return lisp->providerange_Number(init, inc, bound + inc);
     }
 
     evalAsNumber(2, lisp, inc);
-    if (init == (long)init && inc == (long)inc)
+    if (init == (li_long)init && inc == (li_long)inc)
         return lisp->providerange_Integer(init, inc);
     return lisp->providerange_Number(init, inc);
 }
@@ -6001,7 +6011,7 @@ Element* List_rangein_eval::eval(LispE* lisp) {
     if (e1->isString() && e2->isString()) {
         if (!e3->isInteger())
             return lisp->check_error(this, new Error("Error: expecting an increment as integer"), idxinfo);
-        long inc = e3->asInteger();
+        li_long inc = e3->asInteger();
         u_ustring s1 = e1->asUString(lisp);
         u_ustring s2 = e2->asUString(lisp);
         if (!s1.size() || !s2.size())
@@ -6011,7 +6021,7 @@ Element* List_rangein_eval::eval(LispE* lisp) {
     }
     else {
         if (e1->isInteger() && e2->isInteger() && e3->isInteger()) {
-            long inc = e3->asInteger();
+            li_long inc = e3->asInteger();
             //The last value is part of the final range list
             //hence the "+ inc" with e2
             e = range(lisp, e1->asInteger(), e2->asInteger() + inc, inc);
@@ -6131,7 +6141,7 @@ Element* List_sum_eval::eval(LispE* lisp) {
             return v?lisp->provideShort(v):zero_value;
         }
         case t_integers: {
-            long v = ((Integers*)first_element)->liste.sum();
+            li_long v = ((Integers*)first_element)->liste.sum();
             first_element->release();
             return v?lisp->provideInteger(v):zero_value;
         }
@@ -6164,7 +6174,7 @@ Element* List_sum_eval::eval(LispE* lisp) {
             return lisp->provideNumber(v);
         }
         case t_seti: {
-            long v = 0;
+            li_long v = 0;
             Set_i* lst = (Set_i*)first_element;
             for (const auto& a: lst->ensemble)
                 v += a;
@@ -6205,7 +6215,7 @@ Element* List_product_eval::eval(LispE* lisp) {
             return v?lisp->provideShort(v):zero_value;
         }
         case t_integers: {
-            long v = ((Integers*)first_element)->liste.product();
+            li_long v = ((Integers*)first_element)->liste.product();
             first_element->release();
             return v?lisp->provideInteger(v):zero_value;
         }
@@ -6227,7 +6237,7 @@ Element* List_product_eval::eval(LispE* lisp) {
             return lisp->provideNumber(v);
         }
         case t_seti: {
-            long v = 1;
+            li_long v = 1;
             Set_i* lst = (Set_i*)first_element;
             for (const auto& a: lst->ensemble)
                 v *= a;

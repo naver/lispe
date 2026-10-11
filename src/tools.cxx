@@ -139,21 +139,37 @@ bool ckjchar(wchar_t ucs) {
       (ucs >= 0x30000 && ucs <= 0x3fffd)));
 }
 
-wstring convertToWString(long d) {
-    wchar_t buff[20];
-    swprintf_s(buff, 20, L"%ld", d);
+//%lld with a cast: li_long is long in native builds and int64_t in WebAssembly
+//24 characters: -9223372036854775808 needs 21 with the final zero
+wstring convertToWString(li_long d) {
+    wchar_t buff[24];
+    swprintf_s(buff, 24, L"%lld", (long long)d);
     return buff;
+}
+
+string convertToString(li_long d) {
+    char buff[24];
+    sprintf_s(buff, 24, "%lld", (long long)d);
+    return buff;
+}
+
+u_ustring convertToUString(li_long d) {
+    return w_to_u(convertToWString(d));
+}
+
+#ifdef LISPE_WASM
+wstring convertToWString(long d) {
+    return convertToWString((li_long)d);
 }
 
 string convertToString(long d) {
-    char buff[20];
-    sprintf_s(buff, 20, "%ld", d);
-    return buff;
+    return convertToString((li_long)d);
 }
 
 u_ustring convertToUString(long d) {
-    return w_to_u(convertToWString(d));
+    return convertToUString((li_long)d);
 }
+#endif
 
 wstring convertToWString(double d) {
     wchar_t buff[20];
@@ -2472,7 +2488,7 @@ double convertingfloathexa(const char* s) {
         if (*s=='+')
             ++s;
     
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         if (*s=='0') {
             if (s[1]=='x') {
@@ -2609,7 +2625,7 @@ double convertingfloathexa(const wchar_t* s) {
         if (*s=='+')
             ++s;
     
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         if (*s=='0') {
             if (s[1]=='x') {
@@ -2747,7 +2763,7 @@ double convertingfloathexa(const u_uchar* s) {
         if (*s=='+')
             ++s;
     
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         if (*s=='0') {
             if (s[1]=='x') {
@@ -2887,7 +2903,7 @@ double convertingfloathexa(u_ustring& s) {
         if (s[i]=='+')
             i++;
     
-    long v;
+    int64_t v;
     if (isadigit(s[i])) {
         if (s[i] == '0') {
             if (s[i+1] == 'x') {
@@ -3026,7 +3042,7 @@ double convertingfloathexa(string& s) {
         if (s[i]=='+')
             i++;
     
-    long v;
+    int64_t v;
     if (isadigit(s[i])) {
         if (s[i] == '0') {
             if (s[i+1] == 'x') {
@@ -3175,7 +3191,7 @@ double convertingfloathexa(const char* s, long& l) {
             l++;
         }
     
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         if (*s=='0') {
             if (s[1]=='x') {
@@ -3526,7 +3542,7 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
     }
 }
 
-long convertinginteger(string& number) {
+li_long convertinginteger(string& number) {
     long ipos=0;
     long sz = number.size();
     
@@ -3547,7 +3563,7 @@ long convertinginteger(string& number) {
     if (ipos == sz)
         return 0;
 
-    long v = 0;
+    li_long v = 0;
     
     uchar c = number[ipos++];
     if (sz == ipos) {
@@ -3587,7 +3603,7 @@ long convertinginteger(string& number) {
     return v*sign;
 }
 
-long convertinginteger(wstring& number) {
+li_long convertinginteger(wstring& number) {
     long ipos=0;
     long sz = number.size();
     
@@ -3608,7 +3624,7 @@ long convertinginteger(wstring& number) {
     if (ipos == sz)
         return 0;
 
-    long v = 0;
+    li_long v = 0;
     
     UWCHAR c = number[ipos++];
     if (sz == ipos) {
@@ -3648,7 +3664,7 @@ long convertinginteger(wstring& number) {
     return v*sign;
 }
 
-long convertinginteger(u_ustring& number) {
+li_long convertinginteger(u_ustring& number) {
     long ipos=0;
     long sz = number.size();
     
@@ -3669,7 +3685,7 @@ long convertinginteger(u_ustring& number) {
     if (ipos == sz)
         return 0;
 
-    long v = 0;
+    li_long v = 0;
     
     u_uchar c = number[ipos++];
     if (sz == ipos) {
@@ -3788,7 +3804,7 @@ double convertingfloathexa(wchar_t* s, long& l) {
             l++;
         }
     
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         if (*s=='0') {
             if (s[1]=='x') {
@@ -3953,7 +3969,7 @@ double convertingfloathexa(u_uchar* s, long& l) {
             l++;
         }
     
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         if (*s=='0') {
             if (s[1]=='x') {
@@ -6014,8 +6030,8 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
                 c = src[to];
                 src[to] = 0;
                 
-                if (v == (long)v)
-                    container->append(lisp, (long)v);
+                if (v == (li_long)v)
+                    container->append(lisp, (li_long)v);
                 else
                     container->append(lisp, v);
                 
@@ -6182,7 +6198,7 @@ char LispEJsonCompiler::build_to_json(Element* container) {
                 c = src[to];
                 src[to] = 0;
                 
-                if (v == (long)v)
+                if (v == (li_long)v)
                     container->append(new Integer(v));
                 else
                     container->append(new Number(v));

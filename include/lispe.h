@@ -120,7 +120,7 @@ public:
     
     unordered_map<u_ustring, Stringbyte*> const_stringbyte_pool;
     unordered_map<u_ustring, String*> const_string_pool;
-    unordered_map<long, Integer*> const_integer_pool;
+    unordered_map<li_long, Integer*> const_integer_pool;
     unordered_map<double, Number*> const_number_pool;
     
     unordered_map<short, char> depths;
@@ -1284,7 +1284,7 @@ public:
         return execution_stack.back()->variables.at(label)->asUString(this);
     }
 
-    inline long get_variable_integer(int16_t label) {
+    inline li_long get_variable_integer(int16_t label) {
         return execution_stack.back()->variables.at(label)->asInteger();
     }
 
@@ -1463,7 +1463,7 @@ public:
         return c;
     }
 
-    inline Integer* provideConstinteger(long u) {
+    inline Integer* provideConstinteger(li_long u) {
         Integer* c = const_integer_pool[u];
         if (c == NULL) {
             c = new Constinteger(u);
@@ -1629,7 +1629,7 @@ public:
         return new Shorts(n, pos);
     }
 
-    inline Integers* provideIntegers(long nb, long v) {
+    inline Integers* provideIntegers(long nb, li_long v) {
         return integers_pool.last?integers_pool.backpop()->set(nb, v):new Integerspool(this, nb, v);
     }
 
@@ -1685,7 +1685,7 @@ public:
         return float_pool.last?float_pool.backpop()->set(d):new Floatpool(this, d);
     }
 
-    inline Integer* provideInteger(long d) {
+    inline Integer* provideInteger(li_long d) {
         return integer_pool.last?integer_pool.backpop()->set(d):new Integerpool(this, d);
     }
 

@@ -1852,7 +1852,7 @@ double convertingfloathexa(const char* s) {
         return conversiontofloathexa(s, sign);
     }
 
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         v = *s++ & 15;
         while (isadigit(*s)) {
@@ -1992,7 +1992,7 @@ double convertingfloathexa(const char* s, long& l) {
         return conversiontofloathexa(s, sign, l);
     }
 
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         v = *s++ & 15;
         l++;
@@ -2546,7 +2546,7 @@ double convertingfloathexa(wchar_t* s, long& l) {
         return convertingtofloathexa(s, sign, l);
     }
 
-    long v;
+    int64_t v;
     if (isadigit(*s)) {
         v = *s++ & 15;
         l++;

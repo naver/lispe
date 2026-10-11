@@ -715,7 +715,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t idx,  int32_t* str_as_
     //Now our value
     Integers* ints = lisp->provideIntegers();
     for (long i = 0; i < mx; i++) {
-        ints->append(lisp, (long)values[i]);
+        ints->append(lisp, (li_long)values[i]);
     }
     
     lisp->storing_variable(ints, variable->label());

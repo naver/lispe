@@ -39,8 +39,8 @@
 static const double M_GOLDEN = 1.61803398874989484820458683436563811772030917980576286213544862270526046281890244970720720418939113748475;
 #define lmin(x,y) x<y?x:y
 //------------------------------------------------------------------------------------------
-Element* range(LispE* lisp, long init, long limit, long inc) {
-    long d = (limit - init) / inc;
+Element* range(LispE* lisp, li_long init, li_long limit, li_long inc) {
+    li_long d = (limit - init) / inc;
     if (d<0)
         d *= -1;
     
@@ -55,12 +55,12 @@ Element* range(LispE* lisp, long init, long limit, long inc) {
         Integers* range_list = lisp->provideIntegers();
         range_list->liste.reserve((long)d);
         if (inc > 0) {
-            for (long i = init; i < limit; i += inc) {
+            for (li_long i = init; i < limit; i += inc) {
                 range_list->liste.push_back(i);
             }
         }
         else {
-            for (long i = init; i > limit; i += inc)
+            for (li_long i = init; i > limit; i += inc)
                 range_list->liste.push_back(i);
         }
         return range_list;
@@ -273,7 +273,7 @@ double Element::checkNumber(LispE* lisp) {
     throw new Errorstack(lisp, s);
 }
 
-long Element::checkInteger(LispE* lisp) {
+li_long Element::checkInteger(LispE* lisp) {
     wstring s = L"Error: cannot use this element in an arithmetic expression: '";
     s += asString(lisp);
     s += L"'";
@@ -462,15 +462,15 @@ Element* Float::mod(LispE* lisp, Element* e) {
         return n->mod(lisp, e);
     }
     
-    long v = e->checkInteger(lisp);
+    li_long v = e->checkInteger(lisp);
     if (!v)
         throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
-        content = (long)content % v;
+        content = (li_long)content % v;
         return this;
     }
-    return lisp->provideFloat((long)content%v);
+    return lisp->provideFloat((li_long)content%v);
 }
 
 Element* Float::power(LispE* lisp, Element* e) {
@@ -812,15 +812,15 @@ Element* Number::mod(LispE* lisp, Element* e) {
         return n->mod(lisp, e);
     }
     
-    long v = e->checkInteger(lisp);
+    li_long v = e->checkInteger(lisp);
     if (!v)
         throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
-        content = (long)content % v;
+        content = (li_long)content % v;
         return this;
     }
-    return lisp->provideNumber((long)content%v);
+    return lisp->provideNumber((li_long)content%v);
 }
 
 Element* Number::power(LispE* lisp, Element* e) {
@@ -837,7 +837,7 @@ Element* Number::power(LispE* lisp, Element* e) {
 }
 
 Element* Number::bit_not(LispE* lisp)  {
-    if ((long)content == content) {
+    if ((li_long)content == content) {
         long c = content;
         return lisp->provideNumber(~c);
     }
@@ -860,7 +860,7 @@ Element* Number::bit_and_not(LispE* lisp, Element* e)  {
         return n->bit_and_not(lisp, e);
     }
     
-    if ((long)content == content) {
+    if ((li_long)content == content) {
         long c = content;
         c &= ~e->checkInteger(lisp);
         return lisp->provideNumber(c);
@@ -883,7 +883,7 @@ Element* Number::bit_and(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    if ((long)content == content) {
+    if ((li_long)content == content) {
         long c = content;
         c &= e->checkInteger(lisp);
         return lisp->provideNumber(c);
@@ -907,7 +907,7 @@ Element* Number::bit_or(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    if ((long)content == content) {
+    if ((li_long)content == content) {
         long c = content;
         c |= e->checkInteger(lisp);
         return lisp->provideNumber(c);
@@ -929,7 +929,7 @@ Element* Number::bit_xor(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    if ((long)content == content) {
+    if ((li_long)content == content) {
         long c = content;
         c ^= e->checkInteger(lisp);
         return lisp->provideNumber(c);
@@ -950,7 +950,7 @@ Element* Number::leftshift(LispE* lisp, Element* e)  {
         release();
         return n->leftshift(lisp, e);
     }
-    if ((long)content == content) {
+    if ((li_long)content == content) {
         long c = content;
         c <<= e->checkInteger(lisp);
         return lisp->provideNumber(c);
@@ -971,7 +971,7 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
         release();
         return n->rightshift(lisp, e);
     }
-    if ((long)content == content) {
+    if ((li_long)content == content) {
         long c = content;
         c >>= e->checkInteger(lisp);
         return lisp->provideNumber(c);
@@ -1163,7 +1163,7 @@ Element* Integer::mod(LispE* lisp, Element* e) {
         release();
         return n->mod(lisp, e);
     }
-    long v =  e->checkInteger(lisp);
+    li_long v =  e->checkInteger(lisp);
     if (!v)
         throw new Errorstack(lisp, "Error: division by zero");
     
@@ -2458,7 +2458,7 @@ Element* Floats::mod(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             if (liste[i] == 0)
                 throw new Errorstack(lisp, "Error: division by zero");
-            d %= (long)liste[i];
+            d %= (li_long)liste[i];
         }
         return lisp->provideFloat(d);
     }
@@ -2924,7 +2924,7 @@ Element* Numbers::mod(LispE* lisp, Element* e) {
         for (long i = 1; i < size(); i++) {
             if (liste[i] == 0)
                 throw new Errorstack(lisp, "Error: division by zero");
-            d %= (long)liste[i];
+            d %= (li_long)liste[i];
         }
         return lisp->provideNumber(d);
     }
@@ -3078,7 +3078,7 @@ Element* Integers::bit_not(LispE* l) {
 Element* Integers::bit_and(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             d &= liste[i];
         }
@@ -3114,7 +3114,7 @@ Element* Integers::bit_and(LispE* lisp, Element* e) {
 Element* Integers::bit_and_not(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             d &= ~liste[i];
         }
@@ -3151,7 +3151,7 @@ Element* Integers::bit_and_not(LispE* lisp, Element* e) {
 Element* Integers::bit_or(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             d |= liste[i];
         }
@@ -3186,7 +3186,7 @@ Element* Integers::bit_or(LispE* lisp, Element* e) {
 Element* Integers::bit_xor(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             d ^= liste[i];
         }
@@ -3254,7 +3254,7 @@ Element* Integers::plus(LispE* lisp, Element* e) {
 
 Element* Integers::minus(LispE* lisp, Element* e) {
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             d -= liste[i];
         }
@@ -3327,7 +3327,7 @@ Element* Integers::multiply(LispE* lisp, Element* e) {
 Element* Integers::divide(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
                 throw new Errorstack(lisp, "Error: division by zero");
@@ -3356,7 +3356,7 @@ Element* Integers::divide(LispE* lisp, Element* e) {
         return this;
     }
     
-    long d = e->asInteger();
+    li_long d = e->asInteger();
     if (d == 0)
         throw new Errorstack(lisp, "Error: division by zero");
     liste.divide(d);
@@ -3365,7 +3365,7 @@ Element* Integers::divide(LispE* lisp, Element* e) {
 
 Element* Integers::mod(LispE* lisp, Element* e) {
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
                 throw new Errorstack(lisp, "Error: division by zero");
@@ -3437,7 +3437,7 @@ Element* Integers::power(LispE* lisp, Element* e) {
 
 Element* Integers::leftshift(LispE* lisp, Element* e) {
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             d <<= liste[i];
         }
@@ -3473,7 +3473,7 @@ Element* Integers::leftshift(LispE* lisp, Element* e) {
 Element* Integers::rightshift(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        long d = liste[0];
+        li_long d = liste[0];
         for (long i = 1; i < size(); i++) {
             d >>= liste[i];
         }
@@ -3952,7 +3952,7 @@ Element* Shorts::rightshift(LispE* lisp, Element* e) {
 
 Element* Set_i::plus(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d = 0;
+    li_long d = 0;
     if (e == NULL) {
         for (const auto& a: ensemble) {
             d += a;
@@ -3989,7 +3989,7 @@ Element* Set_i::plus(LispE* lisp, Element* e) {
         release();
         return res;
     }
-    long w = e->asInteger();
+    li_long w = e->asInteger();
     for (const auto& a: ensemble) {
         d = a + w;
         res->add(d);
@@ -4000,7 +4000,7 @@ Element* Set_i::plus(LispE* lisp, Element* e) {
 
 Element* Set_i::minus(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d = 0;
+    li_long d = 0;
     if (e == NULL) {
         bool first = true;
         for (const auto& a: ensemble) {
@@ -4043,7 +4043,7 @@ Element* Set_i::minus(LispE* lisp, Element* e) {
         release();
         return res;
     }
-    long w = e->asInteger();
+    li_long w = e->asInteger();
     for (const auto& a: ensemble) {
         d = a - w;
         res->add(d);
@@ -4054,7 +4054,7 @@ Element* Set_i::minus(LispE* lisp, Element* e) {
 
 Element* Set_i::multiply(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d = 1;
+    li_long d = 1;
     if (e == NULL) {
         for (const auto& a: ensemble) {
             d *= a;
@@ -4091,7 +4091,7 @@ Element* Set_i::multiply(LispE* lisp, Element* e) {
         release();
         return res;
     }
-    long w = e->asInteger();
+    li_long w = e->asInteger();
     for (const auto& a: ensemble) {
         d = a * w;
         res->add(d);
@@ -4178,7 +4178,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
         bool first = true;
-        long d = 0;
+        li_long d = 0;
         for (const auto& a: ensemble) {
             if (first) {
                 d = a;
@@ -4187,7 +4187,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
             else {
                 if (!a)
                     throw new Errorstack(lisp, "Error: division by zero");
-                d %= (long)a;
+                d %= (li_long)a;
             }
         }
         return lisp->provideNumber(d);
@@ -4208,14 +4208,14 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
                 throw new Errorstack(lisp, "Error: division by zero");
             }
             
-            d = (long)a % (long)*nxt;
+            d = (li_long)a % (li_long)*nxt;
             res->add(d);
             nxt++;
         }
         release();
         return res;
     }
-    long w;
+    li_long w;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -4228,7 +4228,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
                 delete res;
                 throw new Errorstack(lisp, "Error: division by zero");
             }
-            d = (long)a % w ;
+            d = (li_long)a % w ;
             res->add(d);
             i++;
         }
@@ -4242,7 +4242,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
     }
     
     for (const auto& a: ensemble) {
-        d = (long)a % w;
+        d = (li_long)a % w;
         res->add(d);
     }
     release();
@@ -4313,7 +4313,7 @@ Element* Set_i::power(LispE* lisp, Element* e) {
 
 Element* Set_i::bit_and_not(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d = 0;
+    li_long d = 0;
     if (e == NULL) {
         bool first = true;
         for (const auto& a: ensemble) {
@@ -4342,7 +4342,7 @@ Element* Set_i::bit_and_not(LispE* lisp, Element* e) {
         return res;
     }
     
-    long r;
+    li_long r;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -4368,7 +4368,7 @@ Element* Set_i::bit_and_not(LispE* lisp, Element* e) {
 }
 
 Element* Set_i::bit_and(LispE* lisp, Element* e) {
-    long d = 0;
+    li_long d = 0;
     if (e == NULL) {
         bool first = true;
         for (const auto& a: ensemble) {
@@ -4397,7 +4397,7 @@ Element* Set_i::bit_and(LispE* lisp, Element* e) {
         return res;
     }
     
-    long r;
+    li_long r;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -4423,7 +4423,7 @@ Element* Set_i::bit_and(LispE* lisp, Element* e) {
 }
 
 Element* Set_i::bit_or(LispE* lisp, Element* e) {
-    long d = 0;
+    li_long d = 0;
     if (e == NULL) {
         for (const auto& a: ensemble) {
             d |= a;
@@ -4446,7 +4446,7 @@ Element* Set_i::bit_or(LispE* lisp, Element* e) {
         return res;
     }
     
-    long r;
+    li_long r;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -4473,7 +4473,7 @@ Element* Set_i::bit_or(LispE* lisp, Element* e) {
 
 Element* Set_i::bit_xor(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d = 0;
+    li_long d = 0;
     if (e == NULL) {
         for (const auto& a: ensemble) {
             d ^= a;
@@ -4496,7 +4496,7 @@ Element* Set_i::bit_xor(LispE* lisp, Element* e) {
         return res;
     }
     
-    long r;
+    li_long r;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -4534,7 +4534,7 @@ Element* Set_i::bit_not(LispE* lisp) {
 
 Element* Set_i::leftshift(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d = 0;
+    li_long d = 0;
     if (e == NULL) {
         bool first = true;
         for (const auto& a: ensemble) {
@@ -4564,7 +4564,7 @@ Element* Set_i::leftshift(LispE* lisp, Element* e) {
         return res;
     }
     
-    long w;
+    li_long w;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -4591,7 +4591,7 @@ Element* Set_i::leftshift(LispE* lisp, Element* e) {
 
 Element* Set_i::rightshift(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d = 0;
+    li_long d = 0;
     if (e == NULL) {
         bool first = true;
         for (const auto& a: ensemble) {
@@ -4621,7 +4621,7 @@ Element* Set_i::rightshift(LispE* lisp, Element* e) {
         return res;
     }
     
-    long w;
+    li_long w;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -4884,7 +4884,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
             else {
                 if (!a)
                     throw new Errorstack(lisp, "Error: division by zero");
-                d %= (long)a;
+                d %= (li_long)a;
             }
         }
         return lisp->provideNumber(d);
@@ -4905,14 +4905,14 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
                 throw new Errorstack(lisp, "Error: division by zero");
             }
             
-            d = (long)a % (long)*nxt;
+            d = (li_long)a % (li_long)*nxt;
             res->add(d);
             nxt++;
         }
         release();
         return res;
     }
-    long w;
+    li_long w;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -4925,7 +4925,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
                 delete res;
                 throw new Errorstack(lisp, "Error: division by zero");
             }
-            d = (long)a % w ;
+            d = (li_long)a % w ;
             res->add(d);
             i++;
         }
@@ -4939,7 +4939,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
     }
     
     for (const auto& a: ensemble) {
-        d = (long)a % w;
+        d = (li_long)a % w;
         res->add(d);
     }
     release();
@@ -5306,7 +5306,7 @@ Element* Set_n::leftshift(LispE* lisp, Element* e) {
         release();
         return res;
     }
-    long w;
+    li_long w;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -5365,7 +5365,7 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
         release();
         return res;
     }
-    long w;
+    li_long w;
     if (e->isList()) {
         long i = 0;
         for (const auto& a : ensemble) {
@@ -5515,8 +5515,8 @@ Element* List_divideintegers::eval(LispE* lisp) {
     
     int16_t listsize = liste.size();
     Element* second_element = null_;
-    long nom = first_element->asInteger();
-    long quotient;
+    li_long nom = first_element->asInteger();
+    li_long quotient;
     try {
         lisp->checkState(this);
         for (long i = 2; i < listsize; i++) {
@@ -5541,11 +5541,11 @@ Element* List_divideintegers::eval(LispE* lisp) {
 // Modulo with Python semantics: the result has the sign of the divisor.
 // In C++ (since C++11) a % b has the sign of a, so a non-zero remainder
 // whose sign differs from b must be shifted by b.
-static inline long floormodulo(long a, long b) {
+static inline li_long floormodulo(li_long a, li_long b) {
     // a % -1 is always 0, and evaluating LONG_MIN % -1 would trap on x86
     if (b == -1)
         return 0;
-    long r = a % b;
+    li_long r = a % b;
     if (r != 0 && ((r ^ b) < 0))
         r += b;
     return r;
@@ -5557,8 +5557,8 @@ Element* List_pymodintegers::eval(LispE* lisp) {
 
     int16_t listsize = liste.size();
     Element* second_element = null_;
-    long nom = first_element->asInteger();
-    long quotient;
+    li_long nom = first_element->asInteger();
+    li_long quotient;
     try {
         lisp->checkState(this);
         for (long i = 2; i < listsize; i++) {
@@ -5583,9 +5583,9 @@ Element* List_pymodintegers::eval(LispE* lisp) {
 // Floor division with Python semantics: the quotient is rounded towards minus infinity.
 // In C++ (since C++11) a % b has the sign of a, so a non-zero remainder
 // whose sign differs from b means that truncation rounded the wrong way.
-static inline long floordivide(long a, long b) {
-    long q = a / b;
-    long r = a % b;
+static inline li_long floordivide(li_long a, li_long b) {
+    li_long q = a / b;
+    li_long r = a % b;
     if (r != 0 && ((r ^ b) < 0))
         --q;
     return q;
@@ -5597,8 +5597,8 @@ Element* List_floordivideintegers::eval(LispE* lisp) {
 
     int16_t listsize = liste.size();
     Element* second_element = null_;
-    long nom = first_element->asInteger();
-    long quotient;
+    li_long nom = first_element->asInteger();
+    li_long quotient;
     try {
         lisp->checkState(this);
         for (long i = 2; i < listsize; i++) {
@@ -5941,7 +5941,7 @@ Element* List::evall_multiply(LispE* lisp) {
                     return v?lisp->provideShort(v):zero_value;
                 }
                 case t_integers: {
-                    long v = ((Integers*)lst)->liste.product();
+                    li_long v = ((Integers*)lst)->liste.product();
                     first_element->release();
                     return v?lisp->provideInteger(v):zero_value;
                 }
@@ -6052,7 +6052,7 @@ Element* List_multiply2::eval(LispE* lisp) {
                 return v?lisp->provideShort(v):zero_value;
             }
             case t_integers: {
-                long v = ((Integers*)lst)->liste.product();
+                li_long v = ((Integers*)lst)->liste.product();
                 first_element->release();
                 lisp->resetStack();
                 return v?lisp->provideInteger(v):zero_value;
@@ -6161,7 +6161,7 @@ Element* List::evall_plus(LispE* lisp) {
                     return v?lisp->provideShort(v):zero_value;
                 }
                 case t_integers: {
-                    long v = ((Integers*)lst)->liste.sum();
+                    li_long v = ((Integers*)lst)->liste.sum();
                     first_element->release();
                     return v?lisp->provideInteger(v):zero_value;
                 }
@@ -6323,7 +6323,7 @@ Element* List_plus2::eval(LispE* lisp) {
                 return v?lisp->provideShort(v):zero_value;
             }
             case t_integers: {
-                long v = ((Integers*)lst)->liste.sum();
+                li_long v = ((Integers*)lst)->liste.sum();
                 first_element->release();
                 lisp->resetStack();
                 return v?lisp->provideInteger(v):zero_value;
@@ -7285,8 +7285,8 @@ Element* List::evall_divideintegersequal(LispE* lisp) {
             }
         }
         else {
-            long value = first_element->asInteger();
-            long quotient;
+            li_long value = first_element->asInteger();
+            li_long quotient;
 
             for (i = 2; i < listsize; i++) {
                 second_element = liste[i]->eval(lisp);
@@ -7498,8 +7498,8 @@ Element* List::evall_floormoduloequal(LispE* lisp) {
                         return zero_value;
                     }
                     // Python modulo folded from the left over the list
-                    long v = lst->index(0)->asInteger();
-                    long q;
+                    li_long v = lst->index(0)->asInteger();
+                    li_long q;
                     for (long idx = 1; idx < lst->size(); idx++) {
                         q = lst->index(idx)->asInteger();
                         if (q == 0)
@@ -7514,8 +7514,8 @@ Element* List::evall_floormoduloequal(LispE* lisp) {
             }
         }
         else {
-            long value = first_element->asInteger();
-            long quotient;
+            li_long value = first_element->asInteger();
+            li_long quotient;
 
             for (i = 2; i < listsize; i++) {
                 second_element = liste[i]->eval(lisp);
@@ -7620,8 +7620,8 @@ Element* List::evall_floordivideintegersequal(LispE* lisp) {
                         return zero_value;
                     }
                     // Python floor division folded from the left over the list
-                    long v = lst->index(0)->asInteger();
-                    long q;
+                    li_long v = lst->index(0)->asInteger();
+                    li_long q;
                     for (long idx = 1; idx < lst->size(); idx++) {
                         q = lst->index(idx)->asInteger();
                         if (q == 0)
@@ -7638,8 +7638,8 @@ Element* List::evall_floordivideintegersequal(LispE* lisp) {
             }
         }
         else {
-            long value = first_element->asInteger();
-            long quotient;
+            li_long value = first_element->asInteger();
+            li_long quotient;
 
             for (i = 2; i < listsize; i++) {
                 second_element = liste[i]->eval(lisp);
@@ -9242,23 +9242,24 @@ double cosine_similarity(vecte_a<double>& values, vecte_a<double>& v) {
 }
 
 //------------------------------------------------------------------------------------------
-long gcd_math(long a, long b)
+li_long gcd_math(li_long a, li_long b)
 {
-    // Everything divides 0
-    if (a == 0)
-        return b;
-    if (b == 0)
-        return a;
-    // base case
-    if (a == b)
-        return a;
-    // a is greater
-    if (a > b)
-        return gcd_math(a-b, b);
-    return gcd_math(a, b-a);
+    // Euclid's algorithm, with remainders: the version by subtractions was recursive
+    // and needed as many calls as a/b (gcd 1 1000000000000 overflowed the stack),
+    // and it never stopped with a negative number
+    if (a < 0)
+        a = -a;
+    if (b < 0)
+        b = -b;
+    while (b) {
+        li_long r = a % b;
+        a = b;
+        b = r;
+    }
+    return a;
 }
 
-long hcf_math(long x, long y) {
+li_long hcf_math(li_long x, li_long y) {
     return (!y)?x:hcf_math(y, x%y);
 }
 
@@ -9446,7 +9447,7 @@ public:
                 return lisp->provideNumber(v);
             }
             case math_iabs: {
-                long v = val_v->asInteger();
+                li_long v = val_v->asInteger();
                 v = (v < 0)?v*-1:v;
                 return lisp->provideInteger(v);
             }
@@ -9616,13 +9617,13 @@ public:
                 return lisp->provideNumber(v);
             }
             case math_gcd: {
-                long v = val_v->asInteger();
-                long vv = lisp->get_variable(U"vaal")->asInteger();
+                li_long v = val_v->asInteger();
+                li_long vv = lisp->get_variable(U"vaal")->asInteger();
                 return lisp->provideInteger(gcd_math(v,vv));
             }
             case math_hcf: {
-                long v = val_v->asInteger();
-                long vv = lisp->get_variable(U"vaal")->asInteger();
+                li_long v = val_v->asInteger();
+                li_long vv = lisp->get_variable(U"vaal")->asInteger();
                 return lisp->provideInteger(hcf_math(v,vv));
             }
             case math_cosine: {
@@ -9963,8 +9964,8 @@ Element* Integers::matrix_product(LispE* lisp, Element* mat, long sh, long sh10,
     long sz = size();
     long szf = m2->size();
     long i, j, k;
-    vecte_a<long> transpose(szf);
-    long v;
+    vecte_a<li_long> transpose(szf);
+    li_long v;
 
     transpose.reserve(szf);
     

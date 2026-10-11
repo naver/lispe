@@ -824,7 +824,7 @@ void Dictionarypool::append(LispE* lisp, double v) {
     }
 }
 
-void Dictionarypool::append(LispE* lisp, long v) {
+void Dictionarypool::append(LispE* lisp, li_long v) {
     if (choice)
         u_key = convertToUString(v);
     else {
@@ -1126,7 +1126,7 @@ void Dictionary::garbaging_values(LispE* lisp) {
 Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    
+    increment();
     String* element = lisp->provideString();
     lisp->recording(element, label);
     
@@ -1159,6 +1159,7 @@ Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
             }
             if (e->type == l_return) {
                 _keys->release();
+                decrementkeep();
                 if (e->isBreak())
                     return null_;
                 return e;
@@ -1167,8 +1168,10 @@ Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
     }
     catch (Error* err) {
         _keys->release();
+        decrementkeep();
         throw err;
     }
+    decrementkeep();
     _keys->release();
     return e;
 }
@@ -1197,7 +1200,7 @@ Element* Dictionary_json::loop(LispE* lisp, int16_t label, List* code) {
     
     String* element = lisp->provideString();
     lisp->recording(element, label);
-    
+    increment();
     long sz = code->liste.size();
     //We record the keys first, in  case the dictionary is changed
     //in the following instructions
@@ -1222,11 +1225,13 @@ Element* Dictionary_json::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -1553,7 +1558,7 @@ Element* Dictionary_i::minmax(LispE* lisp) {
 }
 
 void Dictionary_i::flatten(LispE* lisp, List* l) {
-    long k;
+    li_long k;
     for (const auto& a: dictionary) {
         k = a.first;
         l->append(lisp->provideNumber(k));
@@ -1579,7 +1584,7 @@ Element* Dictionary_i::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     Integer* element = lisp->provideInteger(0);
     lisp->recording(element, label);
-    
+    increment();
     long sz = code->liste.size();
     //We record the keys first, in  case the dictionary is changed
     //in the following instructions
@@ -1609,6 +1614,7 @@ Element* Dictionary_i::loop(LispE* lisp, int16_t label, List* code) {
             }
             if (e->type == l_return) {
                 _keys->release();
+                decrementkeep();
                 if (e->isBreak())
                     return null_;
                 return e;
@@ -1617,8 +1623,10 @@ Element* Dictionary_i::loop(LispE* lisp, int16_t label, List* code) {
     }
     catch (Error* err) {
         _keys->release();
+        decrementkeep();
         throw err;
     }
+    decrementkeep();
     _keys->release();
     return e;
     
@@ -1713,7 +1721,7 @@ Element* Dictionary_i::search_reverse(LispE* lisp, Element* valeur, long ix) {
 Element* Dictionary_i::reverse(LispE* lisp, bool duplicate) {
     Dictionary_i* dico = lisp->provideDictionary_i();
     
-    long k;
+    li_long k;
     Element* e;
     for (const auto& a: dictionary) {
         k = a.second->asInteger();
@@ -1728,24 +1736,24 @@ Element* Dictionary_i::reverse(LispE* lisp, bool duplicate) {
     return dico;
 }
 
-Element* Dictionary_i::value_on_index(long k, LispE* lisp) {
+Element* Dictionary_i::value_on_index(li_long k, LispE* lisp) {
     auto it = dictionary.find(k);
     return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
-Element* Dictionary_i::protected_index(LispE* lisp, long k) {
+Element* Dictionary_i::protected_index(LispE* lisp, li_long k) {
     auto it = dictionary.find(k);
     return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Dictionary_i::value_on_index(LispE* lisp, Element* ix) {
-    long v = ix->checkInteger(lisp);
+    li_long v = ix->checkInteger(lisp);
     auto it = dictionary.find(v);
     return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary_i::protected_index(LispE* lisp, Element* ix) {
-    long v = ix->checkInteger(lisp);
+    li_long v = ix->checkInteger(lisp);
     auto it = dictionary.find(v);
     if (it == dictionary.end())
         throw new Errorstack(lisp, "Error: index out of bounds");
@@ -1862,7 +1870,7 @@ Element* Dictionary_n::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     Number* element = lisp->provideNumber(0);
     lisp->recording(element, label);
-    
+    increment();
     long sz = code->liste.size();
     //We record the keys first, in  case the dictionary is changed
     //in the following instructions
@@ -1892,6 +1900,7 @@ Element* Dictionary_n::loop(LispE* lisp, int16_t label, List* code) {
             }
             if (e->type == l_return) {
                 _keys->release();
+                decrementkeep();
                 if (e->isBreak())
                     return null_;
                 return e;
@@ -1900,9 +1909,11 @@ Element* Dictionary_n::loop(LispE* lisp, int16_t label, List* code) {
     }
     catch (Error* err) {
         _keys->release();
+        decrementkeep();
         throw err;
     }
     _keys->release();
+    decrementkeep();
     return e;
     
 }
@@ -2097,21 +2108,21 @@ Element* Dictionary_json::next_iter_exchange(LispE* lisp, void* it) {
 }
 
 Element* Dictionary_i::next_iter(LispE* lisp, void* it) {
-    std::unordered_map<long, Element*>::iterator* n = (std::unordered_map<long, Element*>::iterator*)it;
+    std::unordered_map<li_long, Element*>::iterator* n = (std::unordered_map<li_long, Element*>::iterator*)it;
     if (*n == dictionary.end())
         return emptyatom_;
 
-    long u = (*n)->first;
+    li_long u = (*n)->first;
     (*n)++;
     return lisp->provideInteger(u);
 }
 
 Element* Dictionary_i::next_iter_exchange(LispE* lisp, void* it) {
-    std::unordered_map<long, Element*>::iterator* n = (std::unordered_map<long, Element*>::iterator*)it;
+    std::unordered_map<li_long, Element*>::iterator* n = (std::unordered_map<li_long, Element*>::iterator*)it;
     if (*n == dictionary.end())
         return emptyatom_;
 
-    long u = (*n)->first;
+    li_long u = (*n)->first;
     (*n)++;
     return lisp->provideInteger(u);
 }
@@ -2263,7 +2274,7 @@ void Treepool::append(LispE* lisp, double v) {
     }
 }
 
-void Treepool::append(LispE* lisp, long v) {
+void Treepool::append(LispE* lisp, li_long v) {
     if (choice)
         u_key = convertToUString(v);
     else {
@@ -2565,7 +2576,7 @@ void Tree::garbaging_values(LispE* lisp) {
 Element* Tree::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    
+    increment();
     String* element = lisp->provideString();
     lisp->recording(element, label);
     
@@ -2598,6 +2609,7 @@ Element* Tree::loop(LispE* lisp, int16_t label, List* code) {
             }
             if (e->type == l_return) {
                 _keys->release();
+                decrementkeep();
                 if (e->isBreak())
                     return null_;
                 return e;
@@ -2606,9 +2618,11 @@ Element* Tree::loop(LispE* lisp, int16_t label, List* code) {
     }
     catch (Error* err) {
         _keys->release();
+        decrementkeep();
         throw err;
     }
     _keys->release();
+    decrementkeep();
     return e;
 }
 
@@ -2888,7 +2902,7 @@ Element* Tree_i::minmax(LispE* lisp) {
 }
 
 void Tree_i::flatten(LispE* lisp, List* l) {
-    long k;
+    li_long k;
     for (const auto& a: tree) {
         k = a.first;
         l->append(lisp->provideNumber(k));
@@ -2914,7 +2928,7 @@ Element* Tree_i::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     Integer* element = lisp->provideInteger(0);
     lisp->recording(element, label);
-    
+    increment();
     long sz = code->liste.size();
     //We record the keys first, in  case the tree is changed
     //in the following instructions
@@ -2944,6 +2958,7 @@ Element* Tree_i::loop(LispE* lisp, int16_t label, List* code) {
             }
             if (e->type == l_return) {
                 _keys->release();
+                decrementkeep();
                 if (e->isBreak())
                     return null_;
                 return e;
@@ -2952,9 +2967,11 @@ Element* Tree_i::loop(LispE* lisp, int16_t label, List* code) {
     }
     catch (Error* err) {
         _keys->release();
+        decrementkeep();
         throw err;
     }
     _keys->release();
+    decrementkeep();
     return e;
     
 }
@@ -3048,7 +3065,7 @@ Element* Tree_i::search_reverse(LispE* lisp, Element* valeur, long ix) {
 Element* Tree_i::reverse(LispE* lisp, bool duplicate) {
     Tree_i* dico = lisp->provideTree_i();
     
-    long k;
+    li_long k;
     Element* e;
     for (const auto& a: tree) {
         k = a.second->asInteger();
@@ -3063,24 +3080,24 @@ Element* Tree_i::reverse(LispE* lisp, bool duplicate) {
     return dico;
 }
 
-Element* Tree_i::value_on_index(long k, LispE* lisp) {
+Element* Tree_i::value_on_index(li_long k, LispE* lisp) {
     auto it = tree.find(k);
     return (it == tree.end())?null_:it->second->copying(false);
 }
 
-Element* Tree_i::protected_index(LispE* lisp, long k) {
+Element* Tree_i::protected_index(LispE* lisp, li_long k) {
     auto it = tree.find(k);
     return (it == tree.end())?null_:it->second;
 }
 
 Element* Tree_i::value_on_index(LispE* lisp, Element* ix) {
-    long v = ix->checkInteger(lisp);
+    li_long v = ix->checkInteger(lisp);
     auto it = tree.find(v);
     return (it == tree.end())?null_:it->second->copying(false);
 }
 
 Element* Tree_i::protected_index(LispE* lisp, Element* ix) {
-    long v = ix->checkInteger(lisp);
+    li_long v = ix->checkInteger(lisp);
     auto it = tree.find(v);
     if (it == tree.end())
         throw new Errorstack(lisp, "Error: index out of bounds");
@@ -3197,7 +3214,7 @@ Element* Tree_n::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     Number* element = lisp->provideNumber(0);
     lisp->recording(element, label);
-    
+    increment();
     long sz = code->liste.size();
     //We record the keys first, in  case the tree is changed
     //in the following instructions
@@ -3227,6 +3244,7 @@ Element* Tree_n::loop(LispE* lisp, int16_t label, List* code) {
             }
             if (e->type == l_return) {
                 _keys->release();
+                decrementkeep();
                 if (e->isBreak())
                     return null_;
                 return e;
@@ -3235,9 +3253,11 @@ Element* Tree_n::loop(LispE* lisp, int16_t label, List* code) {
     }
     catch (Error* err) {
         _keys->release();
+        decrementkeep();
         throw err;
     }
     _keys->release();
+    decrementkeep();
     return e;
     
 }
@@ -3414,21 +3434,21 @@ Element* Tree::next_iter_exchange(LispE* lisp, void* it) {
 }
 
 Element* Tree_i::next_iter(LispE* lisp, void* it) {
-    std::map<long, Element*>::iterator* n = (std::map<long, Element*>::iterator*)it;
+    std::map<li_long, Element*>::iterator* n = (std::map<li_long, Element*>::iterator*)it;
     if (*n == tree.end())
         return emptyatom_;
 
-    long u = (*n)->first;
+    li_long u = (*n)->first;
     (*n)++;
     return lisp->provideInteger(u);
 }
 
 Element* Tree_i::next_iter_exchange(LispE* lisp, void* it) {
-    std::map<long, Element*>::iterator* n = (std::map<long, Element*>::iterator*)it;
+    std::map<li_long, Element*>::iterator* n = (std::map<li_long, Element*>::iterator*)it;
     if (*n == tree.end())
         return emptyatom_;
 
-    long u = (*n)->first;
+    li_long u = (*n)->first;
     (*n)++;
     return lisp->provideInteger(u);
 }

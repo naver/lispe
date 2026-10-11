@@ -87,7 +87,7 @@ typedef enum {
     //Recording in the stack or in memory
     l_sleep, l_wait, l_infix,
 #ifdef LISPE_WASM
-    l_evaljs, l_evaljssync,
+    l_evaljs, l_evaljsi, l_evaljsd, l_evaljsb, l_evaljssync,
 #endif
 
     l_set_const, l_setq, l_setqv, l_setqi, l_setg, l_setqequal, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
@@ -448,7 +448,7 @@ public:
 
     virtual void append(LispE* lisp, u_ustring& k) {}
     virtual void append(LispE* lisp, double v) {}
-    virtual void append(LispE* lisp, long v) {}
+    virtual void append(LispE* lisp, li_long v) {}
     virtual Element* eval_infix(LispE* lisp) {
         return this;
     }
@@ -695,7 +695,7 @@ public:
     }
 
 
-    virtual long asInteger() {
+    virtual li_long asInteger() {
         return 0;
     }
     
@@ -712,7 +712,7 @@ public:
     }
     
     virtual void setvalue(double v) {}
-    virtual void setvalue(long v) {}
+    virtual void setvalue(li_long v) {}
     virtual void setvalue(float v) {}
     virtual void setvalue(int16_t v) {}
     virtual void setvalue(u_ustring& v) {}
@@ -885,7 +885,7 @@ public:
     }
     
     virtual double checkNumber(LispE* lisp);
-    virtual long checkInteger(LispE* lisp);
+    virtual li_long checkInteger(LispE* lisp);
     virtual int16_t checkShort(LispE* lisp);
     virtual float checkFloat(LispE* lisp);
 
@@ -931,7 +931,7 @@ public:
         release();
     }
 
-    virtual bool equalvalue(long n) {
+    virtual bool equalvalue(li_long n) {
         return false;
     }
     
@@ -1032,7 +1032,7 @@ public:
     
     virtual Element* protected_index(LispE*, Element* k);
     virtual Element* protected_index(LispE*, double k);
-    virtual Element* protected_index(LispE*, long i);
+    virtual Element* protected_index(LispE*, li_long i);
     virtual Element* protected_index(LispE*, u_ustring&);
 
 
@@ -1041,7 +1041,7 @@ public:
     virtual void recording(string&, Element*) {}
     virtual void recording(u_ustring&, Element*) {}
     virtual void recording(double, Element*) {}
-    virtual void recording(long, Element*) {}
+    virtual void recording(li_long, Element*) {}
 
     virtual Element* takenb(LispE*, long nb, bool direction) {
         return this;
@@ -1055,7 +1055,7 @@ public:
         return false;
     }
     
-    virtual bool remove(long) {
+    virtual bool remove(li_long) {
         return false;
     }
 
@@ -1445,7 +1445,7 @@ public:
         return Boolean();
     }
     
-    long asInteger() {
+    li_long asInteger() {
         return Boolean();
     }
     
@@ -1682,7 +1682,7 @@ public:
         return value->asFloat();
     }
 
-    long asInteger() {
+    li_long asInteger() {
         return value->asInteger();
     }
     
@@ -1831,7 +1831,7 @@ public:
         return content;
     }
     
-    long checkInteger(LispE* lisp) {
+    li_long checkInteger(LispE* lisp) {
         return content;
     }
     
@@ -1863,8 +1863,8 @@ public:
         return (int16_t)content;
     }
 
-    long asInteger() {
-        return (long)content;
+    li_long asInteger() {
+        return (li_long)content;
     }
 
     int asInt() {
@@ -1993,7 +1993,7 @@ public:
         return content;
     }
     
-    long checkInteger(LispE* lisp) {
+    li_long checkInteger(LispE* lisp) {
         return content;
     }
     
@@ -2021,8 +2021,8 @@ public:
         return (int16_t)content;
     }
 
-    long asInteger() {
-        return (long)content;
+    li_long asInteger() {
+        return (li_long)content;
     }
     
     int asInt() {
@@ -2231,7 +2231,7 @@ public:
         return content;
     }
     
-    long checkInteger(LispE* lisp) {
+    li_long checkInteger(LispE* lisp) {
         return content;
     }
     
@@ -2251,7 +2251,7 @@ public:
         return content;
     }
 
-    long asInteger() {
+    li_long asInteger() {
         return content;
     }
     
@@ -2406,7 +2406,7 @@ public:
         return content.real();
     }
     
-    long checkInteger(LispE* lisp) {
+    li_long checkInteger(LispE* lisp) {
         return content.real();
     }
     
@@ -2426,7 +2426,7 @@ public:
         return content.real();
     }
 
-    long asInteger() {
+    li_long asInteger() {
         return content.real();
     }
     
@@ -2508,14 +2508,14 @@ public:
 class Integer : public Element {
 public:
  
-    long content;
-    Integer(long d) : Element(t_integer) {
+    li_long content;
+    Integer(li_long d) : Element(t_integer) {
         content = d;
     }
     
-    Integer(long d, uint16_t s) : content(d), Element(t_integer, s) {}
+    Integer(li_long d, uint16_t s) : content(d), Element(t_integer, s) {}
 
-    bool equalvalue(long n) {
+    bool equalvalue(li_long n) {
         return (content == n);
     }
     
@@ -2544,7 +2544,7 @@ public:
         return this;
     }
 
-    void setvalue(long v) { content = v;}
+    void setvalue(li_long v) { content = v;}
 
     char check_match(LispE* lisp, Element* value) {
         return check_ok*(content == value->asInteger());
@@ -2586,7 +2586,7 @@ public:
         return content;
     }
     
-    long checkInteger(LispE* lisp) {
+    li_long checkInteger(LispE* lisp) {
         return content;
     }
 
@@ -2606,7 +2606,7 @@ public:
         return content;
     }
 
-    long asInteger() {
+    li_long asInteger() {
         return content;
     }
     
@@ -2657,10 +2657,10 @@ public:
 class Integerpool : public Integer {
 public:
     LispE* lisp;
-    Integerpool(LispE* l, long d) : lisp(l), Integer(d) {}
-    Integerpool(long d) : lisp(NULL), Integer(d, s_constant) {}
+    Integerpool(LispE* l, li_long d) : lisp(l), Integer(d) {}
+    Integerpool(li_long d) : lisp(NULL), Integer(d, s_constant) {}
 
-    inline Integerpool* set(long d) {
+    inline Integerpool* set(li_long d) {
         content = d;
         return this;
     }
@@ -2679,7 +2679,7 @@ class Constinteger : public Integerpool {
 public:
     bool provide;
     
-    Constinteger(long d) : Integerpool(d) {
+    Constinteger(li_long d) : Integerpool(d) {
         provide = false;
         status = s_constant;
     }
@@ -2729,6 +2729,21 @@ public:
     Element* copying(bool duplicate = true);
     Element* duplicate_constant(LispE* lisp);
 };
+
+//True if the string is only an integer: spaces, an optional sign, digits, spaces.
+//Such a string is converted with convertinginteger, which is exact: going through a
+//double (convertingfloathexa) loses the digits beyond 2^53
+template <class S> bool is_integer_string(S& s) {
+    long i = 0, sz = s.size();
+    while (i < sz && s[i] <= 32) i++;
+    if (i < sz && (s[i] == '-' || s[i] == '+')) i++;
+    long first = i;
+    while (i < sz && s[i] >= '0' && s[i] <= '9') i++;
+    if (i == first)
+        return false;
+    while (i < sz && s[i] <= 32) i++;
+    return (i == sz);
+}
 
 class String : public Element {
 public:
@@ -2854,7 +2869,7 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -2938,8 +2953,10 @@ public:
         return (int16_t)convertingfloathexa(content);
     }
     
-    long asInteger() {
-        return (long)convertingfloathexa(content);
+    li_long asInteger() {
+        if (is_integer_string(content))
+            return convertinginteger(content);
+        return (li_long)convertingfloathexa(content);
     }
     
     Element* plus(LispE* l, Element* e);
@@ -3203,7 +3220,7 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -3292,8 +3309,10 @@ public:
         return (int16_t)convertingfloathexa(content);
     }
     
-    long asInteger() {
-        return (long)convertingfloathexa(content);
+    li_long asInteger() {
+        if (is_integer_string(content))
+            return convertinginteger(content);
+        return (li_long)convertingfloathexa(content);
     }
     
     Element* plus(LispE* l, Element* e);
@@ -4383,7 +4402,7 @@ public:
     void append(Element* e);
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
 };
 
 
@@ -4841,7 +4860,7 @@ public:
 class Dictionary_i : public Element {
 public:
 
-    unordered_map<long, Element*> dictionary;
+    unordered_map<li_long, Element*> dictionary;
     Element* object;
     bool marking;
     bool usermarking;
@@ -4878,14 +4897,14 @@ public:
     }
 
     void* begin_iter() {
-        return new std::unordered_map<long, Element*>::iterator(dictionary.begin());
+        return new std::unordered_map<li_long, Element*>::iterator(dictionary.begin());
     }
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
-        delete (std::unordered_map<long, Element*>::iterator*)it;
+        delete (std::unordered_map<li_long, Element*>::iterator*)it;
     }
 
     virtual Element* newInstance() {
@@ -5218,20 +5237,20 @@ public:
         return (dictionary.size());
     }
     
-    Element* on_index(long k) {
+    Element* on_index(li_long k) {
         auto it = dictionary.find(k);
         if (it != dictionary.end())
             return it->second;
         return NULL;
     }
 
-    Element* protected_index(LispE*, long k);
+    Element* protected_index(LispE*, li_long k);
 
-    Element* value_on_index(long k, LispE* l);
+    Element* value_on_index(li_long k, LispE* l);
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
     
-    void recording(long k, Element* e) {
+    void recording(li_long k, Element* e) {
         auto it = dictionary.find(k);
         if (it != dictionary.end()) {
             it->second->decrement();
@@ -5252,11 +5271,11 @@ public:
     Element* thevalues(LispE* lisp);
     
     bool remove(LispE*, Element* e) {
-        long d =  e->asInteger();
+        li_long d =  e->asInteger();
         return remove(d);
     }
 
-    bool remove(long k) {
+    bool remove(li_long k) {
         auto it = dictionary.find(k);
         if (it == dictionary.end())
             return false;
@@ -5489,7 +5508,7 @@ public:
     Element* value_from_index(LispE*, long i);
     
     Element* value_on_index(LispE*, long i);
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
 
     Element* value_on_index(wstring& k, LispE* l);
     Element* value_on_index(u_ustring& k, LispE* l);
@@ -5532,7 +5551,7 @@ public:
     }
     
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
 
     void append(Element* e) {
         ensemble.insert(e->asUString(NULL));
@@ -5798,7 +5817,7 @@ public:
     Element* value_from_index(LispE*, long i);
     
     Element* value_on_index(LispE*, long i);
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* protected_index(LispE*, double&);
     Element* value_on_index(LispE*, Element* idx);
@@ -5820,7 +5839,7 @@ public:
     void append(LispE* lisp, double v) {
         ensemble.insert(v);
     }
-    void append(LispE* lisp, long v) {
+    void append(LispE* lisp, li_long v) {
         ensemble.insert((double)v);
     }
 
@@ -5852,7 +5871,7 @@ public:
         return ensemble.erase(k);
     }
 
-    bool remove(long k) {
+    bool remove(li_long k) {
         return ensemble.erase(k);
     }
         
@@ -5909,12 +5928,12 @@ public:
 class Set_i : public Element {
 public:
     
-    std::set<long> ensemble;
+    std::set<li_long> ensemble;
     Constinteger exchange_value;
     
     Set_i() : exchange_value(0), Element(t_seti) {}
     
-    Set_i(std::set<long>& e) : exchange_value(0), ensemble(e), Element(t_seti) {}
+    Set_i(std::set<li_long>& e) : exchange_value(0), ensemble(e), Element(t_seti) {}
     
     Set_i(uint16_t s) : exchange_value(0), Element(t_seti, s) {}
     
@@ -5939,7 +5958,7 @@ public:
     }
 
     void* begin_iter() {
-        return new std::set<long>::iterator(ensemble.begin());
+        return new std::set<li_long>::iterator(ensemble.begin());
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
@@ -5948,7 +5967,7 @@ public:
     Element* next_iter_exchange(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
-        delete (std::set<long>::iterator*)it;
+        delete (std::set<li_long>::iterator*)it;
     }
 
     Element* loop(LispE* lisp, int16_t label,  List* code);
@@ -6098,7 +6117,7 @@ public:
     Element* value_from_index(LispE*, long i);
     
     Element* value_on_index(LispE*, long i);
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* protected_index(LispE*, double&);
     Element* value_on_index(LispE*, Element* idx);
@@ -6120,7 +6139,7 @@ public:
     void append(LispE* lisp, double v) {
         ensemble.insert(v);
     }
-    void append(LispE* lisp, long v) {
+    void append(LispE* lisp, li_long v) {
         ensemble.insert((double)v);
     }
 
@@ -6138,7 +6157,7 @@ public:
     }
     
     Element* replace(LispE* lisp, Element* i, Element* e) {
-        long k = i->asInteger();
+        li_long k = i->asInteger();
         ensemble.erase(k);
         ensemble.insert(e->asInteger());
         return this;
@@ -6151,12 +6170,12 @@ public:
         return ensemble.erase(e->asInteger());
     }
 
-    bool remove(long k) {
+    bool remove(li_long k) {
         return ensemble.erase(k);
     }
 
     bool remove(double k) {
-        return ensemble.erase((long)k);
+        return ensemble.erase((li_long)k);
     }
         
     Element* bit_not(LispE* l);
@@ -6429,7 +6448,7 @@ public:
     Element* value_from_index(LispE*, long i);
     
     Element* value_on_index(LispE*, long i);
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
 
     Element* value_on_index(wstring& k, LispE* l);
     Element* value_on_index(u_ustring& k, LispE* l);
@@ -7050,7 +7069,7 @@ public:
     
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
 };
 
 
@@ -7500,7 +7519,7 @@ public:
 class Tree_i : public Element {
 public:
 
-    map<long, Element*> tree;
+    map<li_long, Element*> tree;
     Element* object;
     bool marking;
     bool usermarking;
@@ -7537,14 +7556,14 @@ public:
     }
 
     void* begin_iter() {
-        return new std::map<long, Element*>::iterator(tree.begin());
+        return new std::map<li_long, Element*>::iterator(tree.begin());
     }
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
-        delete (std::map<long, Element*>::iterator*)it;
+        delete (std::map<li_long, Element*>::iterator*)it;
     }
 
     virtual Element* newInstance() {
@@ -7878,13 +7897,13 @@ public:
         return (tree.size());
     }
     
-    Element* protected_index(LispE*, long k);
+    Element* protected_index(LispE*, li_long k);
 
-    Element* value_on_index(long k, LispE* l);
+    Element* value_on_index(li_long k, LispE* l);
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
     
-    void recording(long k, Element* e) {
+    void recording(li_long k, Element* e) {
         auto it = tree.find(k);
         if (it != tree.end()) {
             it->second->decrement();
@@ -7905,11 +7924,11 @@ public:
     Element* thevalues(LispE* lisp);
     
     bool remove(LispE*, Element* e) {
-        long d =  e->asInteger();
+        li_long d =  e->asInteger();
         return remove(d);
     }
 
-    bool remove(long k) {
+    bool remove(li_long k) {
         auto it = tree.find(k);
         if (it == tree.end())
             return false;
@@ -7999,7 +8018,7 @@ public:
 
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
 
     void append(Element* e) {
         if (choice) {
@@ -8111,7 +8130,7 @@ public:
     
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
 
     bool isDictionary() {
         return true;

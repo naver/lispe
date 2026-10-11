@@ -672,6 +672,7 @@ Element* Ontology::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(null_, label);
     Element* element;
     long sz = code->liste.size();
+    increment();
     for (const auto& a : indexes) {
         element = a.second;
         lisp->replacestackvalue(element, label);
@@ -682,11 +683,13 @@ Element* Ontology::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 

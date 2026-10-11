@@ -791,7 +791,7 @@ public:
     Element* maximum(LispE*);
     Element* minmax(LispE*);
 
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -951,7 +951,7 @@ public:
 
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
 
     void push_front(Element* e) {
         liste.push_front(e);
@@ -1031,7 +1031,7 @@ public:
     Element* reverse(LispE*, bool duplique = true);
     
     void storevalue(LispE*, double v);
-    void storevalue(LispE*, long v);
+    void storevalue(LispE*, li_long v);
     void storevalue(LispE*, u_ustring& v);
     
     void pop() {
@@ -1057,7 +1057,7 @@ public:
         return remove(d);
     }
 
-    bool remove(long d) {
+    bool remove(li_long d) {
         if (liste.empty())
             return false;
         

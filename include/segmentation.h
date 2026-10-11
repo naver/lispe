@@ -29,7 +29,7 @@ class Tokenizer {
 public:
     vector<u_ustring> tokens;
     vector<double> numbers;
-    vector<long> integers;
+    vector<li_long> integers;
     vector<lisp_code> types;
     vector<long> lines;
     vector<long> positions;
@@ -76,7 +76,7 @@ public:
         positions.push_back(e);
     }
 
-    void append(long valeur, u_ustring& segment, lisp_code t, long l, long b, long e) {
+    void append(li_long valeur, u_ustring& segment, lisp_code t, long l, long b, long e) {
         tokens.push_back(segment);
         numbers.push_back(0);
         integers.push_back(valeur);

@@ -1240,7 +1240,7 @@ void Dictionary_as_list::append(LispE* lisp, double v) {
     append(lisp->provideNumber(v));
 }
 
-void Dictionary_as_list::append(LispE* lisp, long v) {
+void Dictionary_as_list::append(LispE* lisp, li_long v) {
     append(lisp->provideInteger(v));
 }
 
@@ -1262,7 +1262,7 @@ void Dictionary_as_buffer::append(LispE* lisp, double v) {
     }
 }
 
-void Dictionary_as_buffer::append(LispE* lisp, long v) {
+void Dictionary_as_buffer::append(LispE* lisp, li_long v) {
     if (choice)
         key = convertToUString(v);
     else {
@@ -1292,6 +1292,7 @@ Element* String::loop(LispE* lisp, int16_t label, List* code) {
     long i = 0;
     u_ustring localvalue;
     long szc = content.size();
+    increment();
     while (i < szc) {
         lisp->handlingutf8->getchar(content, localvalue, i);
         e->release();
@@ -1315,11 +1316,13 @@ Element* String::loop(LispE* lisp, int16_t label, List* code) {
         }
         if (e->type == l_return) {
             //the break is local, the return is global to a function
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -1328,7 +1331,7 @@ Element* Stringbyte::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     Stringbyte* element = new Stringbyte();
     lisp->recording(element, label);
-    
+    increment();
     long sz = code->liste.size();
     long i = 0;
     string localvalue;
@@ -1355,12 +1358,14 @@ Element* Stringbyte::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             //the break is local, the return is global to a function
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -1408,7 +1413,6 @@ Element* Rankloop::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(null_, label);
     long sz = code->liste.size();
     Element* ranks = null_;
-    
     for (long i = 0; i < max_iterator; i++) {
         if (last)
             ranks = lst->rank(lisp, positions);
@@ -2267,7 +2271,7 @@ Element* Stringbyte::reverse(LispE* lisp, bool duplicate) {
 // there are two many cases where it creates dangling structures...
 
 //------------------------------------------------------------------------------------------
-Element* Element::protected_index(LispE* lisp,long i) {
+Element* Element::protected_index(LispE* lisp,li_long i) {
     return null_;
 }
 
@@ -2279,13 +2283,13 @@ Element* Element::protected_index(LispE* lisp, double k) {
     return null_;
 }
 
-Element* String::protected_index(LispE* lisp,long i) {
+Element* String::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < content.size())
         return lisp->provideString(content[i]);
     return null_;
 }
 
-Element* Stringbyte::protected_index(LispE* lisp,long i) {
+Element* Stringbyte::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < size()) {
         string res;
         lisp->handlingutf8->getAtchar(content, res, i);
@@ -2782,7 +2786,7 @@ Element* Integer::less(LispE* lisp, Element* e) {
 }
 
 Element* Integer::compare(LispE* lisp, Element* e) {
-    long v = e->asInteger();
+    li_long v = e->asInteger();
     int16_t test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }

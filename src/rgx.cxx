@@ -1121,7 +1121,15 @@ public:
 
     Element* findall_i(LispE* lisp, u_ustring& w, long pos) {
         Integers* liste = lisp->provideIntegers();
+#ifdef LISPE_WASM
+        //the positions are long, the values of an Integers list are li_long (int64_t)
+        vecte_a<long> positions;
+        au.searchall(w, positions, pos);
+        for (long i = 0; i < positions.size(); i++)
+            liste->liste.push_back(positions[i]);
+#else
         au.searchall(w, liste->liste, pos);
+#endif
         return liste;
     }
 

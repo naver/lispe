@@ -978,7 +978,7 @@ public:
         items->divide(home, v);
     }
 
-    void searchall(vecte_a<long>& indexes, Z v, long ix) {
+    void searchall(vecte_a<li_long>& indexes, Z v, long ix) {
         for (long i = home + ix; i < items->last; i++) {
             if (items->buffer[i] == v)
                 indexes.push_back(i - home);
@@ -1412,7 +1412,7 @@ public:
         return items->replaceall(home, test, value);
     }
 
-    void searchall(vecte_a<long>& indexes, Z& v, long ix) {
+    void searchall(vecte_a<li_long>& indexes, Z& v, long ix) {
         for (long i = home + ix; i < items->last; i++) {
             if (items->buffer[i] == v)
                 indexes.push_back(i - home);

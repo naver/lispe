@@ -33,7 +33,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.10.9.14.14";
+static std::string version = "1.2026.10.11.11.39";
 string LispVersion() {
     return version;
 }
@@ -528,6 +528,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_infix, "infix", P_TWO, &List::evall_infix, new List_infix_eval());
 #ifdef LISPE_WASM 
     set_instruction(l_evaljs, "evaljs", P_TWO, &List::evall_js);
+    set_instruction(l_evaljsi, "evaljs_i", P_TWO, &List::evall_js_i);
+    set_instruction(l_evaljsd, "evaljs_d", P_TWO, &List::evall_js_d);
+    set_instruction(l_evaljsb, "evaljs_b", P_TWO, &List::evall_js_b);
     set_instruction(l_evaljssync, "asyncjs", P_ATLEASTTWO, &List::evall_js_async);
 #else
     set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
@@ -1793,8 +1796,9 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                         buffer.find(U"e") == -1 &&
                         buffer.find(U"P") == -1 &&
                         buffer.find(U"p") == -1) {
-                        lg_value = convertinginteger(buffer);
-                        infos.append(lg_value, buffer, t_integer, line_number, left, right);
+                        //a separate li_long: lg_value also holds find positions (long)
+                        li_long integer_value = convertinginteger(buffer);
+                        infos.append(integer_value, buffer, t_integer, line_number, left, right);
                     }
                     else {
                         d = convertingfloathexa((u_uchar*)buffer.c_str(), lg_value);
@@ -2553,7 +2557,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 ((List_switch_eval*)lm)->build(this);
                 break;
             case l_power:
-                if (nbarguments == 3 && element->index(2)->equalvalue((long)2))
+                if (nbarguments == 3 && element->index(2)->equalvalue((li_long)2))
                     lm = new List_power2((Listincode*)element);
                 else
                     lm = new List_powern((Listincode*)element);
@@ -2799,7 +2803,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 break;
             }
             case t_integer: {
-                long value = parse.integers[index];
+                li_long value = parse.integers[index];
                 element = provideConstinteger(value);
                 current_program->append(element);
                 index++;
@@ -3028,8 +3032,8 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                 index++;
                 break;
             case t_integer:
-                value = parse.integers[index];
-                e = provideConstinteger(value);
+                //no detour through the double value: integers above 2^53 would lose digits
+                e = provideConstinteger(parse.integers[index]);
                 courant->append(e);
                 index++;
                 break;
@@ -3880,6 +3884,9 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
+
+
 
 
 

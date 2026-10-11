@@ -566,7 +566,7 @@ public:
         }
         
         vl = temps->tm_year + 1900;
-        return lisp->provideInteger((long)vl);
+        return lisp->provideInteger((li_long)vl);
     }
 
     Element* month(LispE* lisp, int vl) {
@@ -578,7 +578,7 @@ public:
         }
         
         vl = temps->tm_mon + 1;
-        return lisp->provideInteger((long)vl);
+        return lisp->provideInteger((li_long)vl);
     }
 
     Element* day(LispE* lisp, int vl) {
@@ -590,7 +590,7 @@ public:
         }
         
         vl = temps->tm_mday;
-        return lisp->provideInteger((long)vl);
+        return lisp->provideInteger((li_long)vl);
     }
 
     Element* hour(LispE* lisp, int vl) {
@@ -602,7 +602,7 @@ public:
         }
         
         vl = temps->tm_hour;
-        return lisp->provideInteger((long)vl);
+        return lisp->provideInteger((li_long)vl);
     }
 
     Element* minute(LispE* lisp, int vl) {
@@ -614,7 +614,7 @@ public:
         }
         
         vl = temps->tm_min;
-        return lisp->provideInteger((long)vl);
+        return lisp->provideInteger((li_long)vl);
     }
 
     Element* second(LispE* lisp, int vl) {
@@ -626,21 +626,21 @@ public:
         }
         
         vl = temps->tm_sec;
-        return lisp->provideInteger((long)vl);
+        return lisp->provideInteger((li_long)vl);
     }
 
     Element* weekday(LispE* lisp) {
         //First parameter is a string
         struct tm* temps = localtime(&the_time);
         long vl = temps->tm_wday;
-        return lisp->provideInteger((long)vl);
+        return lisp->provideInteger((li_long)vl);
     }
 
     Element* yearday(LispE* lisp) {
         //First parameter is a string
         struct tm* temps = localtime(&the_time);
         long vl = temps->tm_yday;
-        return lisp->provideInteger((long)vl);
+        return lisp->provideInteger((li_long)vl);
     }
 
     Element* setdate(int y, int m, int d, int H, int M, int S) {
@@ -704,7 +704,7 @@ public:
         return the_time;
     }
     
-    long asInteger() {
+    li_long asInteger() {
         return the_time;
     }
     
@@ -998,7 +998,7 @@ public:
         return chrono_value.time_since_epoch().count();
     }
 
-    long asInteger() {
+    li_long asInteger() {
         return chrono_value.time_since_epoch().count();
     }
 
@@ -1014,15 +1014,15 @@ public:
     }
     
     wstring asString(LispE* lisp) {
-        return convertToWString((long)chrono_value.time_since_epoch().count());
+        return convertToWString((li_long)chrono_value.time_since_epoch().count());
     }
 
     u_ustring asUString(LispE* lisp) {
-        return convertToUString((long)chrono_value.time_since_epoch().count());
+        return convertToUString((li_long)chrono_value.time_since_epoch().count());
     }
 
     string toString(LispE* lisp) {
-        return convertToString((long)chrono_value.time_since_epoch().count());
+        return convertToString((li_long)chrono_value.time_since_epoch().count());
     }
 
 };
@@ -1126,7 +1126,7 @@ public:
         struct stat scible;
         int stcible = stat(STR(filename), &scible);
         if (stcible >= 0) {
-            Element* size = lisp->provideInteger((long)scible.st_size);
+            Element* size = lisp->provideInteger((li_long)scible.st_size);
             Element* change = new Dateitem(lisp, scible.st_mtime);
             Element* adate = new Dateitem(lisp, scible.st_atime);
             Element* cdate = new Dateitem(lisp, scible.st_ctime);

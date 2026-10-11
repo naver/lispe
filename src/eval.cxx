@@ -36,6 +36,14 @@ void List::evalAsInteger(long i, LispE* lisp, long& d) {
     d = e->asInteger();
     e->release();
 }
+
+#ifdef LISPE_WASM
+void List::evalAsInteger(long i, LispE* lisp, li_long& d) {
+    Element* e = liste[i]->eval(lisp);
+    d = e->asInteger();
+    e->release();
+}
+#endif
 //------------------------------------------------------------------------------------------
 char List::check_match(LispE* lisp, Element* value) {
     if (!value->isList() || liste.size() != value->size())
@@ -467,11 +475,14 @@ Element* Instruction::eval(LispE* lisp) {
 
 #ifdef LISPE_WASM
 string eval_js(string code, bool& error);
+int64_t eval_js_i(string code, bool& error, string& message);
+double eval_js_d(string code, bool& error, string& message);
+bool eval_js_b(string code, bool& error, string& message);
+
 void eval_js_async(LispE* lisp, string& code, List* recall);
 
-Element* List::evall_js(LispE* lisp) {
+void List::run_js(LispE* lisp, string& code) {
     Element* element = liste[1]->eval(lisp);
-    string code;
     if (element->isList()) {
         Element* e;
         if (!element->size()) {
@@ -498,11 +509,49 @@ Element* List::evall_js(LispE* lisp) {
     else
         code = element->toString(lisp);
     element->release();
+}
+
+Element* List::evall_js(LispE* lisp) {
+    string code;
+    run_js(lisp, code);
     bool err = false;
     code = eval_js(code, err);
     if (err)
         return new Error(code);
     return lisp->provideString(code);
+}
+
+Element* List::evall_js_i(LispE* lisp) {
+    string code;
+    run_js(lisp, code);
+    bool err = false;
+    string message;
+    int64_t res = eval_js_i(code, err, message);
+    if (err)
+        return new Error(message);
+    return lisp->provideInteger(res);
+}
+
+Element* List::evall_js_d(LispE* lisp) {
+    string code;
+    run_js(lisp, code);
+    bool err = false;
+    string message;
+    double res = eval_js_d(code, err, message);
+    if (err)
+        return new Error(message);
+    return lisp->provideNumber(res);
+}
+
+Element* List::evall_js_b(LispE* lisp) {
+    string code;
+    run_js(lisp, code);
+    bool err = false;
+    string message;
+    bool res = eval_js_b(code, err, message);
+    if (err)
+        return new Error(message);
+    return booleans_[res];
 }
 
 Element* List::evall_js_async(LispE* lisp) {

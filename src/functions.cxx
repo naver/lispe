@@ -4356,10 +4356,10 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                 }
                 else
                     listsz = 0; //we force to stop now...
-                
+
                 e->release();
                 nxt = current_list->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
+                while (listsz && nxt != emptyatom_) {
                     lisp->replacestackvalue(nxt, label);
                     e = op->eval_lambda_min(lisp);
                     if (e->type == l_return)

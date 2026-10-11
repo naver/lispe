@@ -866,7 +866,7 @@ public:
     Element* maximum(LispE*);
     Element* minmax(LispE*);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -1082,7 +1082,7 @@ public:
     
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
     
     void append(Element* e) {
         liste.push_element(e);
@@ -1165,6 +1165,10 @@ public:
     void evalAsUString(long i, LispE* lisp, u_ustring& w);
     void evalAsNumber(long i, LispE* lisp, double& d);
     void evalAsInteger(long i, LispE* lisp, long& d);
+#ifdef LISPE_WASM
+    //li_long is int64_t in WebAssembly: the value keeps its 64 bits (long d: an index, 32 bits)
+    void evalAsInteger(long i, LispE* lisp, li_long& d);
+#endif
     
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
@@ -1183,7 +1187,7 @@ public:
     Element* reverse(LispE*, bool duplique = true);
     
     void storevalue(LispE*, double v);
-    void storevalue(LispE*, long v);
+    void storevalue(LispE*, li_long v);
     void storevalue(LispE*, u_ustring& v);
     
     void pop() {
@@ -1210,7 +1214,7 @@ public:
         return remove(d);
     }
     
-    bool remove(long d) {
+    bool remove(li_long d) {
         if (!liste.size())
             return false;
         
@@ -1458,7 +1462,11 @@ public:
     Element* evall_index_zero(LispE* lisp);
     Element* evall_input(LispE* lisp);
 #ifdef LISPE_WASM
+    void run_js(LispE* lisp, string& code);
     Element* evall_js(LispE* lisp);
+    Element* evall_js_i(LispE* lisp);
+    Element* evall_js_d(LispE* lisp);
+    Element* evall_js_b(LispE* lisp);
     Element* evall_js_async(LispE* lisp);
 #endif
     Element* evall_lambda(LispE* lisp);
@@ -4966,7 +4974,7 @@ public:
        return type;
    }
 
-    Element* protected_index(LispE* lisp,long i) {
+    Element* protected_index(LispE* lisp,li_long i) {
         if (i < 0 || i >= size())
             throw new Errorstack(lisp, "Error: index out of bounds");
         return liste[i];
@@ -6412,7 +6420,7 @@ public:
 
     Element* eval(LispE* lisp);
     Element* loop(LispE* lisp, int16_t label,  List* code);
-    Element* protected_index(LispE* lisp,long i) {
+    Element* protected_index(LispE* lisp,li_long i) {
         element.liste[1]->decrement();
         element.liste[1] = lst->protected_index(lisp, i);
         element.liste[1]->increment();
@@ -6422,7 +6430,7 @@ public:
     
     Element* value_from_index(LispE* lisp, long i)  {
         element.liste[1]->decrement();
-        element.liste[1] = lst->protected_index(lisp, i);
+        element.liste[1] = lst->protected_index(lisp, (li_long)i);
         idx.content = i + init;
         return &element;
     }
@@ -10073,7 +10081,7 @@ public:
     void flatten(LispE*, Strings* l);
     void flatten(LispE*, Stringbytes* l);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -10187,7 +10195,7 @@ public:
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, float v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
     
     void append(Element* e) {
         liste.push_back(e->asFloat());
@@ -10243,7 +10251,7 @@ public:
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, float v);
-    void storevalue(LispE*, long v);
+    void storevalue(LispE*, li_long v);
     void storevalue(LispE*, u_ustring& v);
     
     bool removefirst() {
@@ -10265,7 +10273,7 @@ public:
         return remove(d);
     }
     
-    bool remove(long d) {
+    bool remove(li_long d) {
         if (!liste.size())
             return false;
         
@@ -10592,7 +10600,7 @@ public:
     void flatten(LispE*, Strings* l);
     void flatten(LispE*, Stringbytes* l);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -10704,7 +10712,7 @@ public:
     
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
     
     void append(Element* e) {
         liste.push_back(e->asNumber());
@@ -10758,7 +10766,7 @@ public:
     Element* reverse(LispE*, bool duplique = true);
     
     void storevalue(LispE*, double v);
-    void storevalue(LispE*, long v);
+    void storevalue(LispE*, li_long v);
     void storevalue(LispE*, u_ustring& v);
     
     bool removefirst() {
@@ -10780,7 +10788,7 @@ public:
         return remove(d);
     }
     
-    bool remove(long d) {
+    bool remove(li_long d) {
         if (!liste.size())
             return false;
         
@@ -11103,7 +11111,7 @@ public:
     void flatten(LispE*, Strings* l);
     void flatten(LispE*, Stringbytes* l);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -11166,7 +11174,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += L",";
-            buffer += convertToWString((long)liste[i]);
+            buffer += convertToWString((li_long)liste[i]);
         }
         buffer += L"]";
         return buffer;
@@ -11184,7 +11192,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += L" ";
-            buffer += convertToWString((long)liste[i]);
+            buffer += convertToWString((li_long)liste[i]);
         }
         buffer += L")";
         return buffer;
@@ -11202,7 +11210,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += U" ";
-            buffer += convertToUString((long)liste[i]);
+            buffer += convertToUString((li_long)liste[i]);
         }
         buffer += U")";
         return buffer;
@@ -11215,7 +11223,7 @@ public:
     
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
     
     void append(Element* e) {
         liste.push_back(e->asShort());
@@ -11272,7 +11280,7 @@ public:
     
     
     void storevalue(LispE*, double v);
-    void storevalue(LispE*, long v);
+    void storevalue(LispE*, li_long v);
     void storevalue(LispE*, u_ustring& v);
     
     bool removefirst() {
@@ -11294,7 +11302,7 @@ public:
         return remove(d);
     }
     
-    bool remove(long d) {
+    bool remove(li_long d) {
         if (!liste.size())
             return false;
         
@@ -11371,11 +11379,11 @@ class Integers : public Element {
 public:
     
     Constinteger exchange_value;
-    vecte_a<long> liste;
+    vecte_a<li_long> liste;
     
     Integers() : Element(t_integers), exchange_value(0) {}
     Integers(uint16_t s) : Element(t_integers, s), exchange_value(0) {}
-    Integers(long nb, long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
+    Integers(long nb, li_long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i) : liste(i->liste), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i, long pos) : liste(i->liste, pos), Element(t_integers), exchange_value(0) {}
     
@@ -11566,7 +11574,7 @@ public:
     void flatten(LispE*, Strings* l);
     void flatten(LispE*, Stringbytes* l);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -11678,7 +11686,7 @@ public:
     
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
     
     void append(Element* e) {
         liste.push_back(e->asInteger());
@@ -11734,7 +11742,7 @@ public:
     Element* rotate(LispE* lisp, long nb);
     
     void storevalue(LispE*, double v);
-    void storevalue(LispE*, long v);
+    void storevalue(LispE*, li_long v);
     void storevalue(LispE*, u_ustring& v);
     
     bool removefirst() {
@@ -11756,7 +11764,7 @@ public:
         return remove(d);
     }
     
-    bool remove(long d) {
+    bool remove(li_long d) {
         if (!liste.size())
             return false;
         
@@ -11830,7 +11838,7 @@ public:
         exchange_value.provide = true;
     }
     
-    Integerspool(LispE* l, long sz, long v) : lisp(l), Integers(sz, v) {
+    Integerspool(LispE* l, long sz, li_long v) : lisp(l), Integers(sz, v) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
@@ -11852,7 +11860,7 @@ public:
         return this;
     }
     
-    inline Integerspool* set(long nb, long v) {
+    inline Integerspool* set(long nb, li_long v) {
         liste.clear();
         while (nb != 0) {
             liste.push_back(v);
@@ -12076,7 +12084,7 @@ public:
     void flatten(LispE*, Strings* l);
     void flatten(LispE*, Stringbytes* l);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -12207,7 +12215,7 @@ public:
     
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
     
     void append(Element* e) {
         liste.push_back(e->asUString(NULL));
@@ -12262,7 +12270,7 @@ public:
     
     
     void storevalue(LispE*, double v);
-    void storevalue(LispE*, long v);
+    void storevalue(LispE*, li_long v);
     void storevalue(LispE*, u_ustring& v);
     
     bool removefirst() {
@@ -12284,7 +12292,7 @@ public:
         return remove(d);
     }
     
-    bool remove(long d) {
+    bool remove(li_long d) {
         if (!liste.size())
             return false;
         
@@ -12582,7 +12590,7 @@ public:
     void flatten(LispE*, Strings* l);
     void flatten(LispE*, Stringbytes* l);
     
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     
     Element* value_from_index(LispE*, long i);
     
@@ -12735,7 +12743,7 @@ public:
     
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
-    void append(LispE* lisp, long v);
+    void append(LispE* lisp, li_long v);
     
     void append(Element* e) {
         liste.push_back(e->toString(NULL));
@@ -12790,7 +12798,7 @@ public:
     
     
     void storevalue(LispE*, double v);
-    void storevalue(LispE*, long v);
+    void storevalue(LispE*, li_long v);
     void storevalue(LispE*, u_ustring& v);
     void storevalue(LispE*, string& v) {
         liste.push_back(v);
@@ -12815,7 +12823,7 @@ public:
         return remove(d);
     }
     
-    bool remove(long d) {
+    bool remove(li_long d) {
         if (!liste.size())
             return false;
         
@@ -12910,7 +12918,7 @@ public:
         return index_value;
     }
     
-    Element* protected_index(LispE* lisp,long i) {
+    Element* protected_index(LispE* lisp,li_long i) {
         Element* r;
         if (last)
             r = lst->rank(lisp, positions);
@@ -12981,7 +12989,7 @@ public:
 
 
 #define Tenseur_short Tenseur<short, t_tensor_short, Shorts*>
-#define Tenseur_integer Tenseur<long, t_tensor_integer, Integers*>
+#define Tenseur_integer Tenseur<li_long, t_tensor_integer, Integers*>
 #define Tenseur_float Tenseur<float, t_tensor_float, Floats*>
 #define Tenseur_number Tenseur<double, t_tensor_number, Numbers*>
 #define Tenseur_string Tenseur<u_ustring, t_tensor_string, Strings*>
@@ -13292,7 +13300,7 @@ public:
 };
 
 #define Matrice_short Matrice<short, t_matrix_short, t_tensor_short, Shorts*>
-#define Matrice_integer Matrice<long, t_matrix_integer, t_tensor_integer, Integers*>
+#define Matrice_integer Matrice<li_long, t_matrix_integer, t_tensor_integer, Integers*>
 #define Matrice_float Matrice<float, t_matrix_float, t_tensor_float, Floats*>
 #define Matrice_number Matrice<double, t_matrix_number, t_tensor_number, Numbers*>
 #define Matrice_string Matrice<u_ustring, t_matrix_string, t_tensor_string, Strings*>

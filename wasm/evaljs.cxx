@@ -93,6 +93,73 @@ string eval_js(string code, bool& error) {
 }
 
 //------------------------------------------------------------------------------------------
+// evaljs_i, evaljs_d, evaljs_b: the JavaScript value comes back as a number or a boolean,
+// without going through its text representation.
+// Returns false (and the error message in message) if the evaluation failed
+static bool run_js(string& code, string& message) {
+    EM_ASM({
+        window._lispeJsEvalResult = null;
+        window._lispeJsEvalError = null;
+        try {
+            window._lispeJsEvalResult = eval(UTF8ToString($0));
+        } catch(e) {
+            window._lispeJsEvalError = e.toString();
+        }
+    }, code.c_str());
+
+    char* errorStr = (char*)EM_ASM_PTR({
+        if (window._lispeJsEvalError) {
+            var errorStr = window._lispeJsEvalError;
+            var size = lengthBytesUTF8(errorStr) + 1;
+            var buffer = Module._malloc(size);
+            stringToUTF8(errorStr, buffer, size);
+            return buffer;
+        }
+        return 0;
+    });
+
+    if (errorStr) {
+        message = errorStr;
+        free(errorStr);
+        return false;
+    }
+    return true;
+}
+
+// A double: Number(value), as in JavaScript (true -> 1, "2.5" -> 2.5, null -> 0, undefined -> NaN)
+double eval_js_d(string code, bool& error, string& message) {
+    error = !run_js(code, message);
+    if (error)
+        return 0;
+    return EM_ASM_DOUBLE({
+        return Number(window._lispeJsEvalResult);
+    });
+}
+
+// An integer: Number(value) truncated toward zero; NaN and infinities give 0.
+// The value goes through a double, which holds integers exactly up to 2^53
+int64_t eval_js_i(string code, bool& error, string& message) {
+    error = !run_js(code, message);
+    if (error)
+        return 0;
+    double d = EM_ASM_DOUBLE({
+        var v = Math.trunc(Number(window._lispeJsEvalResult));
+        return isFinite(v) ? v : 0;
+    });
+    return (int64_t)d;
+}
+
+// A boolean: the JavaScript truth value (false, 0, "", null, undefined and NaN are false)
+bool eval_js_b(string code, bool& error, string& message) {
+    error = !run_js(code, message);
+    if (error)
+        return false;
+    return EM_ASM_INT({
+        return window._lispeJsEvalResult ? 1 : 0;
+    });
+}
+
+//------------------------------------------------------------------------------------------
 extern "C" {
     EMSCRIPTEN_KEEPALIVE void store_in_lisp(LispE* lisp, List* recall, const char* result, bool error) {
         string r(result);

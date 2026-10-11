@@ -305,7 +305,7 @@ public:
     }
 
     Element* index(long i);
-    Element* protected_index(LispE*,long i);
+    Element* protected_index(LispE*,li_long i);
     Element* value_from_index(LispE*, long i);
     Element* value_on_index(LispE*, long i);
     Element* value_on_index(LispE*, Element* idx);

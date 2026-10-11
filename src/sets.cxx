@@ -318,7 +318,7 @@ void Set_s::append(LispE* lisp, double v) {
     ensemble.insert(convertToUString(v));
 }
 
-void Set_s::append(LispE* lisp, long v) {
+void Set_s::append(LispE* lisp, li_long v) {
     ensemble.insert(convertToUString(v));
 }
 
@@ -328,6 +328,7 @@ Element* Set_s::loop(LispE* lisp, int16_t label, List* code) {
     String* element = lisp->provideString();
     lisp->recording(element, label);
     long sz = code->liste.size();
+    increment();
     for (auto & a: ensemble) {
         e->release();
         e = lisp->get_variable(label);
@@ -348,11 +349,13 @@ Element* Set_s::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -539,7 +542,7 @@ Element* Set_s::search_reverse(LispE* lisp, Element* a_value, long ix) {
     return !ensemble.count(a_value->asUString(lisp))?null_:a_value;
 }
 
-Element* Set_s::protected_index(LispE* lisp, long i) {
+Element* Set_s::protected_index(LispE* lisp, li_long i) {
     if (i >= 0 && i < ensemble.size()) {
         for (const auto& a: ensemble) {
             if (!i) {
@@ -680,7 +683,7 @@ Element* Set_s::asList(LispE* lisp, List* l) {
 }
 
 Element* Set_i::next_iter(LispE* lisp, void* it) {
-    std::set<long>::iterator* n = (std::set<long>::iterator*)it;
+    std::set<li_long>::iterator* n = (std::set<li_long>::iterator*)it;
     if (*n == ensemble.end())
         return emptyatom_;
     Element* r = lisp->provideInteger(**n);
@@ -689,7 +692,7 @@ Element* Set_i::next_iter(LispE* lisp, void* it) {
 }
 
 Element* Set_i::next_iter_exchange(LispE* lisp, void* it) {
-    std::set<long>::iterator* n = (std::set<long>::iterator*)it;
+    std::set<li_long>::iterator* n = (std::set<li_long>::iterator*)it;
     if (*n == ensemble.end())
         return emptyatom_;
     exchange_value.content = **n;
@@ -762,7 +765,7 @@ Element* Set_i::list_xor(LispE* lisp, Element* value) {
             s->add(a);
     }
 
-    long v;
+    li_long v;
     if (value->type == t_llist) {
         u_link* a = ((LList*)value)->liste.begin();
         for (; a != NULL; a = a->next()) {
@@ -823,7 +826,7 @@ Element* Set_i::copying(bool duplicate) {
 Element* Set_i::minimum(LispE* lisp) {
     if (ensemble.empty())
         return null_;
-    long w = 0;
+    li_long w = 0;
     bool first = true;
     for (const auto& a : ensemble) {
         if (first) {
@@ -841,7 +844,7 @@ Element* Set_i::minimum(LispE* lisp) {
 Element* Set_i::maximum(LispE* lisp) {
     if (ensemble.empty())
         return null_;
-    long w = 0;
+    li_long w = 0;
     bool first = true;
     for (const auto& a : ensemble) {
         if (first) {
@@ -859,8 +862,8 @@ Element* Set_i::maximum(LispE* lisp) {
 Element* Set_i::minmax(LispE* lisp) {
     if (ensemble.empty())
         return null_;
-    long v_min = 0;
-    long v_max = 0;
+    li_long v_min = 0;
+    li_long v_max = 0;
     bool first = true;
     
     for (const auto& a : ensemble) {
@@ -897,6 +900,7 @@ Element* Set_i::loop(LispE* lisp, int16_t label, List* code) {
     Integer* element = lisp->provideInteger(0);
     lisp->recording(element, label);
     long sz = code->liste.size();
+    increment();
     for (auto & a: ensemble) {
         e->release();
         e = lisp->get_variable(label);
@@ -918,11 +922,13 @@ Element* Set_i::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -955,7 +961,7 @@ Element* Set_i::checkkey(LispE* lisp, Element* e) {
 }
 
 Element* Set_i::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
-    long keyvalue = a_value->asInteger();
+    li_long keyvalue = a_value->asInteger();
     if (ensemble.count(keyvalue)) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asInteger());
@@ -966,7 +972,7 @@ Element* Set_i::replace_all_elements(LispE* lisp, Element* a_value, Element* rem
 
 Element* Set_i::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     Numbers* l = lisp->provideNumbers();
-    long keyvalue = a_value->asInteger();
+    li_long keyvalue = a_value->asInteger();
     if (!ensemble.count(keyvalue))
         return emptylist_;
     l->liste.push_back(keyvalue);
@@ -974,7 +980,7 @@ Element* Set_i::search_all_elements(LispE* lisp, Element* a_value, long ix) {
 }
 
 Element* Set_i::count_all_elements(LispE* lisp, Element* a_value, long ix) {
-    long keyvalue = a_value->asInteger();
+    li_long keyvalue = a_value->asInteger();
     if (!ensemble.count(keyvalue))
         return zero_value;
     return one_value;
@@ -984,7 +990,7 @@ Element* Set_i::search_reverse(LispE* lisp, Element* a_value, long ix) {
     return !ensemble.count(a_value->asInteger())?null_:a_value;
 }
 
-Element* Set_i::protected_index(LispE* lisp, long i) {
+Element* Set_i::protected_index(LispE* lisp, li_long i) {
     if (i >= 0 && i < ensemble.size()) {
         for (const auto& a: ensemble) {
             if (!i) {
@@ -1019,7 +1025,7 @@ Element* Set_i::value_from_index(LispE* lisp, long i) {
 }
 
 Element* Set_i::value_on_index(LispE* lisp, Element* ix) {
-    long k = ix->asInteger();
+    li_long k = ix->asInteger();
     if (!ensemble.count(k))
         return null_;
     return lisp->provideInteger(k);
@@ -1141,6 +1147,7 @@ Element* Set_n::loop(LispE* lisp, int16_t label, List* code) {
     Number* element = lisp->provideNumber(0);
     lisp->recording(element, label);
     long sz = code->liste.size();
+    increment();
     for (auto & a: ensemble) {
         e->release();
         e = lisp->get_variable(label);
@@ -1162,11 +1169,13 @@ Element* Set_n::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -1348,7 +1357,7 @@ Element* Set_n::search_reverse(LispE* lisp, Element* a_value, long ix) {
     return !ensemble.count(a_value->asNumber())?null_:a_value;
 }
 
-Element* Set_n::protected_index(LispE* lisp, long i) {
+Element* Set_n::protected_index(LispE* lisp, li_long i) {
     if (i >= 0 && i < ensemble.size()) {
         for (const auto& a: ensemble) {
             if (!i) {
@@ -1509,6 +1518,7 @@ Element* Set::loop(LispE* lisp, int16_t label, List* code) {
     Element* element;
     lisp->recording(null_, label);
     long sz = code->liste.size();
+    increment();
     for (const auto& a: dictionary) {
         element = a.second;
         lisp->replacestackvalue(element, label);
@@ -1519,11 +1529,13 @@ Element* Set::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -1718,7 +1730,7 @@ Element* Set::search_reverse(LispE* lisp, Element* a_value, long ix) {
     return (it == dictionary.end())?null_:it->second;
 }
 
-Element* Set::protected_index(LispE* lisp, long i) {
+Element* Set::protected_index(LispE* lisp, li_long i) {
     if (i >= 0 && i < dictionary.size()) {
         for (const auto& a: dictionary) {
             if (!i) {
@@ -2834,14 +2846,16 @@ Element* Heap::index(long i) {
     return root->traverse(i);
 }
 
-Element* Heap::protected_index(LispE* lisp, long i) {
+Element* Heap::protected_index(LispE* lisp, li_long i) {
     if (root == NULL)
         return null_;
     
     if (i == -1)
         return root->back(lisp);
-    
-    Element* e = root->traverse(lisp, i);
+
+    //traverse counts down a long index (i is a li_long)
+    long idx = i;
+    Element* e = root->traverse(lisp, idx);
     if (e == NULL)
         return null_;
     return e;
@@ -2982,6 +2996,7 @@ Element* Heap::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     lisp->recording(null_, label);
     long sz = code->liste.size();
+    increment();
     Element* element = iter.next();
     while (element != NULL) {
         lisp->replacestackvalue(element, label);
@@ -2992,12 +3007,14 @@ Element* Heap::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
         element = iter.next();
     }
+    decrementkeep();
     return e;
 }
 

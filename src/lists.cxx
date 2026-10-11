@@ -981,7 +981,7 @@ void List::storevalue(LispE* lisp, double v) {
     append(lisp->provideNumber(v));
 }
 
-void List::storevalue(LispE* lisp,long v) {
+void List::storevalue(LispE* lisp,li_long v) {
     append(lisp->provideInteger(v));
 }
 
@@ -1023,11 +1023,11 @@ void LList::append(LispE* lisp, double v) {
     append(lisp->provideNumber(v));
 }
 
-void List::append(LispE* lisp, long v) {
+void List::append(LispE* lisp, li_long v) {
     append(lisp->provideInteger(v));
 }
 
-void LList::append(LispE* lisp, long v) {
+void LList::append(LispE* lisp, li_long v) {
     append(lisp->provideInteger(v));
 }
 
@@ -1106,6 +1106,7 @@ Element* LList::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     lisp->recording(null_, label);
     long sz = code->liste.size();
+    increment();
     for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         lisp->replacestackvalue(a->value, label);
         _releasing(e);
@@ -1115,11 +1116,13 @@ Element* LList::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -1128,6 +1131,7 @@ Element* List::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     lisp->recording(null_, label);
     long sz = code->liste.size();
+    increment();
     for (long i = 0; i < liste.size(); i++) {
         lisp->replacestackvalue(liste[i], label);
         _releasing(e);
@@ -1137,11 +1141,13 @@ Element* List::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -1152,6 +1158,7 @@ Element* Enumlist::loop(LispE* lisp, int16_t label, List* code) {
     Element* element;
     long sz = code->liste.size();
     long lsz = size();
+    code->increment();
     for (long i = 0; i < lsz; i++) {
         element = index(i);
         lisp->replacestackvalue(element, label);
@@ -1162,11 +1169,13 @@ Element* Enumlist::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            code->decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    code->decrementkeep();
     return e;
 }
 
@@ -1828,13 +1837,13 @@ Element* List_instance::protected_index(LispE* lisp, Element* k) {
     throw new Errorstack(lisp, "Error: index out of bounds");
 }
 
-Element* List::protected_index(LispE* lisp,long i) {
+Element* List::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < liste.size())
         return liste[i];
     return null_;
 }
 
-Element* LList::protected_index(LispE* lisp,long i) {
+Element* LList::protected_index(LispE* lisp,li_long i) {
     Element* e = null_;
     if (i >= 0) {
         e = at_e(i)->copying(false);
@@ -3101,7 +3110,7 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
     
     for (long i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
-            e = e->protected_index(lisp, pos);
+            e = e->protected_index(lisp, (li_long)pos);
             if (e == null_)
                 throw new Errorstack(lisp, "Error: No more elements to traverse with 'cad..r'");
             
@@ -3474,7 +3483,7 @@ void Numbers::storevalue(LispE* lisp, double v) {
     liste.push_back(v);
 }
 
-void Numbers::storevalue(LispE* lisp,long v) {
+void Numbers::storevalue(LispE* lisp,li_long v) {
     liste.push_back(v);
 }
 
@@ -3504,7 +3513,7 @@ void Numbers::append(LispE* lisp, double v) {
     liste.push_back(v);
 }
 
-void Numbers::append(LispE* lisp, long v) {
+void Numbers::append(LispE* lisp, li_long v) {
     liste.push_back(v);
 }
 
@@ -3514,6 +3523,7 @@ Element* Numbers::loop(LispE* lisp, int16_t label, List* code) {
     Number* element = lisp->provideNumber(0);
     lisp->recording(element, label);
     long sz = code->liste.size();
+    increment();
     for (long i = 0; i < liste.size(); i++) {
         e->release();
         e = lisp->get_variable(label);
@@ -3535,11 +3545,13 @@ Element* Numbers::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -3812,7 +3824,7 @@ Element* Numbers::reverse(LispE* lisp, bool duplicate) {
     return this;
 }
 
-Element* Numbers::protected_index(LispE* lisp,long i) {
+Element* Numbers::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < liste.size())
         return lisp->provideNumber(liste[i]);
     return null_;
@@ -4029,7 +4041,7 @@ Element* Numbers::cdr(LispE* lisp) {
 
 Element* Integers::check_member(LispE* lisp, Element* the_set) {
     Integers* n = lisp->provideIntegers();
-    long v;
+    li_long v;
     long i, j;
     long sz = the_set->size();
     for (j = 0; j < size(); j++) {
@@ -4080,8 +4092,8 @@ Element* Integers::maximum(LispE* lisp) {
 }
 
 Element* Integers::minmax(LispE* lisp) {
-    long v_min;
-    long v_max;
+    li_long v_min;
+    li_long v_max;
     if (liste.minmax(v_min, v_max)) {
         Integers* f = lisp->provideIntegers();
         f->liste.push_back(v_min);
@@ -4137,12 +4149,12 @@ void Integers::storevalue(LispE* lisp, double v) {
     liste.push_back(v);
 }
 
-void Integers::storevalue(LispE* lisp,long v) {
+void Integers::storevalue(LispE* lisp,li_long v) {
     liste.push_back(v);
 }
 
 void Integers::storevalue(LispE* lisp, u_ustring& s) {
-    long v = convertinginteger(s);
+    li_long v = convertinginteger(s);
     liste.push_back(v);
 }
 
@@ -4157,7 +4169,7 @@ Element* Integers::invert_sign(LispE* lisp) {
 }
 
 void Integers::append(LispE* lisp, u_ustring& k) {
-    long d = convertinginteger(k);
+    li_long d = convertinginteger(k);
     liste.push_back(d);
 }
 
@@ -4165,7 +4177,7 @@ void Integers::append(LispE* lisp, double v) {
     liste.push_back(v);
 }
 
-void Integers::append(LispE* lisp, long v) {
+void Integers::append(LispE* lisp, li_long v) {
     liste.push_back(v);
 }
 
@@ -4175,6 +4187,7 @@ Element* Integers::loop(LispE* lisp, int16_t label, List* code) {
     Integer* element = lisp->provideInteger(0);
     lisp->recording(element, label);
     long sz = code->liste.size();
+    increment();
     for (long i = 0; i < liste.size(); i++) {
         e->release();
         e = lisp->get_variable(label);
@@ -4196,11 +4209,13 @@ Element* Integers::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -4276,7 +4291,7 @@ Element* Integers::unique(LispE* lisp) {
     
     Integers* nb = lisp->provideIntegers();
     long i;
-    std::set<long> values;
+    std::set<li_long> values;
     for (i = 0; i < liste.size(); i++) {
         if (values.insert(liste[i]).second)
             nb->liste.push_back(liste[i]);
@@ -4408,7 +4423,7 @@ Element* Integers::list_xor(LispE* lisp, Element* value) {
             l->liste.push_back(liste[i]);
     }
 
-    long v;
+    li_long v;
     if (value->type == t_llist) {
         u_link* a = ((LList*)value)->liste.begin();
         for (; a != NULL; a = a->next()) {
@@ -4471,7 +4486,7 @@ Element* Integers::reverse(LispE* lisp, bool duplicate) {
     return this;
 }
 
-Element* Integers::protected_index(LispE* lisp,long i) {
+Element* Integers::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < liste.size())
         return lisp->provideInteger(liste[i]);
     return null_;
@@ -4822,7 +4837,7 @@ void Strings::storevalue(LispE* lisp, double v) {
     liste.push_back(convertToUString(v));
 }
 
-void Strings::storevalue(LispE* lisp,long v) {
+void Strings::storevalue(LispE* lisp,li_long v) {
     liste.push_back(convertToUString(v));
 }
 
@@ -4838,7 +4853,7 @@ void Strings::append(LispE* lisp, double v) {
     liste.push_back(convertToUString(v));
 }
 
-void Strings::append(LispE* lisp, long v) {
+void Strings::append(LispE* lisp, li_long v) {
     liste.push_back(convertToUString(v));
 }
 
@@ -4847,7 +4862,7 @@ Element* Strings::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     String* element = lisp->provideString();
     lisp->recording(element, label);
-    
+    increment();
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
         e->release();
@@ -4870,11 +4885,13 @@ Element* Strings::loop(LispE* lisp, int16_t label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            decrementkeep();
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    decrementkeep();
     return e;
 }
 
@@ -5153,7 +5170,7 @@ Element* Strings::reverse(LispE* lisp, bool duplicate) {
     return this;
 }
 
-Element* Strings::protected_index(LispE* lisp,long i) {
+Element* Strings::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < liste.size())
         return lisp->provideString(liste[i]);
     return null_;
@@ -5837,7 +5854,7 @@ void Stringbytes::storevalue(LispE* lisp, double v) {
     liste.push_back(convertToString(v));
 }
 
-void Stringbytes::storevalue(LispE* lisp,long v) {
+void Stringbytes::storevalue(LispE* lisp,li_long v) {
     liste.push_back(convertToString(v));
 }
 
@@ -5851,7 +5868,7 @@ void Stringbytes::append(LispE* lisp, double v) {
     liste.push_back(convertToString(v));
 }
 
-void Stringbytes::append(LispE* lisp, long v) {
+void Stringbytes::append(LispE* lisp, li_long v) {
     liste.push_back(convertToString(v));
 }
 
@@ -6172,7 +6189,7 @@ Element* Stringbytes::reverse(LispE* lisp, bool duplicate) {
     return this;
 }
 
-Element* Stringbytes::protected_index(LispE* lisp,long i) {
+Element* Stringbytes::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < liste.size())
         return new Stringbyte(liste[i]);
     return null_;
@@ -6969,13 +6986,13 @@ void Shorts::flatten(LispE* lisp, Integers* l) {
 
 void Shorts::flatten(LispE* lisp, Strings* l) {
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(convertToUString((long)liste[i]));
+        l->liste.push_back(convertToUString((li_long)liste[i]));
     }
 }
 
 void Shorts::flatten(LispE* lisp, Stringbytes* l) {
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(convertToString((long)liste[i]));
+        l->liste.push_back(convertToString((li_long)liste[i]));
     }
 }
 
@@ -6995,12 +7012,12 @@ void Shorts::storevalue(LispE* lisp, double v) {
     liste.push_back(v);
 }
 
-void Shorts::storevalue(LispE* lisp,long v) {
+void Shorts::storevalue(LispE* lisp,li_long v) {
     liste.push_back(v);
 }
 
 void Shorts::storevalue(LispE* lisp, u_ustring& s) {
-    long v = convertinginteger(s);
+    li_long v = convertinginteger(s);
     liste.push_back(v);
 }
 
@@ -7023,7 +7040,7 @@ void Shorts::append(LispE* lisp, double v) {
     liste.push_back(v);
 }
 
-void Shorts::append(LispE* lisp, long v) {
+void Shorts::append(LispE* lisp, li_long v) {
     liste.push_back(v);
 }
 
@@ -7332,7 +7349,7 @@ Element* Shorts::reverse(LispE* lisp, bool duplicate) {
     return this;
 }
 
-Element* Shorts::protected_index(LispE* lisp,long i) {
+Element* Shorts::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < liste.size())
         return lisp->provideShort(liste[i]);
     return null_;
@@ -7382,7 +7399,7 @@ Element* Shorts::join_in_list(LispE* lisp, u_ustring& sep) {
     for (long i = 0; i < liste.size(); i++) {
         str += beg;
         beg = sep;
-        str += convertToUString((long)liste[i]);
+        str += convertToUString((li_long)liste[i]);
     }
     return lisp->provideString(str);
 }
@@ -7669,7 +7686,7 @@ void Floats::storevalue(LispE* lisp, float v) {
     liste.push_back(v);
 }
 
-void Floats::storevalue(LispE* lisp,long v) {
+void Floats::storevalue(LispE* lisp,li_long v) {
     liste.push_back(v);
 }
 
@@ -7703,7 +7720,7 @@ void Floats::append(LispE* lisp, float v) {
     liste.push_back(v);
 }
 
-void Floats::append(LispE* lisp, long v) {
+void Floats::append(LispE* lisp, li_long v) {
     liste.push_back(v);
 }
 
@@ -8011,7 +8028,7 @@ Element* Floats::reverse(LispE* lisp, bool duplicate) {
     return this;
 }
 
-Element* Floats::protected_index(LispE* lisp,long i) {
+Element* Floats::protected_index(LispE* lisp,li_long i) {
     if (i >= 0 && i < liste.size())
         return lisp->provideFloat(liste[i]);
     return null_;
@@ -8301,7 +8318,7 @@ Element* Integers::next_iter(LispE* lisp, void* it) {
     long* n = (long*)it;
     if (n[0] == liste.size())
         return emptyatom_;
-    long v = liste[n[0]];
+    li_long v = liste[n[0]];
     n[0]++;
     return lisp->provideInteger(v);
 }

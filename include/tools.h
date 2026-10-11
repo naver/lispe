@@ -102,9 +102,9 @@ long VirtualIndentation(string& codestr, bool lisp, bool python);
 void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bool python);
 void cr_normalise(string& code);
 
-long convertinginteger(u_ustring& number);
-long convertinginteger(wstring& number);
-long convertinginteger(string& number);
+li_long convertinginteger(u_ustring& number);
+li_long convertinginteger(wstring& number);
+li_long convertinginteger(string& number);
 void noconvertingfloathexa(wchar_t* s, long& l);
 
 void s_split(wstring& s, wstring& splitter, vector<wstring>& strs, bool keepblanks = false);
@@ -140,9 +140,16 @@ inline u_ustring w_to_u(wstring w) {
 #define _w_to_u(w) (u_ustring&)w
 #endif
 
+wstring convertToWString(li_long d);
+string convertToString(li_long d);
+u_ustring convertToUString(li_long d);
+#ifdef LISPE_WASM
+//In WebAssembly, li_long is int64_t and long is 32 bits: without these versions,
+//a long argument would be ambiguous between li_long and double
 wstring convertToWString(long d);
 string convertToString(long d);
 u_ustring convertToUString(long d);
+#endif
 wstring convertToWString(double d);
 string convertToString(double d);
 u_ustring convertToUString(double d);
