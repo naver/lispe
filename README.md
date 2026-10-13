@@ -25,9 +25,9 @@ Since LispE is _also_ a WASM library: you can test [LispE HERE](https://naver.gi
 
 See also: [Predicate-Based Agent in the Browser (PREDIBAG)](https://github.com/naver/lispe/wiki/6.1.5-PREDIBAG-in-the-Browser)
   
-## CHECK binaries
+## Download binaries
 
-We have stashed [here](https://github.com/naver/lispe/tree/master/binaries) precompiled versions for Window and Mac OS (including M1)...
+Precompiled binaries for Windows, macOS, and Docker are available in the [GitHub Releases](https://github.com/naver/lispe/releases) section.
 
 ## A Lisp with all the bells and whistles
 __LispE__ is a true Lisp with all the traditional operators that one can expect from such a language:

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*"
+           Name="LispE"
+           Language="1033"
+           Version="$(var.Version)"
+           Manufacturer="NAVER Corp."
+           UpgradeCode="7C2B849D-56D9-4BEE-A2C2-22C73E85867F">
+
+    <Package InstallerVersion="200"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Description="LispE: Lisp Élémentaire - A compact and versatile Lisp implementation" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of LispE is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="ProductFeature" Title="LispE" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+
+    <UIRef Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="LispE" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="LispE" />
+      </Directory>
+    </Directory>
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="lispe.exe" Guid="*">
+        <File Id="lispe.exe" Source="$(var.BinDir)\lispe.exe" KeyPath="yes" />
+        <Environment Id="PATH" Name="PATH" Value="[INSTALLFOLDER]" Permanent="no"
+                     Part="last" Action="set" System="yes" />
+      </Component>
+      <Component Id="lispewin.exe" Guid="*">
+        <File Id="lispewin.exe" Source="$(var.BinDir)\lispewin.exe" />
+      </Component>
+      <Component Id="lispe_sqlite.dll" Guid="*">
+        <File Id="lispe_sqlite.dll" Source="$(var.BinDir)\lispe_sqlite.dll" />
+      </Component>
+      <Component Id="lispe_xml.dll" Guid="*">
+        <File Id="lispe_xml.dll" Source="$(var.BinDir)\lispe_xml.dll" />
+      </Component>
+      <Component Id="lispe_curl.dll" Guid="*">
+        <File Id="lispe_curl.dll" Source="$(var.BinDir)\lispe_curl.dll" />
+      </Component>
+      <Component Id="gui.dll" Guid="*">
+        <File Id="gui.dll" Source="$(var.BinDir)\gui.dll" />
+      </Component>
+      <Component Id="lispe_transducer.dll" Guid="*">
+        <File Id="lispe_transducer.dll" Source="$(var.BinDir)\lispe_transducer.dll" />
+      </Component>
+      <Component Id="StartMenuShortcut" Guid="*" Directory="ApplicationProgramsFolder">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="LispE"
+                  Description="LispE: Lisp Élémentaire"
+                  Target="[INSTALLFOLDER]lispe.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\NAVER\LispE"
+                       Name="installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Product>
+</Wix>
