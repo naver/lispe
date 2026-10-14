@@ -33,7 +33,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.10.11.11.39";
+static std::string version = "1.2026.10.14.9.59";
 string LispVersion() {
     return version;
 }
@@ -531,6 +531,10 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_evaljsi, "evaljs_i", P_TWO, &List::evall_js_i);
     set_instruction(l_evaljsd, "evaljs_d", P_TWO, &List::evall_js_d);
     set_instruction(l_evaljsb, "evaljs_b", P_TWO, &List::evall_js_b);
+    set_instruction(l_evaljsj, "evaljs_j", P_TWO, &List::evall_js_j);
+    set_instruction(l_evaljsli, "evaljs_li", P_TWO, &List::evall_js_li);
+    set_instruction(l_evaljsld, "evaljs_ld", P_TWO, &List::evall_js_ld);
+    set_instruction(l_evaljslf, "evaljs_lf", P_TWO, &List::evall_js_lf);
     set_instruction(l_evaljssync, "asyncjs", P_ATLEASTTWO, &List::evall_js_async);
 #else
     set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
@@ -696,9 +700,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_zip, "zip", P_ATLEASTTHREE,  new List_zip_eval());
     set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR,  &List::evall_zipwith, new List_zipwith_eval());
 
-#ifdef MACDEBUG
-    set_instruction(l_debug_function, "f_debug", P_FULL, &List::List::evall_debug_function);
-#endif
+    set_instruction(l_debug_function, "f_status", P_FULL, &List::List::evall_debug_function);
     
     // High level functions
     set_instruction(l_cycle, "cycle", P_TWO, &List::evall_cycle_cps);
@@ -1572,6 +1574,84 @@ LispE::LispE(LispE* lisp) {
     recordingunique(delegation->_CUT, v_cut);
     recordingunique(delegation->_ERROR, t_error);
 }
+
+Strings* LispE::to_strings(u_ustring& thelist) {
+    long sz = delegation->main_tokenizer.tokenize<u_ustring>(thelist, delegation->r_parse);
+    Strings* lst = provideStrings();
+    int16_t lc;
+    for (long i = 0; i < sz; i++) {
+        //Note that the code in lc are also characters
+        //that mimic the type of the element that was identified
+        //They do not always correspond to a specific character in the buffer
+        lc = delegation->r_parse.stacktype[i];
+        if (lc == 34) {
+            lst->liste.push_back(delegation->r_parse.stack[i]);
+        }
+    }
+    return lst;
+}
+
+Integers* LispE::to_integers(u_ustring& thelist) {
+    long sz = delegation->main_tokenizer.tokenize<u_ustring>(thelist, delegation->r_parse);
+    Integers* lst = provideIntegers();
+    u_ustring buffer;
+    int16_t lc;
+    li_long value;
+    for (long i = 0; i < sz; i++) {
+        //Note that the code in lc are also characters
+        //that mimic the type of the element that was identified
+        //They do not always correspond to a specific character in the buffer
+        lc = delegation->r_parse.stacktype[i];
+        if (lc == 57) {
+            buffer = delegation->r_parse.stack[i];
+            value = convertinginteger(buffer);
+            lst->liste.push_back(value);
+        }
+    }
+    return lst;
+}
+
+Numbers* LispE::to_numbers(u_ustring& thelist) {
+    long sz = delegation->main_tokenizer.tokenize<u_ustring>(thelist, delegation->r_parse);
+    Numbers* lst = provideNumbers();
+    u_ustring buffer;
+    double value;
+    int16_t lc;
+    for (long i = 0; i < sz; i++) {
+        //Note that the code in lc are also characters
+        //that mimic the type of the element that was identified
+        //They do not always correspond to a specific character in the buffer
+        lc = delegation->r_parse.stacktype[i];
+        if (lc == 57) {
+            buffer = delegation->r_parse.stack[i];
+            value = convertingfloathexa(buffer);
+            lst->liste.push_back(value);
+        }
+    }
+    return lst;
+}
+
+Floats* LispE::to_floats(u_ustring& thelist) {
+    long sz = delegation->main_tokenizer.tokenize<u_ustring>(thelist, delegation->r_parse);
+    Floats* lst = provideFloats();
+    u_ustring buffer;
+    int16_t lc;
+    float value;
+    for (long i = 0; i < sz; i++) {
+        //Note that the code in lc are also characters
+        //that mimic the type of the element that was identified
+        //They do not always correspond to a specific character in the buffer
+        lc = delegation->r_parse.stacktype[i];
+        if (lc == 57) {
+            buffer = delegation->r_parse.stack[i];
+            value = convertingfloathexa(buffer);
+            lst->liste.push_back(value);
+        }
+    }
+    return lst;
+
+}
+
 
 /*
  The segmenter is the first step in the compilation of a code.
@@ -3884,6 +3964,11 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
+
+
+
+
 
 
 

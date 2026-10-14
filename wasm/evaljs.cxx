@@ -159,6 +159,146 @@ bool eval_js_b(string code, bool& error, string& message) {
     });
 }
 
+// evaljs_j: the JavaScript value comes back as a LispE value.
+// The returned kind tells what was received:
+// 0: null or undefined, 1: false, 2: true, 3: integer (in number), 4: double (in number),
+// 5: BigInt (its digits in text), 6: string (in text), 7: array or object (its JSON in text)
+// Only arrays and objects go through JSON.stringify, scalar values come back directly
+int eval_js_j(string code, bool& error, string& message, string& text, double& number) {
+    error = !run_js(code, message);
+    if (error)
+        return 0;
+
+    int kind = EM_ASM_INT({
+        var classify = function(v) {
+            if (v === null || v === undefined)
+                return 0;
+            switch (typeof v) {
+                case "boolean":
+                    return v ? 2 : 1;
+                case "number":
+                    window._lispeJsEvalNumber = v;
+                    return Number.isSafeInteger(v) ? 3 : 4;
+                case "bigint":
+                    window._lispeJsEvalText = v.toString();
+                    return 5;
+                case "string":
+                    window._lispeJsEvalText = v;
+                    return 6;
+                case "function":
+                case "symbol":
+                    window._lispeJsEvalText = String(v);
+                    return 6;
+            }
+            return -1;
+        };
+        window._lispeJsEvalText = null;
+        var v = window._lispeJsEvalResult;
+        var k = classify(v);
+        if (k != -1)
+            return k;
+        var json;
+        try {
+            json = JSON.stringify(v);
+        } catch(e) {
+            // a circular structure or a BigInt inside an object
+            window._lispeJsEvalText = e.toString();
+            return -1;
+        }
+        if (json === undefined)
+            return 0;
+        // toJSON can turn an object into a scalar value (a Date becomes a string)
+        if (json[0] != "{" && json[0] != "[")
+            return classify(JSON.parse(json));
+        window._lispeJsEvalText = json;
+        return 7;
+    });
+
+    if (kind == 3 || kind == 4)
+        number = EM_ASM_DOUBLE({ return window._lispeJsEvalNumber; });
+    else {
+        if (kind >= 5 || kind == -1) {
+            char* str = (char*)EM_ASM_PTR({
+                var s = window._lispeJsEvalText;
+                window._lispeJsEvalText = null;
+                var size = lengthBytesUTF8(s) + 1;
+                var buffer = Module._malloc(size);
+                stringToUTF8(s, buffer, size);
+                return buffer;
+            });
+            text = str;
+            free(str);
+        }
+    }
+
+    if (kind == -1) {
+        error = true;
+        message = text;
+        return 0;
+    }
+    return kind;
+}
+
+// evaljs_li, evaljs_ld, evaljs_lf: an array of numbers (or a typed array) comes back in values,
+// copied as a block of doubles into the WASM memory, without any text representation.
+// An element that is not a number (string, null, undefined, nested array) is an error, rather than
+// a value that would silently disappear and shift the indexes.
+// Returns false (and the error message in message) if the evaluation failed
+bool eval_js_array(string code, std::vector<double>& values, string& message) {
+    if (!run_js(code, message))
+        return false;
+
+    int sz = EM_ASM_INT({
+        var v = window._lispeJsEvalResult;
+        window._lispeJsEvalArray = null;
+        window._lispeJsEvalText = null;
+        if (v instanceof Float64Array) {
+            window._lispeJsEvalArray = v;
+            return v.length;
+        }
+        if (ArrayBuffer.isView(v) && !(v instanceof DataView)) {
+            // Int32Array, Uint8Array... and BigInt64Array, whose values are converted with Number
+            window._lispeJsEvalArray = Float64Array.from(v, Number);
+            return v.length;
+        }
+        if (!Array.isArray(v)) {
+            window._lispeJsEvalText = "Error: expecting an array of numbers, got: " + (v === null ? "null" : typeof v);
+            return -1;
+        }
+        for (var i = 0; i < v.length; i++) {
+            if (typeof v[i] != "number") {
+                window._lispeJsEvalText = "Error: element " + i + " is not a number: " + (v[i] === null ? "null" : (Array.isArray(v[i]) ? "array" : typeof v[i]));
+                return -1;
+            }
+        }
+        window._lispeJsEvalArray = Float64Array.from(v);
+        return v.length;
+    });
+
+    if (sz < 0) {
+        char* str = (char*)EM_ASM_PTR({
+            var s = window._lispeJsEvalText;
+            window._lispeJsEvalText = null;
+            var size = lengthBytesUTF8(s) + 1;
+            var buffer = Module._malloc(size);
+            stringToUTF8(s, buffer, size);
+            return buffer;
+        });
+        message = str;
+        free(str);
+        return false;
+    }
+
+    values.resize(sz);
+    if (sz) {
+        EM_ASM({
+            HEAPF64.set(window._lispeJsEvalArray, $0 >> 3);
+            window._lispeJsEvalArray = null;
+        }, values.data());
+    }
+    return true;
+}
+
 //------------------------------------------------------------------------------------------
 extern "C" {
     EMSCRIPTEN_KEEPALIVE void store_in_lisp(LispE* lisp, List* recall, const char* result, bool error) {

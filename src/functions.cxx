@@ -4056,6 +4056,129 @@ Element* List_maplist_eval::eval(LispE* lisp) {
     return emptylist_;
 }
 
+Element* List_maplist_lambda_eval::eval(LispE* lisp) {
+    Element* current_list = null_;
+    Element* op = liste[1];
+    Element* container = NULL;
+    
+    bool sb = lisp->set_true_as_one();
+    void* iter = NULL;
+    Element* save_variable = this;
+    int16_t protect_save = 0;
+        
+    try {
+        lisp->checkState(this);
+        if (listesize == 4) {
+            current_list = liste[3]->eval(lisp);
+            choice = current_list->Boolean();
+            current_list->release();
+        }
+        
+        current_list = liste[2]->eval(lisp);
+        long listsz = current_list->size();
+        if (!listsz) {
+            current_list->release();
+            lisp->reset_to_true(sb);
+            lisp->resetStack();
+            return emptylist_;
+        }
+                
+        iter = current_list->begin_iter();
+        Element* nxt = current_list->next_iter_exchange(lisp, iter);
+        
+        //if there is already a variable with this name on the stack
+        //we record it to restore it later...
+        save_variable = lisp->record_or_replace(nxt, label);
+        
+        //if choice == no, then it means that the output is always a List object
+        //So we cannot build a tensor as output
+        char check_tensor = !choice;
+        
+        Element* e = op->eval_lambda_min(lisp);
+        if (e->type == l_return)
+            container = emptylist_;
+        else {
+            if (choice) {
+                switch (e->type) {
+                    case t_string:
+                    case t_longstring:
+                        container = lisp->provideStrings();
+                        break;
+                    case t_stringbyte:
+                        container = new Stringbytes();
+                        break;
+                    case t_integer:
+                        container = lisp->provideIntegers();
+                        break;
+                    case t_float:
+                        container = lisp->provideFloats();
+                        break;
+                    case t_number:
+                        container = lisp->provideNumbers();
+                        break;
+                    case t_llist:
+                        container = new LList(&lisp->delegation->mark);
+                        break;
+                    default:
+                        container = lisp->provideList();
+                }
+            }
+            else
+                container = lisp->provideList();
+            
+            e = e->copying(false);
+            protect_save = (e == save_variable);
+            check_tensor |= e->isPureList();
+            container->append(e);
+            e->release();
+            nxt = current_list->next_iter_exchange(lisp, iter);
+            while (nxt != emptyatom_) {
+                lisp->replacestackvalue(nxt, label);
+                e = op->eval_lambda_min(lisp);
+                if (e->type == l_return)
+                    break;
+                
+                check_tensor |= e->isPureList();
+                check_tensor |= !e->is_same_tensor(container->last(lisp));
+                e = e->copying(false);
+                container->append(e);
+                protect_save += (e == save_variable);
+                e->release();
+                nxt = current_list->next_iter_exchange(lisp, iter);
+            }
+        }
+        current_list->clean_iter(iter);
+        lisp->reset_in_stack(save_variable, label);
+        if (protect_save  && !container->isValueList())
+            save_variable->incrementstatus(protect_save);
+
+        current_list->release();
+        lisp->reset_to_true(sb);
+        lisp->resetStack();
+        if (check_tensor == a_valuelist || check_tensor == a_tensor) {
+            nxt = container->index(0)->newTensor(lisp, (List*)container);
+            if (nxt != container) {
+                container->release();
+                return nxt;
+            }
+        }
+        return container;
+    }
+    catch (Error* err) {
+        if (save_variable != this)
+            lisp->reset_in_stack(save_variable, label);
+        if (iter != NULL)
+            current_list->clean_iter(iter);
+        lisp->reset_to_true(sb);
+        current_list->release();
+        if (container != NULL)
+            container->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    
+    return emptylist_;
+}
+
 Element* List_filterlist_eval::eval(LispE* lisp) {
     long listsz = liste.size();
     //Operation is: (// operation l1)
@@ -4071,7 +4194,8 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
     int16_t label = -1;
     void* iter =  NULL;
     bool choice = (liste[0]->label() == l_filterlist);
-    
+    int16_t protect_save = 0;
+
     try {
         lisp->checkState(this);
         if (listsz == 4) {
@@ -4133,7 +4257,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
         //if choice == no, then it means that the output is always a List object
         //So we cannot build a tensor as output
         char check_tensor = !choice;
-        
+
         if (op->isLambda()) {
             if (!op->index(1)->size())
                 return lisp->check_error(this, new Error("Error: Wrong number of arguments"), idxinfo);
@@ -4141,19 +4265,20 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
             if (label < l_final)
                 return lisp->check_error(this, new Error("Error: Wrong argument"), idxinfo);
 
+
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
 
             //if there is already a variable with this name on the stack
             //we record it to restore it later...
             save_variable = lisp->record_or_replace(nxt, label);
-            
             e = op->eval_lambda_min(lisp);
             if (e->type != l_return) {
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
                     check_tensor |= e->isPureList();
+                    protect_save = (e == save_variable);
                     result->append(e);
                 }
                 e->release();
@@ -4169,6 +4294,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                         check_tensor |= e->isPureList();
                         check_tensor |= !e->is_same_tensor(result->last(lisp));
                         result->append(e);
+                        protect_save += (e == save_variable);
                     }
                     e->release();
                     nxt = current_list->next_iter_exchange(lisp, iter);
@@ -4176,6 +4302,8 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
             }
             current_list->clean_iter(iter);
             lisp->reset_in_stack(save_variable, label);
+            if (protect_save  && !result->isValueList())
+                save_variable->incrementstatus(protect_save);
         }
         else {
             e = op;
@@ -4235,8 +4363,9 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         if (op->isLambda()) {
-            if (save_variable != this)
+            if (save_variable != this) {
                 lisp->reset_in_stack(save_variable, label);
+            }
         }
         else {
             if (call != NULL)
@@ -4269,7 +4398,8 @@ Element* List_takelist_eval::eval(LispE* lisp) {
     int16_t label = -1;
     void* iter = NULL;
     bool choice = (liste[0]->label() == l_takelist);
-    
+    int16_t protect_save = 0;
+
     try {
         lisp->checkState(this);
         if (listsz == 4) {
@@ -4352,6 +4482,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                     e->release();
                     e = nxt->copying(false);
                     check_tensor |= e->isPureList();
+                    protect_save = (e == save_variable);
                     result->append(e);
                 }
                 else
@@ -4370,6 +4501,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                         check_tensor |= e->isPureList();
                         check_tensor |= !e->is_same_tensor(result->last(lisp));
                         result->append(e);
+                        protect_save += (e == save_variable);
                     }
                     else {
                         e->release();
@@ -4381,6 +4513,8 @@ Element* List_takelist_eval::eval(LispE* lisp) {
             }
             current_list->clean_iter(iter);
             lisp->reset_in_stack(save_variable, label);
+            if (protect_save  && !result->isValueList())
+                save_variable->incrementstatus(protect_save);
         }
         else {
             e = op;
@@ -4445,8 +4579,9 @@ Element* List_takelist_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         if (op->isLambda()) {
-            if (save_variable != this)
+            if (save_variable != this) {
                 lisp->reset_in_stack(save_variable, label);
+            }
         }
         else {
             if (call != NULL)
@@ -4479,7 +4614,8 @@ Element* List_droplist_eval::eval(LispE* lisp) {
     int16_t label = -1;
     void* iter = NULL;
     bool choice = (liste[0]->label() == l_droplist);
-    
+    int16_t protect_save = 0;
+
     try {
         lisp->checkState(this);
         if (listsz == 4) {
@@ -4567,6 +4703,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                     e = nxt->copying(false);
                     check_tensor |= e->isPureList();
                     result->append(e);
+                    protect_save = (e == save_variable);
                     add = true;
                 }
                 e->release();
@@ -4583,6 +4720,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                         check_tensor |= e->isPureList();
                         check_tensor |= !e->is_same_tensor(result->last(lisp));
                         result->append(e);
+                        protect_save += (e == save_variable);
                         add = true;
                     }
                     e->release();
@@ -4591,6 +4729,8 @@ Element* List_droplist_eval::eval(LispE* lisp) {
             }
             current_list->clean_iter(iter);
             lisp->reset_in_stack(save_variable, label);
+            if (protect_save  && !result->isValueList())
+                save_variable->incrementstatus(protect_save);
         }
         else {
             e = op;
@@ -4652,8 +4792,9 @@ Element* List_droplist_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         if (op->isLambda()) {
-            if (save_variable != this)
+            if (save_variable != this) {
                 lisp->reset_in_stack(save_variable, label);
+            }
         }
         else {
             if (call != NULL)

@@ -1407,6 +1407,11 @@ public:
         }
     }
     
+    Strings* to_strings(u_ustring& thelist);
+    Integers* to_integers(u_ustring& thelist);
+    Numbers* to_numbers(u_ustring& thelist);
+    Floats* to_floats(u_ustring& thelist);
+
     int16_t createNewType(u_ustring name);
     
     Element* provideOperator(int16_t identifier) {

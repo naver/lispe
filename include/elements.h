@@ -87,7 +87,7 @@ typedef enum {
     //Recording in the stack or in memory
     l_sleep, l_wait, l_infix,
 #ifdef LISPE_WASM
-    l_evaljs, l_evaljsi, l_evaljsd, l_evaljsb, l_evaljssync,
+    l_evaljs, l_evaljsi, l_evaljsd, l_evaljsb, l_evaljsj, l_evaljsli, l_evaljsld, l_evaljslf, l_evaljssync,
 #endif
 
     l_set_const, l_setq, l_setqv, l_setqi, l_setg, l_setqequal, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,

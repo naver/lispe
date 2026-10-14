@@ -1467,6 +1467,10 @@ public:
     Element* evall_js_i(LispE* lisp);
     Element* evall_js_d(LispE* lisp);
     Element* evall_js_b(LispE* lisp);
+    Element* evall_js_j(LispE* lisp);
+    Element* evall_js_li(LispE* lisp);
+    Element* evall_js_ld(LispE* lisp);
+    Element* evall_js_lf(LispE* lisp);
     Element* evall_js_async(LispE* lisp);
 #endif
     Element* evall_lambda(LispE* lisp);
@@ -1580,8 +1584,8 @@ public:
     Element* evall_this(LispE*);
     
     
-#ifdef MACDEBUG
     Element* evall_debug_function(LispE* lisp);
+#ifdef MACDEBUG
     Element* evall_nconc(LispE* lisp);
 #endif
     

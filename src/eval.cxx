@@ -478,6 +478,8 @@ string eval_js(string code, bool& error);
 int64_t eval_js_i(string code, bool& error, string& message);
 double eval_js_d(string code, bool& error, string& message);
 bool eval_js_b(string code, bool& error, string& message);
+int eval_js_j(string code, bool& error, string& message, string& text, double& number);
+bool eval_js_array(string code, std::vector<double>& values, string& message);
 
 void eval_js_async(LispE* lisp, string& code, List* recall);
 
@@ -552,6 +554,89 @@ Element* List::evall_js_b(LispE* lisp) {
     if (err)
         return new Error(message);
     return booleans_[res];
+}
+
+Element* List::evall_js_j(LispE* lisp) {
+    string code;
+    run_js(lisp, code);
+    bool err = false;
+    string message;
+    string text;
+    double number = 0;
+    //see eval_js_j in wasm/evaljs.cxx for the kinds of value
+    int kind = eval_js_j(code, err, message, text, number);
+    if (err)
+        return new Error(message);
+
+    switch (kind) {
+        case 1:
+            return booleans_[0];
+        case 2:
+            return booleans_[1];
+        case 3:
+            return lisp->provideInteger((li_long)number);
+        case 4:
+            return lisp->provideNumber(number);
+        case 5:
+            return lisp->provideInteger(convertinginteger(text));
+        case 6:
+            return lisp->provideString(text);
+        case 7: {
+            //an array or an object: the same analysis as json_parse
+            u_ustring u;
+            s_utf8_to_unicode(u, text, text.size());
+            LispEJsonCompiler json;
+            if (!json.compile(lisp, u, false))
+                return new Error("Error: evaljs_j could not read the JSON value");
+            return json.compiled_result;
+        }
+    }
+    return null_;
+}
+
+//evaljs_li, evaljs_ld, evaljs_lf: a JavaScript array of numbers becomes an integers_,
+//a numbers_ or a floats_ list (see eval_js_array in wasm/evaljs.cxx)
+Element* List::evall_js_li(LispE* lisp) {
+    string code;
+    run_js(lisp, code);
+    string message;
+    std::vector<double> values;
+    if (!eval_js_array(code, values, message))
+        return new Error(message);
+    Integers* lst = lisp->provideIntegers();
+    lst->liste.reserve(values.size());
+    //as with evaljs_i: truncated toward zero, NaN and infinities give 0
+    for (long i = 0; i < values.size(); i++)
+        lst->liste.push_back(std::isfinite(values[i]) ? (li_long)values[i] : 0);
+    return lst;
+}
+
+Element* List::evall_js_ld(LispE* lisp) {
+    string code;
+    run_js(lisp, code);
+    string message;
+    std::vector<double> values;
+    if (!eval_js_array(code, values, message))
+        return new Error(message);
+    Numbers* lst = lisp->provideNumbers();
+    lst->liste.reserve(values.size());
+    for (long i = 0; i < values.size(); i++)
+        lst->liste.push_back(values[i]);
+    return lst;
+}
+
+Element* List::evall_js_lf(LispE* lisp) {
+    string code;
+    run_js(lisp, code);
+    string message;
+    std::vector<double> values;
+    if (!eval_js_array(code, values, message))
+        return new Error(message);
+    Floats* lst = lisp->provideFloats();
+    lst->liste.reserve(values.size());
+    for (long i = 0; i < values.size(); i++)
+        lst->liste.push_back((float)values[i]);
+    return lst;
 }
 
 Element* List::evall_js_async(LispE* lisp) {
@@ -2023,18 +2108,16 @@ Element* List::evall_this(LispE* lisp) {
     return null_;
 }
 
-#ifdef MACDEBUG
 //This is a stub function, which is used to focus on specific function debugging
 Element* List::evall_debug_function(LispE* lisp) {
-    long occupation = 0;
-    for (const auto& a: __indexes) {
-        if (a != NULL) {
-            occupation++;
-        }
+    Integers* stats = lisp->provideIntegers();
+    Element* e = liste[1]->eval(lisp);
+    if (e->isList()) {
+        for (long i = 0; i < e->size(); i++)
+            stats->liste.push_back(e->index(i)->status);
     }
-    return lisp->provideInteger(occupation);
+    return stats;
 }
-#endif
 
 
 
