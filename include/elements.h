@@ -158,7 +158,10 @@ typedef enum {
     l_var0, l_var1, l_var2, l_var3, l_var4, l_var5, l_var6, l_var7, l_var8, l_var9, l_varA, l_varB, l_varC, l_varD, l_varE, l_varF,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon, c_point,
     e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
-    t_comment, l_final
+    t_comment,
+    //added at the end, to keep the other codes stable
+    l_prefix,
+    l_final
 } lisp_code;
 
 //------------------------------------------------------------------------------------------

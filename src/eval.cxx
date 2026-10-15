@@ -1488,110 +1488,443 @@ Element* List::evall_set_at(LispE* lisp) {
     return m.eval(lisp);
 }
 
+//------------------------------------------------------------------------------------
 //Infix Expressions: (• x op y op z op u)
+//The expression is translated into its prefix form with a precedence climbing parser.
+//From the loosest to the tightest:
+//  1: += -= *= /= %= ^^= <<= >>= &= |= ^=     (right associative)
+//  2: or            3: xor           4: and
+//  5: = == != < > <= >= >=<
+//  6: | |||         7: ^ ^^^         8: & &~ &&&
+//  9: << >>        10: + - p+ ,     11: * / %
+// 12: ^^ **                                    (right associative)
+// 13: at
+//Unary operators: - (translated into sign) + and ~
+//Functional notation: f(x) or f(x + 1) is translated into (f x) or (f (+ x 1)), multiple arguments are not accepted
+//A sub-list, which is itself an infix expression: (x op y...) is translated in turn.
+//Function calls are kept as such, but their arguments are also checked for infix expressions.
+//------------------------------------------------------------------------------------
+#define infix_unary_precedence 12
+
+static int16_t infix_precedence(int16_t label) {
+    switch (label) {
+        case l_plusequal:
+        case l_minusequal:
+        case l_multiplyequal:
+        case l_divideequal:
+        case l_modequal:
+        case l_powerequal:
+        case l_leftshiftequal:
+        case l_rightshiftequal:
+        case l_bitandequal:
+        case l_bitorequal:
+        case l_bitxorequal:
+            return 1;
+        case l_or:
+            return 2;
+        case l_xor:
+            return 3;
+        case l_and:
+            return 4;
+        case l_equal:
+        case l_equalonezero:
+        case l_different:
+        case l_lower:
+        case l_greater:
+        case l_lowerorequal:
+        case l_greaterorequal:
+        case l_compare:
+            return 5;
+        case l_bitor:
+        case l_listor:
+            return 6;
+        case l_bitxor:
+        case l_listxor:
+            return 7;
+        case l_bitand:
+        case l_bitandnot:
+        case l_listand:
+            return 8;
+        case l_leftshift:
+        case l_rightshift:
+            return 9;
+        case l_plus:
+        case l_minus:
+        case l_pluspython:
+        case l_minus_plus:
+        case l_concatenate:
+            return 10;
+        case l_multiply:
+        case l_divide:
+        case l_mod:
+            return 11;
+        case l_power:
+            return 12;
+        case l_at:
+            return 13;
+    }
+    return 0;
+}
+
+static inline bool infix_right_associative(int16_t prec) {
+    return (prec == 1 || prec == 12);
+}
+
+//a op b op c is translated into (op a b c), when op accepts more than two arguments
+//with the same meaning: (- a b c) is (a - b) - c, (< a b c) is (a < b) and (b < c)
+static bool infix_mergeable(int16_t label) {
+    switch (label) {
+        case l_plus:
+        case l_minus:
+        case l_multiply:
+        case l_divide:
+        case l_mod:
+        case l_bitand:
+        case l_bitor:
+        case l_bitxor:
+        case l_and:
+        case l_or:
+        case l_equal:
+        case l_lower:
+        case l_greater:
+        case l_lowerorequal:
+        case l_greaterorequal:
+        case l_at:
+            return true;
+    }
+    return false;
+}
+
+static inline bool infix_binary(Element* e) {
+    return (e->isOperator() && infix_precedence(e->label()));
+}
+
+static inline bool infix_unary(Element* e) {
+    if (!e->isOperator())
+        return false;
+    int16_t label = e->label();
+    return (label == l_minus || label == l_plus || label == l_bitnot);
+}
+
+//Is this list an infix expression: (x op y ...) or (- x op y...)
+static bool infix_expression(LispE* lisp, Element* e) {
+    long sz = e->size();
+    if (sz < 3)
+        return false;
+    Element* first = e->index(0);
+    if (infix_unary(first))
+        return (sz >= 4 && infix_binary(e->index(2)));
+    //Functional notation: (f(x) op ...)
+    if (first->isAtom() && e->index(1)->isList())
+        return (sz >= 4 && infix_binary(e->index(2)));
+    //If the first element is an instruction or a function, this is a call
+    if (!first->isList() && first->isExecutable(lisp))
+        return false;
+    return infix_binary(e->index(1));
+}
+
+static inline bool infix_comma(Element* e) {
+    return (e->isOperator() && e->label() == l_concatenate);
+}
+
+class InfixParser {
+public:
+    LispE* lisp;
+    Element* tokens;
+    long pos;
+    long end;
+    int idxinfo;
+    //compiling: the sub-lists are modified in place and the new lists are kept in the garbage
+    //otherwise: we are at execution time, the initial lists are left untouched
+    bool compiling;
+    //At execution time, the lists that were created, in order to release them in case of error
+    //Sub-parsers share the vector of the top parser
+    vector<List*> own;
+    vector<List*>* created;
+
+    InfixParser(LispE* l, Element* t, long b, bool c, int idx) {
+        lisp = l;
+        tokens = t;
+        pos = b;
+        end = t->size();
+        compiling = c;
+        idxinfo = idx;
+        created = &own;
+    }
+
+    InfixParser(InfixParser* parent, Element* t) {
+        lisp = parent->lisp;
+        tokens = t;
+        pos = 0;
+        end = t->size();
+        compiling = parent->compiling;
+        idxinfo = parent->idxinfo;
+        created = parent->created;
+    }
+
+    //In case of error, we only release the lists that are not stored in another created list
+    void clean() {
+        long i, j, k;
+        bool root;
+        List* l;
+        for (i = 0; i < created->size(); i++) {
+            root = true;
+            for (j = 0; j < created->size() && root; j++) {
+                if (i == j)
+                    continue;
+                l = created->at(j);
+                for (k = 0; k < l->size() && root; k++)
+                    root = (l->liste[k] != created->at(i));
+            }
+            if (root)
+                created->at(i)->release();
+        }
+        created->clear();
+    }
+
+    void malformed(Element* e) {
+        wstring msg = L"Error: Infix expression is malformed";
+        if (e != NULL) {
+            msg += L" near: '";
+            msg += e->asString(lisp);
+            msg += L"'";
+        }
+        throw new Errorstack(lisp, msg);
+    }
+
+    List* node(Element* op) {
+        List* l;
+        if (compiling) {
+            l = new Listincode(idxinfo);
+            lisp->storeforgarbage(l);
+        }
+        else {
+            l = lisp->provideList();
+            created->push_back(l);
+        }
+        l->append(op);
+        return l;
+    }
+
+    //A sub-list is either an infix expression, or a call whose arguments might be infix expressions
+    Element* translate(Element* e) {
+        if (!e->isList() || !e->size())
+            return e;
+
+        if (infix_expression(lisp, e)) {
+            InfixParser sub(this, e);
+            return sub.parse();
+        }
+
+        if (e->index(0)->label() == l_quote)
+            return e;
+
+        Element* arg;
+        Element* res;
+        List* copy = NULL;
+        //if the first element is a list, as in a 'let', we also translate it
+        long i = e->index(0)->isList()?0:1;
+        for (; i < e->size(); i++) {
+            arg = e->index(i);
+            res = translate(arg);
+            if (compiling) {
+                if (res != arg)
+                    ((List*)e)->liste[i] = res;
+                continue;
+            }
+            if (copy == NULL) {
+                if (res == arg)
+                    continue;
+                copy = lisp->provideList();
+                created->push_back(copy);
+                for (long j = 0; j < i; j++)
+                    copy->append(e->index(j));
+            }
+            copy->append(res);
+        }
+        return (copy == NULL)?e:copy;
+    }
+
+    Element* operand() {
+        if (pos >= end)
+            malformed(NULL);
+
+        Element* e = tokens->index(pos);
+        if (infix_unary(e)) {
+            pos++;
+            Element* value = expression(infix_unary_precedence);
+            switch (e->label()) {
+                case l_plus:
+                    return value;
+                case l_minus:
+                    e = lisp->provideAtomOrInstruction(l_sign);
+                    break;
+            }
+            List* l = node(e);
+            l->append(value);
+            return l;
+        }
+
+        if (e->isOperator())
+            malformed(e);
+
+        pos++;
+        //Functional notation: f(x)
+        if (e->isAtom() && pos < end && tokens->index(pos)->isList())
+            return call(e, tokens->index(pos++));
+        return translate(e);
+    }
+
+    //Functional notation: f(x + 1), the argument is a single infix expression
+    //Note that the tokenizer glues a comma to the previous atom: "x," is one single atom
+    Element* call(Element* function, Element* arguments) {
+        List* call_node = node(function);
+        long sz = arguments->size();
+        if (!sz)
+            return call_node;
+
+        Element* e;
+        for (long i = 0; i < sz; i++) {
+            e = arguments->index(i);
+            if (infix_comma(e) || (e->isAtom() && !e->isOperator() && e->asUString(lisp).back() == ','))
+                throw new Errorstack(lisp, "Error: no multiple argument function accepted in infix expressions");
+        }
+
+        InfixParser sub(this, arguments);
+        call_node->append(sub.parse());
+        return call_node;
+    }
+
+    Element* expression(int16_t minimal) {
+        Element* left = operand();
+        Element* op;
+        Element* right;
+        int16_t prec;
+        int16_t label;
+        int16_t current = -1;
+
+        while (pos < end) {
+            op = tokens->index(pos);
+            if (!op->isOperator())
+                malformed(op);
+            prec = infix_precedence(op->label());
+            if (!prec)
+                malformed(op);
+            if (prec < minimal)
+                break;
+            pos++;
+            right = expression(infix_right_associative(prec)?prec:prec + 1);
+            label = op->label();
+            //We only merge with a list that was built in this loop
+            if (label == current && infix_mergeable(label))
+                left->append(right);
+            else {
+                List* l = node(op);
+                l->append(left);
+                l->append(right);
+                left = l;
+                current = label;
+            }
+        }
+        return left;
+    }
+
+    Element* parse() {
+        if (pos >= end)
+            malformed(NULL);
+        Element* e;
+        try {
+            e = expression(0);
+            if (pos < end)
+                malformed(tokens->index(pos));
+        }
+        catch (Error* err) {
+            //Only the top parser cleans the lists that were created
+            if (!compiling && created == &own)
+                clean();
+            throw err;
+        }
+        return e;
+    }
+};
+
+//Compiling time: (• x op y op z op u) is replaced with its prefix version
+//(• x) is kept as such for execution time, unless x is an infix expression
 Element* List::eval_infix(LispE* lisp) {
     long listsize = liste.size();
-    if (!listsize)
+    int idxinfo = ((Listincode*)this)->idxinfo;
+    if (listsize == 2) {
+        InfixParser p(lisp, this, 1, true, idxinfo);
+        Element* e = liste[1];
+        if (infix_expression(lisp, e))
+            return p.translate(e);
+        //Otherwise, x is evaluated at runtime and the result is translated then
+        //If x is a call, we still need to translate its arguments
+        if (e->isList()) {
+            Element* r = p.translate(e);
+            if (r != e)
+                liste[1] = r;
+        }
         return this;
-
-    Element* e;
-    Element* oper = NULL;
-    Listincode* root;
-
-    long beg = 1;
-    if (liste[0]->label() != l_infix) {
-        if (liste[0]->isExecutable(lisp)) {
-            //we need to check for lists in the arguments, we are still under the infix hood...
-            for (long i = 1; i < listsize; i++) {
-                e = liste[i];
-                if (e->isList()) {
-                    oper = ((List*)e)->eval_infix(lisp);
-                    if (oper != e) {
-                        liste[i] = oper;
-                        lisp->removefromgarbage(e);
-                    }
-                }
-            }
-            return this;
-        }
-        beg = 0;
     }
+    InfixParser p(lisp, this, 1, true, idxinfo);
+    return p.parse();
+}
 
-    int16_t label;
-    Listincode* operations = new Listincode(((Listincode*)this)->idxinfo);
-    lisp->storeforgarbage(operations);
-    bool addtolast = false;
-    bool checkoperator = false;
-    for (long i = beg; i < listsize; i++) {
-        oper = liste[i];
-        if (oper->isOperator()) { //10 + -> first operator
-            if (!checkoperator)
-                throw new Errorstack(lisp, "Error: Infix expression is malformed");
-
-            if (operations->size() == 1) {
-                e = operations->liste[0];
-                operations->liste[0] = oper;
-                operations->append(e);
-                addtolast = false;
-            }
-            else {
-                label = oper->label();
-                if (label == operations->liste[0]->label()) {
-                    addtolast = false;
-                }
-                else {
-                    if (label == l_plus || label == l_minus || label == l_and || label == l_xor || label == l_or) { // go up; this is how the operator priority is maintained.
-                        root = new Listincode(((Listincode*)this)->idxinfo);
-                        lisp->storeforgarbage(root);
-                        root->append(oper);
-                        root->append(operations);
-                        operations = root;
-                        addtolast = false;
-                    }
-                    else {
-                        e = operations->last(lisp);
-                        addtolast = true;
-                        if (!e->isList() || e->index(0)->label() != label || e->size() == 2) { //go in next time
-                            root = new Listincode(((Listincode*)this)->idxinfo);
-                            lisp->storeforgarbage(root);
-                            root->append(oper);
-                            root->append(e);
-                            operations->liste[operations->size() - 1] = root;
-                        }
-                        else {
-                            oper = e->change_to_n();
-                            if (oper != e) {
-                                lisp->removefromgarbage(e);
-                                operations->liste[operations->size() - 1] = oper;
-                            }
-                        }
-                    }
-                }
-            }
-            checkoperator = false;
-            continue;
-        }
-    
-        if (checkoperator)
-            throw new Errorstack(lisp, "Error: Infix expression is malformed");
-    
-        checkoperator = true;
-        e = oper->eval_infix(lisp);
-        if (e != oper)
-            lisp->removefromgarbage(oper);
-        
-        if (addtolast) {
-            operations->last(lisp)->append(e);
-        }
-        else
-            operations->append(e);
-        //cout << operations->toString(lisp) << endl;
+//Translation of a list written in infix into a prefix expression: '(a + (b * c)) --> (+ a (* b c))
+static Element* infix_to_prefix(LispE* lisp, Element* tokens) {
+    if (!tokens->isList() || !tokens->size())
+        return tokens;
+    Element* code;
+    try {
+        InfixParser p(lisp, tokens, 0, false, -1);
+        code = p.parse();
     }
+    catch (Error* err) {
+        tokens->release();
+        throw err;
+    }
+    code->increment();
+    tokens->release();
+    code->decrementkeep();
+    return code;
+}
 
-    if (!checkoperator)
+//(prefix '(a + (b * c))) returns (+ a (* b c))
+Element* List::evall_prefix(LispE* lisp) {
+    return infix_to_prefix(lisp, liste[1]->eval(lisp));
+}
+
+//Execution time:
+//(• x): x is evaluated, if it is a list, its translation into a prefix expression is returned
+//       (• '(12 + 30)) returns (+ 12 30)
+//(• x op y op z op u): this expression could not be compiled beforehand, it is translated and evaluated
+Element* List::evall_infix(LispE* lisp) {
+    long listsize = liste.size();
+    if (listsize < 2)
         throw new Errorstack(lisp, "Error: Infix expression is malformed");
 
-    return operations;
+    if (listsize == 2)
+        return infix_to_prefix(lisp, liste[1]->eval(lisp));
+
+    InfixParser p(lisp, this, 1, false, -1);
+    Element* code = p.parse();
+    Element* result;
+    bool arity = lisp->check_arity_on_fly;
+    try {
+        lisp->check_arity_on_fly = true;
+        result = code->eval(lisp);
+        lisp->check_arity_on_fly = arity;
+    }
+    catch (Error* err) {
+        lisp->check_arity_on_fly = arity;
+        code->release();
+        throw err;
+    }
+
+    if (code != result && !code->element_container(result))
+        code->release();
+    return result;
 }
 
 Element* List::evall_input(LispE* lisp) {

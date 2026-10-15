@@ -1559,6 +1559,7 @@ public:
     Element* evall_plus(LispE* lisp);
     Element* evall_infix(LispE* lisp);
     Element* eval_infix(LispE* lisp);
+    Element* evall_prefix(LispE* lisp);
     
     Element* evall_memory(LispE* lisp);
     
