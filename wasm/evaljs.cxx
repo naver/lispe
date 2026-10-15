@@ -413,15 +413,31 @@ static int js_compile(string& code, bool call) {
             window._lispeJsCache = [];
         if (!window._lispeJsArgs) {
             // Rebuilds the arguments of a call: kinds has one character per argument,
-            // 'd' (100): the next double in the WASM memory, from ptr, otherwise the next value of json
+            // 'd' (100): the next double in the WASM memory, from ptr,
+            // 'D' (68): a list of numbers, its size then its values, which becomes a Float64Array,
+            // otherwise the next value of json
             window._lispeJsArgs = function(kinds, ptr, json) {
                 var n = kinds.length;
                 var a = new Array(n);
                 var values = json ? JSON.parse(json) : null;
                 var p = ptr >> 3;
                 var k = 0;
-                for (var i = 0; i < n; i++)
-                    a[i] = (kinds.charCodeAt(i) == 100) ? HEAPF64[p++] : values[k++];
+                var c;
+                var sz;
+                for (var i = 0; i < n; i++) {
+                    c = kinds.charCodeAt(i);
+                    if (c == 100)
+                        a[i] = HEAPF64[p++];
+                    else {
+                        if (c == 68) {
+                            sz = HEAPF64[p++];
+                            a[i] = HEAPF64.slice(p, p + sz);
+                            p += sz;
+                        }
+                        else
+                            a[i] = values[k++];
+                    }
+                }
                 return a;
             };
         }

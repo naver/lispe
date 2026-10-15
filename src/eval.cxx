@@ -688,8 +688,10 @@ Element* List::evall_js_async(LispE* lisp) {
 //in a cache (see js_compile in wasm/evaljs.cxx)
 //With (list "Pyt.cercle" x y r), the function name goes in code, and the function is compiled only
 //once, whatever the arguments are. The arguments do not go through a JavaScript text:
-//- kinds has one character per argument: 'd' for a number, 'j' for any other value
-//- the numbers are stored as doubles in numbers, which JavaScript reads directly from the WASM memory
+//- kinds has one character per argument: 'd' for a number, 'D' for a list of numbers (numbers,
+//  integers, floats, shorts), 'j' for any other value
+//- the numbers are stored as doubles in numbers, which JavaScript reads directly from the WASM memory;
+//  a list of numbers is stored as its size followed by its values, and arrives as a Float64Array
 //- the other values (strings, lists, dictionaries, true, nil...) go in json, as a JSON array
 //run_jsc returns false when the code is a string, which is then compiled as an expression
 string eval_jsc(string& code, bool call, string& kinds, string& json, std::vector<double>& numbers, bool& error);
@@ -721,6 +723,38 @@ bool List::run_jsc(LispE* lisp, string& code, string& kinds, string& json, std::
                 kinds += 'd';
                 numbers.push_back(e->asNumber());
                 break;
+            case t_numbers: {
+                vecte_a<double>& l = ((Numbers*)e)->liste;
+                kinds += 'D';
+                numbers.push_back(l.size());
+                for (long j = 0; j < l.size(); j++)
+                    numbers.push_back(l[j]);
+                break;
+            }
+            case t_integers: {
+                vecte_a<li_long>& l = ((Integers*)e)->liste;
+                kinds += 'D';
+                numbers.push_back(l.size());
+                for (long j = 0; j < l.size(); j++)
+                    numbers.push_back(l[j]);
+                break;
+            }
+            case t_floats: {
+                vecte_a<float>& l = ((Floats*)e)->liste;
+                kinds += 'D';
+                numbers.push_back(l.size());
+                for (long j = 0; j < l.size(); j++)
+                    numbers.push_back(l[j]);
+                break;
+            }
+            case t_shorts: {
+                vecte_a<int16_t>& l = ((Shorts*)e)->liste;
+                kinds += 'D';
+                numbers.push_back(l.size());
+                for (long j = 0; j < l.size(); j++)
+                    numbers.push_back(l[j]);
+                break;
+            }
             default:
                 kinds += 'j';
                 json += json.empty() ? "[" : ", ";
