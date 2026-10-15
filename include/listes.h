@@ -1472,6 +1472,9 @@ public:
     Element* evall_js_ld(LispE* lisp);
     Element* evall_js_lf(LispE* lisp);
     Element* evall_js_async(LispE* lisp);
+    bool run_jsc(LispE* lisp, string& code, string& kinds, string& json, std::vector<double>& numbers);
+    Element* evall_jsc(LispE* lisp);
+    Element* evall_jsc_async(LispE* lisp);
 #endif
     Element* evall_lambda(LispE* lisp);
     Element* evall_last(LispE* lisp);

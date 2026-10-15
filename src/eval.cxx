@@ -683,6 +683,89 @@ Element* List::evall_js_async(LispE* lisp) {
     return true_;
 }
 
+//------------------------------------------------------------------------------
+//evaljsc and asyncjsc: as evaljs and asyncjs, but the JavaScript code is compiled once and kept
+//in a cache (see js_compile in wasm/evaljs.cxx)
+//With (list "Pyt.cercle" x y r), the function name goes in code, and the function is compiled only
+//once, whatever the arguments are. The arguments do not go through a JavaScript text:
+//- kinds has one character per argument: 'd' for a number, 'j' for any other value
+//- the numbers are stored as doubles in numbers, which JavaScript reads directly from the WASM memory
+//- the other values (strings, lists, dictionaries, true, nil...) go in json, as a JSON array
+//run_jsc returns false when the code is a string, which is then compiled as an expression
+string eval_jsc(string& code, bool call, string& kinds, string& json, std::vector<double>& numbers, bool& error);
+void eval_jsc_async(LispE* lisp, string& code, bool call, string& kinds, string& json, std::vector<double>& numbers, List* recall);
+
+bool List::run_jsc(LispE* lisp, string& code, string& kinds, string& json, std::vector<double>& numbers) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isList()) {
+        code = element->toString(lisp);
+        element->release();
+        return false;
+    }
+
+    if (!element->size()) {
+        element->release();
+        throw new Error ("Error: empty list");
+    }
+    code = element->index(0)->toString(lisp);
+    //The list has already been evaluated: its elements are values, which must not be
+    //evaluated again (a list such as (1 2 "a") would be executed as a call)
+    Element* e;
+    for (long i = 1; i < element->size();i++) {
+        e = element->index(i);
+        switch (e->type) {
+            case t_short:
+            case t_integer:
+            case t_float:
+            case t_number:
+                kinds += 'd';
+                numbers.push_back(e->asNumber());
+                break;
+            default:
+                kinds += 'j';
+                json += json.empty() ? "[" : ", ";
+                json += e->jsonify(lisp);
+        }
+        e->release();
+    }
+    if (!json.empty())
+        json += "]";
+    element->release();
+    return true;
+}
+
+Element* List::evall_jsc(LispE* lisp) {
+    string code;
+    string kinds;
+    string json;
+    std::vector<double> numbers;
+    bool call = run_jsc(lisp, code, kinds, json, numbers);
+    bool err = false;
+    code = eval_jsc(code, call, kinds, json, numbers, err);
+    if (err)
+        return new Error(code);
+    return lisp->provideString(code);
+}
+
+Element* List::evall_jsc_async(LispE* lisp) {
+    string code;
+    string kinds;
+    string json;
+    std::vector<double> numbers;
+    bool call = run_jsc(lisp, code, kinds, json, numbers);
+    long sz = liste.size();
+    List* recall = lisp->provideList();
+    Element* element = liste[2]->eval(lisp);
+    recall->append(element);
+    recall->append(null_);
+    for (long i = 3; i < sz; i++) {
+        element = liste[i]->eval(lisp);
+        recall->append(element->quoting());
+    }
+    eval_jsc_async(lisp, code, call, kinds, json, numbers, recall);
+    return true_;
+}
+
 #endif
 
 Element* LispE::eval(u_ustring& code) {

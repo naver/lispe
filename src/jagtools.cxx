@@ -1780,6 +1780,93 @@ wstring s_wreplacestring(wstring& s, wstring reg, wstring rep) {
 
  */
 
+//------------------------------------------------------------------------
+//Reading of a decimal number: s points to its first digit, l is incremented with the number of
+//characters that were read.
+//Up to 19 significant digits are kept in an integer (leading zeros do not count), together with the
+//decimal exponent that applies to them. When this integer is exact as a double (<= 2^53) and the
+//exponent is between -22 and 22, a single multiplication or division by an exact power of 10 gives
+//the correctly rounded value. Otherwise (large exponents, very small numbers, too many digits),
+//strtod gives the correctly rounded value.
+template <typename T> static double scanningdecimal(const T* s, long& l) {
+    const T* start = s;
+    uint64_t digits = 0;
+    long nb = 0;
+    long exponent = 0;
+    bool truncated = false;
+
+    while (isadigit(*s)) {
+        if (nb < 19) {
+            if (digits || *s != '0') {
+                digits = digits * 10 + (*s & 15);
+                nb++;
+            }
+        }
+        else {
+            exponent++;
+            if (*s != '0')
+                truncated = true;
+        }
+        ++s;
+    }
+
+    bool with_exponent = true;
+    if (*s == '.') {
+        ++s;
+        if (isadigit(*s)) {
+            while (isadigit(*s)) {
+                if (nb < 19) {
+                    if (digits || *s != '0') {
+                        digits = digits * 10 + (*s & 15);
+                        nb++;
+                    }
+                    exponent--;
+                }
+                else {
+                    if (*s != '0')
+                        truncated = true;
+                }
+                ++s;
+            }
+        }
+        else //"1." is read as 1, without any exponent
+            with_exponent = false;
+    }
+
+    if (with_exponent && (*s == 'e' || *s == 'E')) {
+        ++s;
+        long sgn = 1;
+        if (*s == '-') {
+            sgn = -1;
+            ++s;
+        }
+        else {
+            if (*s == '+')
+                ++s;
+        }
+
+        long e = 0;
+        while (isadigit(*s)) {
+            if (e < 100000)
+                e = e * 10 + (*s & 15);
+            ++s;
+        }
+        exponent += e * sgn;
+    }
+
+    l += s - start;
+    if (!digits)
+        return 0;
+
+    if (!truncated && digits <= 9007199254740992ULL && exponent >= -22 && exponent <= 22)
+        return (exponent < 0) ? (double)digits / arConvertExp[-exponent] : (double)digits * arConvertExp[exponent];
+
+    std::string buffer;
+    for (const T* c = start; c < s; c++)
+        buffer += (char)*c;
+    return strtod(buffer.c_str(), NULL);
+}
+//------------------------------------------------------------------------
 double conversiontofloathexa(const char* s, int sign) {
     long v = 0;
     uchar c = *s++;
@@ -1835,9 +1922,9 @@ double convertingfloathexa(const char* s) {
     //End of string...
     if (*s ==0 )
         return 0;
-
+    
     int sign = 1;
-
+    
     //Sign
     if (*s=='-') {
         sign = -1;
@@ -1846,65 +1933,19 @@ double convertingfloathexa(const char* s) {
     else
         if (*s=='+')
             ++s;
-
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        return conversiontofloathexa(s, sign);
-    }
-
-    int64_t v;
-    if (isadigit(*s)) {
-        v = *s++ & 15;
-        while (isadigit(*s)) {
-            v = (v << 3) + (v << 1) + (*s++ & 15);
-        }
-        if (!*s)
-            return v*sign;
-    }
-    else
+    
+    if (!isadigit(*s))
         return 0;
 
-    double res = v;
-
-    if (*s=='.') {
-        ++s;
-        if (isadigit(*s)) {
-            long mantissa = 1;
-            v = *s++ & 15;
-            while (isadigit(*s)) {
-                if (mantissa < 17) {
-                    v = (v << 3) + (v << 1) + (*s & 15);
-                    ++mantissa;
-                }
-                ++s;
-            }
-            res += (double)v / power10(mantissa);
-        }
-        else
-            return res*sign;
-    }
-
-    if ((*s &0xDF) == 'E') {
-        ++s;
-        long sgn = 1;
-        if (*s == '-') {
-            sgn = -1;
-            ++s;
-        }
-        else {
-            if (*s == '+')
-                ++s;
-        }
-
-        if (isadigit(*s)) {
-            v = *s++ & 15;
-            while (isadigit(*s))
-                v = (v << 3) + (v << 1) + (*s++ & 15);
-
-            res *= power10(v*sgn);
+    if (*s=='0') {
+        if (s[1]=='x') {
+            s+=2;
+            return conversiontofloathexa(s, sign);
         }
     }
-    return res*sign;
+
+    long l = 0;
+    return scanningdecimal(s, l)*sign;
 }
 //------------------------------------------------------------------------
 double conversiontofloathexa(const char* s, int sign, long& l) {
@@ -1971,7 +2012,7 @@ double convertingfloathexa(const char* s, long& l) {
     //End of string...
     if (*s ==0 )
         return 0;
-
+    
     int sign = 1;
 
     //Sign
@@ -1985,78 +2026,19 @@ double convertingfloathexa(const char* s, long& l) {
             ++s;
             l++;
         }
-
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        l++;
-        return conversiontofloathexa(s, sign, l);
-    }
-
-    int64_t v;
-    if (isadigit(*s)) {
-        v = *s++ & 15;
-        l++;
-        while (isadigit(*s)) {
-            v = (v << 3) + (v << 1) + (*s++ & 15);
-            l++;
-        }
-        if (!*s)
-            return v*sign;
-    }
-    else
+    
+    if (!isadigit(*s))
         return 0;
 
-    double res = v;
-
-    if (*s=='.') {
-        ++s;
-        l++;
-        if (isadigit(*s)) {
-            long mantissa = 1;
-            v = *s++ & 15;
+    if (*s=='0') {
+        if (s[1]=='x') {
+            s+=2;
             l++;
-            while (isadigit(*s)) {
-                if (mantissa < 17) {
-                    v = (v << 3) + (v << 1) + (*s & 15);
-                    ++mantissa;
-                }
-                ++s;
-                l++;
-            }
-            res += (double)v / power10(mantissa);
+            return conversiontofloathexa(s, sign, l);
         }
-        else
-            return res*sign;
     }
 
-    if ((*s &0xDF) == 'E') {
-        ++s;
-        l++;
-        long sgn = 1;
-        if (*s == '-') {
-            sgn = -1;
-            ++s;
-            l++;
-        }
-        else {
-            if (*s == '+') {
-                ++s;
-                ++l;
-            }
-        }
-
-        if (isadigit(*s)) {
-            v = *s++ & 15;
-            l++;
-            while (isadigit(*s)) {
-                v = (v << 3) + (v << 1) + (*s++ & 15);
-                l++;
-            }
-
-            res *= power10(v*sgn);
-        }
-    }
-    return res*sign;
+    return scanningdecimal(s, l)*sign;
 }
 
 void noconversiontofloathexa(const char* s, int sign, short& l) {
@@ -2525,7 +2507,7 @@ double convertingfloathexa(wchar_t* s, long& l) {
     //End of string...
     if (*s ==0 )
         return 0;
-
+    
     int sign = 1;
 
     //Sign
@@ -2539,78 +2521,19 @@ double convertingfloathexa(wchar_t* s, long& l) {
             ++s;
             l++;
         }
-
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        l++;
-        return convertingtofloathexa(s, sign, l);
-    }
-
-    int64_t v;
-    if (isadigit(*s)) {
-        v = *s++ & 15;
-        l++;
-        while (isadigit(*s)) {
-            v = (v << 3) + (v << 1) + (*s++ & 15);
-            l++;
-        }
-        if (!*s)
-            return v*sign;
-    }
-    else
+    
+    if (!isadigit(*s))
         return 0;
 
-    double res = v;
-
-    if (*s=='.') {
-        ++s;
-        l++;
-        if (isadigit(*s)) {
-            long mantissa = 1;
-            v = *s++ & 15;
+    if (*s=='0') {
+        if (s[1]=='x') {
+            s+=2;
             l++;
-            while (isadigit(*s)) {
-                if (mantissa < 17) {
-                    v = (v << 3) + (v << 1) + (*s & 15);
-                    ++mantissa;
-                }
-                ++s;
-                l++;
-            }
-            res += (double)v / power10(mantissa);
+            return convertingtofloathexa(s, sign, l);
         }
-        else
-            return res*sign;
     }
 
-    if ((*s &0xDF) == 'E') {
-        ++s;
-        l++;
-        long sgn = 1;
-        if (*s == '-') {
-            sgn = -1;
-            ++s;
-            l++;
-        }
-        else {
-            if (*s == '+') {
-                ++s;
-                ++l;
-            }
-        }
-
-        if (isadigit(*s)) {
-            v = *s++ & 15;
-            l++;
-            while (isadigit(*s)) {
-                v = (v << 3) + (v << 1) + (*s++ & 15);
-                l++;
-            }
-
-            res *= power10(v*sgn);
-        }
-    }
-    return res*sign;
+    return scanningdecimal(s, l)*sign;
 }
 
 //------------------------------------------------------------------------

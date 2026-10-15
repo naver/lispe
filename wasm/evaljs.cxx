@@ -381,3 +381,169 @@ void eval_js_async(LispE* lisp, string& code, List* recall) {
         }})();
     }, code.c_str(), lisp, recall);
 }
+
+//------------------------------------------------------------------------------------------
+// evaljsc and asyncjsc: the JavaScript code is compiled once into a function, kept in
+// window._lispeJsCache. The C++ maps below give the index of that function:
+//  - js_cache_code: a string, compiled as an expression: new Function("return (" + code + "\n)")
+//  - js_cache_call: a function name, called with an array of arguments: new Function("a", "return " + name + "(...a)")
+// Code that cannot be compiled as an expression ("var x = 1; x + 2") is recorded with -1,
+// it then goes through eval, as with evaljs.
+// Note that the compiled functions only see the global scope (window).
+#include <unordered_map>
+static std::unordered_map<string, int> js_cache_code;
+static std::unordered_map<string, int> js_cache_call;
+// Strings built on the fly would make the cache grow without end: it is emptied beyond this size
+static const size_t js_cache_max = 1024;
+
+static int js_compile(string& code, bool call) {
+    std::unordered_map<string, int>& cache = call ? js_cache_call : js_cache_code;
+    auto it = cache.find(code);
+    if (it != cache.end())
+        return it->second;
+
+    if (js_cache_code.size() + js_cache_call.size() >= js_cache_max) {
+        js_cache_code.clear();
+        js_cache_call.clear();
+        EM_ASM({ window._lispeJsCache = []; });
+    }
+
+    int id = EM_ASM_INT({
+        if (!window._lispeJsCache)
+            window._lispeJsCache = [];
+        if (!window._lispeJsArgs) {
+            // Rebuilds the arguments of a call: kinds has one character per argument,
+            // 'd' (100): the next double in the WASM memory, from ptr, otherwise the next value of json
+            window._lispeJsArgs = function(kinds, ptr, json) {
+                var n = kinds.length;
+                var a = new Array(n);
+                var values = json ? JSON.parse(json) : null;
+                var p = ptr >> 3;
+                var k = 0;
+                for (var i = 0; i < n; i++)
+                    a[i] = (kinds.charCodeAt(i) == 100) ? HEAPF64[p++] : values[k++];
+                return a;
+            };
+        }
+        var src = UTF8ToString($0).trim();
+        var f;
+        try {
+            if ($1)
+                f = new Function("a", "return " + src + "(...a)");
+            else {
+                while (src.endsWith(";"))
+                    src = src.slice(0, -1).trim();
+                f = new Function("return (" + src + "\n)");
+            }
+        } catch(e) {
+            return -1;
+        }
+        window._lispeJsCache.push(f);
+        return window._lispeJsCache.length - 1;
+    }, code.c_str(), call);
+
+    cache[code] = id;
+    return id;
+}
+
+// When the function name could not be compiled as a function ("var x = 1; f"), the call goes through
+// eval, which sees the array of arguments a: eval(code + "(...a)")
+string eval_jsc(string& code, bool call, string& kinds, string& json, std::vector<double>& numbers, bool& error) {
+    error = false;
+    int id = js_compile(code, call);
+
+    EM_ASM({
+        window._lispeJsEvalResult = null;
+        window._lispeJsEvalError = null;
+        try {
+            var a = $1 ? window._lispeJsArgs(UTF8ToString($2), $3, $4 ? UTF8ToString($4) : null) : null;
+            if ($0 != -1)
+                window._lispeJsEvalResult = $1 ? window._lispeJsCache[$0](a) : window._lispeJsCache[$0]();
+            else
+                window._lispeJsEvalResult = eval(UTF8ToString($5) + ($1 ? "(...a)" : ""));
+        } catch(e) {
+            window._lispeJsEvalError = e.toString();
+        }
+    }, id, call, kinds.c_str(), numbers.data(), json.empty() ? (const char*)0 : json.c_str(), code.c_str());
+
+    char* errorStr = (char*)EM_ASM_PTR({
+        if (window._lispeJsEvalError) {
+            var errorStr = window._lispeJsEvalError;
+            var size = lengthBytesUTF8(errorStr) + 1;
+            var buffer = Module._malloc(size);
+            stringToUTF8(errorStr, buffer, size);
+            return buffer;
+        }
+        return 0;
+    });
+
+    if (errorStr) {
+        string result(errorStr);
+        free(errorStr);
+        error = true;
+        return result;
+    }
+
+    char* resultStr = (char*)EM_ASM_PTR({
+        var result = window._lispeJsEvalResult;
+        window._lispeJsEvalResult = null;
+        var jsString;
+        try {
+            jsString = (result === null || result === undefined) ? "nil" : String(result);
+        } catch(e) {
+            jsString = "";
+        }
+        var size = lengthBytesUTF8(jsString) + 1;
+        var buffer = Module._malloc(size);
+        stringToUTF8(jsString, buffer, size);
+        return buffer;
+    });
+
+    string result(resultStr);
+    free(resultStr);
+    return result;
+}
+
+void eval_jsc_async(LispE* lisp, string& code, bool call, string& kinds, string& json, std::vector<double>& numbers, List* recall) {
+    int id = js_compile(code, call);
+
+    EM_ASM({
+    // The arguments and the function are read now: the C++ values no longer exist once we are back in LispE
+    const f = ($0 == -1) ? null : window._lispeJsCache[$0];
+    const jsCode = ($0 == -1) ? UTF8ToString($5) + ($1 ? "(...a)" : "") : null;
+    let a = null;
+    let argError = null;
+    if ($1) {
+        try {
+            a = window._lispeJsArgs(UTF8ToString($2), $3, $4 ? UTF8ToString($4) : null);
+        } catch(e) {
+            argError = e;
+        }
+    }
+
+    (async function() {
+        try {
+            if (argError)
+                throw argError;
+            const response = await (f === null ? eval(jsCode) : ($1 ? f(a) : f()));
+            let resultString;
+            if (typeof response === 'object') {
+                resultString = JSON.stringify(response);
+            } else {
+                resultString = String(response);
+            }
+            var size = lengthBytesUTF8(resultString) + 1;
+            var buffer = Module._malloc(size);
+            stringToUTF8(resultString, buffer, size);
+            _store_in_lisp($6, $7, buffer, false);
+            Module._free(buffer);
+        } catch (error) {
+            const errorStr = error.toString();
+            var size = lengthBytesUTF8(errorStr) + 1;
+            var buffer = Module._malloc(size);
+            stringToUTF8(errorStr, buffer, size);
+            _store_in_lisp($6, $7, buffer, true);
+            Module._free(buffer);
+        }})();
+    }, id, call, kinds.c_str(), numbers.data(), json.empty() ? (const char*)0 : json.c_str(), code.c_str(), lisp, recall);
+}
