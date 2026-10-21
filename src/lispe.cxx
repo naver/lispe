@@ -33,7 +33,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.10.15.20.34";
+static std::string version = "1.2026.10.21.11.28";
 string LispVersion() {
     return version;
 }
@@ -417,6 +417,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_at_shape, "atshape", P_ATLEASTFOUR,  new List_at_shape_eval());
     set_instruction(l_atom, "atom", P_TWO,  new List_converttoatom_eval());
     set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
+    set_instruction(l_atomise, "atomize", P_TWO, &List::evall_atomise);
     set_instruction(l_aslongstring, "aslongstring", P_TWO, &List::evall_aslongstring);
     set_instruction(l_bitand, "&", P_ATLEASTTWO,  new List_bitand());
     set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE, &List::evall_bitandequal);
@@ -581,7 +582,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal, new List_lowerorequal_eval());
     set_instruction(l_maplist, "maplist", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mapcar, "mapcar", P_THREE,&List::evall_maplist, new List_maplist_eval());
-    set_instruction(l_mark, "mark", P_THREE | P_TWO,  new List_mark_eval());
+    set_instruction(l_mark, "mark@", P_THREE | P_TWO,  new List_mark_eval());
     set_instruction(l_matrix_stringbyte, "matrix_stringbyte", P_TWO | P_THREE | P_FOUR,  new List_matrix_stringbyte_eval());
     set_instruction(l_matrix_string, "matrix_string", P_TWO | P_THREE | P_FOUR,  new List_matrix_string_eval());
     set_instruction(l_matrix_short, "matrix_short", P_TWO | P_THREE | P_FOUR,  new List_matrix_short_eval());
@@ -3967,6 +3968,8 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
+
 
 
 

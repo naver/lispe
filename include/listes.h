@@ -419,7 +419,7 @@ public:
     }
     
     inline int16_t get0() {
-        return items->buffer[home]->type;
+        return items->last?items->buffer[home]->type:0;
     }
     
     void erase(long pos) {

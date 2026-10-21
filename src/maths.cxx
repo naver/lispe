@@ -9201,7 +9201,7 @@ Element* List::evall_powerequal2(LispE* lisp) {
 
 //------------------------------------------------------------------------------------------
 
-typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_iabs,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf, math_cosine} math;
+typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_iabs,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf, math_cosine, math_atan2} math;
 
 
 //------------------------------------------------------------------------------------------
@@ -9626,6 +9626,12 @@ public:
                 li_long vv = lisp->get_variable(U"vaal")->asInteger();
                 return lisp->provideInteger(hcf_math(v,vv));
             }
+            case math_atan2: {
+                //(atan2 y x): the angle of the point (x, y), between -π and π, in the right quadrant
+                v = val_v->asNumber();
+                double x = lisp->get_variable(U"valx")->asNumber();
+                return lisp->provideNumber(atan2(v, x));
+            }
             case math_cosine: {
                 Element* valb = lisp->get_variable(U"valb");
                 if (valb->label() != val_v->label() || valb->size() != val_v->size())
@@ -9760,6 +9766,9 @@ public:
             case math_cosine: {
                 return L"Returns the cosine similarity between two vectors";
             }
+            case math_atan2: {
+                return L"compute the arc tangent of y/x, in the right quadrant: (atan2 y x)";
+            }
         }
         return L"";
     }
@@ -9810,6 +9819,7 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib degree (val)", new Math(lisp, math_degree));
     
     lisp->extension("deflib cosine (val valb)", new Math(lisp, math_cosine));
+    lisp->extension("deflib atan2 (val valx)", new Math(lisp, math_atan2));
     
     u_ustring nom = U"_pi";
     Element* value = lisp->provideNumber(M_PI);

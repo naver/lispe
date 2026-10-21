@@ -2076,7 +2076,9 @@ Element* List::evall_lambda(LispE* lisp) {
 Element* List::evall_last(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* value = container->last_element(lisp);
+    value->increment();
     container->release();
+    value->decrementkeep();
     return value;
 }
 
@@ -2431,7 +2433,9 @@ Element* List::evall_type(LispE* lisp) {
 Element* List::evall_unique(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* value = container->unique(lisp);
+    value->increment();
     container->release();
+    value->decrementkeep();
     return value;
 }
 
@@ -2468,7 +2472,9 @@ Element* List::evall_force(LispE* lisp) {
 Element* List::evall_values(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* values = container->thevalues(lisp);
+    values->increment();
     container->release();
+    values->decrementkeep();
     return values;
 }
 
