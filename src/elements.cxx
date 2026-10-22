@@ -2619,7 +2619,7 @@ Element* Float::equal(LispE* lisp, Element* e) {
 }
 
 Element* Short::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->isNumber() && content == e->asShort())];
+    return booleans_[(e->isFloating()?asFloat() == e->asFloat():(e->isNumber() && content == e->asShort()))];
 }
 
 Element* Complexe::equal(LispE* lisp, Element* e) {
@@ -2627,7 +2627,7 @@ Element* Complexe::equal(LispE* lisp, Element* e) {
 }
 
 Element* Integer::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->isNumber() && content == e->asInteger())];
+    return booleans_[(e->isFloating()?asNumber() == e->asNumber():(e->isNumber() && content == e->asInteger()))];
 }
 
 bool Element::egal(Element* e) {
@@ -2659,7 +2659,7 @@ bool Float::egal(Element* e) {
 }
 
 bool Short::egal(Element* e) {
-    return (e->isNumber() && content == e->asShort());
+    return (e->isFloating()?asFloat() == e->asFloat():(e->isNumber() && content == e->asShort()));
 }
 
 bool Complexe::egal(Element* e) {
@@ -2668,7 +2668,7 @@ bool Complexe::egal(Element* e) {
 
                       
 bool Integer::egal(Element* e) {
-    return (e->isNumber() && content == e->asInteger());
+    return(e->isFloating()?asNumber() == e->asNumber():(e->isNumber() && content == e->asInteger()));
 }
 
 //------------------------------------------------------------------------------------------
@@ -2782,7 +2782,7 @@ Element* Number::moreorequal(LispE* lisp, Element* e) {
 }
 
 Element* Integer::less(LispE* lisp, Element* e) {
-    return booleans_[content < e->asInteger()];
+    return (e->isFloating()?booleans_[asNumber() < e->asNumber()]:booleans_[content < e->asInteger()]);
 }
 
 Element* Integer::compare(LispE* lisp, Element* e) {
@@ -2791,9 +2791,6 @@ Element* Integer::compare(LispE* lisp, Element* e) {
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
-Element* Short::less(LispE* lisp, Element* e) {
-    return booleans_[content < e->asShort()];
-}
 
 char compare_complex(std::complex<double>& c, std::complex<double>& v, char cmp) {
     switch (cmp) {
@@ -2829,8 +2826,12 @@ Element* Complexe::compare(LispE* lisp, Element* e) {
         throw new Errorstack(lisp, "Error: cannot compare these values");
 }
 
+Element* Short::less(LispE* lisp, Element* e) {
+    return (e->isFloating()?booleans_[asFloat() < e->asFloat()]:booleans_[content < e->asShort()]);
+}
+
 Element* Short::lessorequal(LispE* lisp, Element* e) {
-    return booleans_[content <= e->asShort()];
+    return (e->isFloating()?booleans_[asFloat() <= e->asFloat()]:booleans_[content <= e->asShort()]);
 }
 
 Element* Complexe::lessorequal(LispE* lisp, Element* e) {
@@ -2838,19 +2839,18 @@ Element* Complexe::lessorequal(LispE* lisp, Element* e) {
 }
 
 Element* Integer::lessorequal(LispE* lisp, Element* e){
-    return booleans_[content <= e->asInteger()];
+    return (e->isFloating()?booleans_[asNumber() <= e->asNumber()]:booleans_[content <= e->asInteger()]);
 }
 
 Element* Integer::more(LispE* lisp, Element* e) {
-    return booleans_[content > e->asInteger()];
-}
+    return (e->isFloating()?booleans_[asNumber() > e->asNumber()]:booleans_[content > e->asInteger()]);}
 
 Element* Integer::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[content >= e->asInteger()];
+    return (e->isFloating()?booleans_[asNumber() >= e->asNumber()]:booleans_[content >= e->asInteger()]);
 }
 
 Element* Short::more(LispE* lisp, Element* e) {
-    return booleans_[content > e->asShort()];
+    return (e->isFloating()?booleans_[asFloat() > e->asFloat()]:booleans_[content > e->asShort()]);
 }
 
 Element* Complexe::more(LispE* lisp, Element* e) {
@@ -2858,7 +2858,7 @@ Element* Complexe::more(LispE* lisp, Element* e) {
 }
 
 Element* Short::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[content >= e->asShort()];
+    return (e->isFloating()?booleans_[asFloat() >= e->asFloat()]:booleans_[content >= e->asShort()]);
 }
 
 Element* Complexe::moreorequal(LispE* lisp, Element* e) {

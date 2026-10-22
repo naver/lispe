@@ -886,7 +886,11 @@ public:
     virtual bool isNumber() {
         return false;
     }
-    
+
+    virtual bool isFloating() {
+        return false;
+    }
+
     virtual double checkNumber(LispE* lisp);
     virtual li_long checkInteger(LispE* lisp);
     virtual int16_t checkShort(LispE* lisp);
@@ -1781,6 +1785,10 @@ public:
         return (v == content);
     }
     
+    bool isFloating() {
+        return true;
+    }
+
     bool isScalar() {
         return true;
     }
@@ -1943,6 +1951,10 @@ public:
     
     bool equalvalue(double v) {
         return (v == content);
+    }
+
+    bool isFloating() {
+        return true;
     }
 
     bool isScalar() {
@@ -2203,7 +2215,7 @@ public:
     }
 
     bool isequal(LispE* lisp, Element* value) {
-        return (value == this || value->asInteger() == content);
+        return (value == this || (value->isFloating()?asFloat() == value->asFloat():content == value->asShort()));
     }
 
     Element* reverse(LispE*, bool duplique = true);
@@ -2558,7 +2570,7 @@ public:
     }
     
     bool isequal(LispE* lisp, Element* value) {
-        return (value == this || value->asInteger() == content);
+        return (value == this || (value->isFloating()?asNumber() == value->asNumber():content == value->asInteger()));
     }
     
     Element* reverse(LispE*, bool duplique = true);

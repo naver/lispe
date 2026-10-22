@@ -988,12 +988,18 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
 
 Element* Integer::plus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
-        case t_float:
-            content += ((Float*)e)->content;
-            return this;
-        case t_number:
-            content += ((Number*)e)->content;
-            return this;
+        case t_float: {
+            float v = content;
+            v += ((Float*)e)->content;
+            release();
+            return lisp->provideFloat(v);
+        }
+        case t_number: {
+            double v = content;
+            v += ((Number*)e)->content;
+            release();
+            return lisp->provideNumber(v);
+        }
         case t_short:
             content += ((Short*)e)->content;
             return this;
@@ -1013,12 +1019,18 @@ Element* Integer::plus_direct(LispE* lisp, Element* e) {
 
 Element* Integer::minus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
-        case t_float:
-            content -= ((Float*)e)->content;
-            return this;
-        case t_number:
-            content -= ((Number*)e)->content;
-            return this;
+        case t_float: {
+            float v = content;
+            v -= ((Float*)e)->content;
+            release();
+            return lisp->provideFloat(v);
+        }
+        case t_number: {
+            double v = content;
+            v -= ((Number*)e)->content;
+            release();
+            return lisp->provideNumber(v);
+        }
         case t_integer:
             content -= ((Integer*)e)->content;
             return this;
@@ -1038,12 +1050,18 @@ Element* Integer::minus_direct(LispE* lisp, Element* e) {
 
 Element* Integer::multiply_direct(LispE* lisp, Element* e) {
     switch (e->type) {
-        case t_float:
-            content *= ((Float*)e)->content;
-            return this;
-        case t_number:
-            content *= ((Number*)e)->content;
-            return this;
+        case t_float: {
+            float v = content;
+            v *= ((Float*)e)->content;
+            release();
+            return lisp->provideFloat(v);
+        }
+        case t_number: {
+            double v = content;
+            v *= ((Number*)e)->content;
+            release();
+            return lisp->provideNumber(v);
+        }
         case t_integer:
             content *= ((Integer*)e)->content;
             return this;
@@ -1108,6 +1126,12 @@ Element* Integer::plus(LispE* lisp, Element* e) {
         release();
         return n;
     }
+    
+    if (e->isFloating()) {
+        release();
+        return lisp->provideNumber(asNumber() + e->asNumber());
+    }
+    
     if (status != s_constant) {
         content += e->checkInteger(lisp);
         return this;
@@ -1122,6 +1146,12 @@ Element* Integer::minus(LispE* lisp, Element* e) {
         release();
         return n->minus(lisp, e);
     }
+    
+    if (e->isFloating()) {
+        release();
+        return lisp->provideNumber(asNumber() - e->asNumber());
+    }
+
     if (status != s_constant) {
         content -= e->checkInteger(lisp);
         return this;
@@ -1136,6 +1166,12 @@ Element* Integer::multiply(LispE* lisp, Element* e) {
         release();
         return n;
     }
+    
+    if (e->isFloating()) {
+        release();
+        return lisp->provideNumber(asNumber() * e->asNumber());
+    }
+
     if (status != s_constant) {
         content *= e->asInteger();
         return this;
@@ -1279,12 +1315,18 @@ Element* Integer::rightshift(LispE* lisp, Element* e)  {
 
 Element* Short::plus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
-        case t_float:
-            content += ((Float*)e)->content;
-            return this;
-        case t_number:
-            content += ((Number*)e)->content;
-            return this;
+        case t_float: {
+            float v = content;
+            v += ((Float*)e)->content;
+            release();
+            return lisp->provideFloat(v);
+        }
+        case t_number: {
+            double v = content;
+            v += ((Number*)e)->content;
+            release();
+            return lisp->provideNumber(v);
+        }
         case t_short:
             content += ((Short*)e)->content;
             return this;
@@ -1304,12 +1346,18 @@ Element* Short::plus_direct(LispE* lisp, Element* e) {
 
 Element* Short::minus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
-        case t_float:
-            content -= ((Float*)e)->content;
-            return this;
-        case t_number:
-            content -= ((Number*)e)->content;
-            return this;
+        case t_float: {
+            float v = content;
+            v -= ((Float*)e)->content;
+            release();
+            return lisp->provideFloat(v);
+        }
+        case t_number: {
+            double v = content;
+            v -= ((Number*)e)->content;
+            release();
+            return lisp->provideNumber(v);
+        }
         case t_integer:
             content -= ((Integer*)e)->content;
             return this;
@@ -1329,12 +1377,18 @@ Element* Short::minus_direct(LispE* lisp, Element* e) {
 
 Element* Short::multiply_direct(LispE* lisp, Element* e) {
     switch (e->type) {
-        case t_float:
-            content *= ((Float*)e)->content;
-            return this;
-        case t_number:
-            content *= ((Number*)e)->content;
-            return this;
+        case t_float: {
+            float v = content;
+            v *= ((Float*)e)->content;
+            release();
+            return lisp->provideFloat(v);
+        }
+        case t_number: {
+            double v = content;
+            v *= ((Number*)e)->content;
+            release();
+            return lisp->provideNumber(v);
+        }
         case t_integer:
             content *= ((Integer*)e)->content;
             return this;
@@ -1399,6 +1453,12 @@ Element* Short::plus(LispE* lisp, Element* e) {
         release();
         return n;
     }
+    
+    if (e->isFloating()) {
+        release();
+        return lisp->provideFloat(asFloat() + e->asFloat());
+    }
+
     if (status != s_constant) {
         content += e->checkShort(lisp);
         return this;
@@ -1413,6 +1473,12 @@ Element* Short::minus(LispE* lisp, Element* e) {
         release();
         return n->minus(lisp, e);
     }
+    
+    if (e->isFloating()) {
+        release();
+        return lisp->provideFloat(asFloat() - e->asFloat());
+    }
+
     if (status != s_constant) {
         content -= e->checkShort(lisp);
         return this;
@@ -1427,6 +1493,12 @@ Element* Short::multiply(LispE* lisp, Element* e) {
         release();
         return n;
     }
+    
+    if (e->isFloating()) {
+        release();
+        return lisp->provideFloat(asFloat() * e->asFloat());
+    }
+
     if (status != s_constant) {
         content *= e->asInteger();
         return this;
