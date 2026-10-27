@@ -469,6 +469,14 @@ public:
         lock.unlocking(tobelocked);
     }
 
+    void removeAtom(u_ustring& name, bool tobelocked) {
+        lock.locking(tobelocked);
+        uint16_t code = code_to_string.size();
+        code_to_string[code] = name;
+        string_to_code[name] = code;
+        lock.unlocking(tobelocked);
+    }
+
     inline int16_t get_code(u_ustring& s) {
         const auto& a = string_to_code.find(s);
         return a == string_to_code.end()?-1:a->second;

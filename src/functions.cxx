@@ -2639,13 +2639,13 @@ Element* List::eval_call_function(LispE* lisp) {
     return evalfunction(lisp, liste[0]->eval(lisp));
 }
 
-
 //eval_call_function is usually called once, except in the case of a trace
 //In other cases, we promote the call to a specific: t_pattern, t_self or t_function call
 //which do not check anything else anymore...
 Element* Listincode::eval_call_function(LispE* lisp) {
     Element* body = liste[0]->eval(lisp);
-
+    bool is_atom = liste[0]->isAtom();
+    
     if (lisp->delegation->trace_on) {
         if (lisp->trace) {
             //We also retrieve its label (which is l_defun or l_defpat or...)
@@ -2678,31 +2678,49 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     switch(label) {
         case l_defprederr:
         case l_defpred: {
+            if (is_atom)
+                return List_predicate_eval(this, (List*)body).eval(lisp);
+            
             liste[0] = new List_predicate_eval(this, (List*)body);
             lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         }
         case l_defprol:
+            if (is_atom)
+                return List_prolog_eval(this, (List*)body).eval(lisp);
+
             liste[0] = new List_prolog_eval(this, (List*)body);
             lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         case l_defpat:
+            if (is_atom)
+                return List_pattern_eval(this, (List*)body).eval(lisp);
+
             liste[0] = new List_pattern_eval(this, (List*)body);
             lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         case l_defun:
+            if (is_atom)
+                return List_function_eval(lisp, this, (List*)body, lisp->current_space).eval(lisp);
+
             liste[0] = new List_function_eval(lisp, this, (List*)body, lisp->current_space);
             lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         case l_class:
             return create_class_instance(lisp, (List_class_definition*)body);
         case l_deflib:
+            if (is_atom)
+                return List_library_eval(this, (List*)body).eval(lisp);
+
             liste[0] = new List_library_eval(this, (List*)body);
             lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         case l_dethread:
             return eval_thread(lisp, (List*)body);
         case l_lambda:
+            if (is_atom)
+                return eval_lambda(lisp, (List*)body);
+            
             liste[0] = new Atomefonction(body, t_lambda);
             lisp->storeforgarbage(liste[0]);
             return eval_lambda(lisp, (List*)body);

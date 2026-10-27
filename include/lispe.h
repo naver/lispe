@@ -1438,7 +1438,11 @@ public:
     void replaceAtom(u_ustring& identifier, int16_t code) {
         delegation->replaceAtom(identifier, code, threaded());
     }
-    
+
+    void removeAtom(u_ustring& identifier) {
+        delegation->removeAtom(identifier, threaded());
+    }
+
     Element* provideAtomOrInstruction(int16_t identifier) {
         return delegation->provideAtomOrInstruction(identifier);
     }

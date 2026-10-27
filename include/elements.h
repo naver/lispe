@@ -73,7 +73,7 @@ typedef enum {
     t_call, t_call_lambda, t_eval, t_fileelement, t_class, t_class_instance, t_forced,
     
     //System instructions
-    l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, 
+    l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_unlink, l_debug_function, 
     l_next, l_compose, l_enumerate, l_record_in_stack, l_force, l_stop, l_memory,
     
     //Default Lisp instructions

@@ -817,6 +817,8 @@ Element* LispE::eval(u_ustring& code) {
     try {
         lock();
         element = compile_string(code);
+        if (element == NULL)
+            throw new Error("Error: cannot eval this expression");
         locked = true;
         unlock();
         e = element->eval(this);
@@ -2521,6 +2523,18 @@ Element* List::evall_link(LispE* lisp) {
 
     //The first atom is replaced with the second atom code...
     lisp->replaceAtom(identifier, atome->label());
+    return True_;
+}
+
+Element* List::evall_unlink(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Errorstack(lisp, "Error: wrong number of arguments");
+    
+    u_ustring identifier;
+    evalAsUString(1, lisp, identifier);
+
+    //The first atom is replaced with the second atom code...
+    lisp->removeAtom(identifier);
     return True_;
 }
 

@@ -1482,6 +1482,7 @@ public:
     Element* evall_floordivideintegersequal(LispE* lisp);
     Element* evall_floormoduloequal(LispE* lisp);
     Element* evall_link(LispE* lisp);
+    Element* evall_unlink(LispE* lisp);
     Element* evall_load(LispE* lisp);
     Element* evall_let(LispE* lisp);
     Element* evall_minus(LispE* lisp);

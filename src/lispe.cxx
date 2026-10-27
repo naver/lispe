@@ -33,7 +33,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.10.22.14.21";
+static std::string version = "1.2026.10.27.22.49";
 string LispVersion() {
     return version;
 }
@@ -562,6 +562,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_leftshift, "<<", P_ATLEASTTWO,  new List_leftshift_eval());
     set_instruction(l_leftshiftequal, "<<=", P_ATLEASTTHREE, &List::evall_leftshiftequal);
     set_instruction(l_link, "link", P_THREE, &List::evall_link);
+    set_instruction(l_unlink, "unlink", P_TWO, &List::evall_unlink);
     set_instruction(l_list, "list", P_ATLEASTONE,  new List_list_eval());
     set_instruction(l_llist, "llist", P_ATLEASTONE,  new List_llist_eval());
     set_instruction(l_listand, "&&&", P_ATLEASTTWO,  new List_listand_eval());
@@ -2493,6 +2494,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 }
                 break;
             case l_link:
+            case l_unlink:
                 element->eval(this);
                 removefromgarbage(element);
                 cont = true;
@@ -3968,6 +3970,9 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
+
+
 
 
 
