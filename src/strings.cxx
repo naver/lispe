@@ -28,10 +28,12 @@ typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_
     str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_chrbyte, str_is_punctuation,
     str_format, str_padding, str_fill, str_getstruct, str_startwith, str_endwith, str_sprintf,
     str_edit_distance, str_read_json, str_write_json, str_parse_json, str_string_json, str_json_dictionary, str_ngrams,
-    str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main,
+    str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main, str_tokenize_full,
     str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter, str_indent
     
 } string_method;
+
+// (tokenize (tokenizer_main) "La belle dame mange (10) verres")
 
 /*
  First of all we create a new Element derivation
@@ -66,6 +68,14 @@ public:
     }
 
     virtual Element* tokenize(string& u, bool types) {
+        return null_;
+    }
+
+    virtual Element* tokenize_full(u_ustring& u) {
+        return null_;
+    }
+
+    virtual Element* tokenize_full(string& u) {
         return null_;
     }
 
@@ -155,6 +165,41 @@ public:
         return l;
     }
 
+    Element* tokenize_full(u_ustring& u) {
+        Strings* res = lisp->provideStrings();
+        tokenizer_result<u_ustring> tokres(&res->liste, true);
+        tok->tokenize(u, tokres);
+        List* l = lisp->provideList();
+        l->append(res);
+        Integers* pos = lisp->provideIntegers();
+        Integers* lines = lisp->provideIntegers();
+        for (long i = 0; i < tokres.stackln.size(); i++) {
+            pos->liste.push_back(tokres.positions[i*2]);
+            pos->liste.push_back(tokres.positions[i*2+1]);
+            lines->liste.push_back(tokres.stackln[i]);
+        }
+        l->append(pos);
+        l->append(lines);
+        return l;
+    }
+
+    Element* tokenize_full(string& u) {
+        Stringbytes* res = new Stringbytes();
+        tokenizer_result<string> tokres(&res->liste, true);
+        tok->tokenize(u, tokres);
+        List* l = lisp->provideList();
+        l->append(res);
+        Integers* pos = lisp->provideIntegers();
+        Integers* lines = lisp->provideIntegers();
+        for (long i = 0; i < tokres.stackln.size(); i++) {
+            pos->liste.push_back(tokres.positions[i*2]);
+            pos->liste.push_back(tokres.positions[i*2+1]);
+            lines->liste.push_back(tokres.stackln[i]);
+        }
+        l->append(pos);
+        l->append(lines);
+        return l;
+    }
 
     Strings* getrules() {
         Strings* vstr = lisp->provideStrings();
@@ -1533,6 +1578,18 @@ public:
                 u_ustring s =  vstr->asUString(lisp);
                 return ((Rulemethod*)tok)->tokenize(s, types->Boolean());
             }
+            case str_tokenize_full: {
+                Element* tok = lisp->get_variable(U"rules");
+                if (tok->type != v_tokenize)
+                    throw new Errorstack(lisp, "Error: the first element should be a string_rule object");
+                Element* vstr = lisp->get_variable(v_str);
+                if (vstr->type == t_stringbyte) {
+                    string s =  vstr->toString(lisp);
+                    return ((Rulemethod*)tok)->tokenize_full(s);
+                }
+                u_ustring s =  vstr->asUString(lisp);
+                return ((Rulemethod*)tok)->tokenize_full(s);
+            }
             case str_get_rules: {
                 Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != v_tokenize)
@@ -1697,6 +1754,8 @@ public:
                 return L"Display the underlying automata, into which rules were compiled";
             case str_tokenize_rules:
                 return L"Tokenize a string into a list of tokens with internal rules";
+            case str_tokenize_full:
+                return L"Tokenize a string into a list of tokens and positions with internal rules";
             case str_get_rules:
                 return L"Return the internal tokenization rules";
             case str_set_rules:
@@ -1806,6 +1865,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib segmenter (keepblanks point)", new Stringmethod(lisp, str_segmenter));
     lisp->extension("deflib tokenizer_rules ()", new Stringmethod(lisp, str_tokenizer_rules));
     lisp->extension("deflib tokenize_rules (rules str (types))", new Stringmethod(lisp, str_tokenize_rules));
+    lisp->extension("deflib tokenize_full (rules str)", new Stringmethod(lisp, str_tokenize_full));
     lisp->extension("deflib tokenizer ()", new Stringmethod(lisp, str_tokenizer_rules));
     lisp->extension("deflib tokenizer_display (rules)", new Stringmethod(lisp, str_tokenizer_display_rules));
     lisp->extension("deflib tokenize (rules str (types))", new Stringmethod(lisp, str_tokenize_rules));
