@@ -270,10 +270,27 @@ public:
                 if (action->index(0)->isOperator()) {
                     List* a = create_instruction_class(lisp, action->index(0)->label());
                     lisp->storeforgarbage(a);
+                    long thevar = -1;
+                    for (i = 1; i < sz; i++) {
+                        if (action->index(i)->isNULL()) {
+                            thevar = i;
+                            break;
+                        }
+                    }
                     a->append(action->index(0));
-                    a->append(var);
-                    for (i = 1; i < sz; i++)
-                        a->append(action->index(i));
+                    if (thevar == -1) {
+                        a->append(var);
+                        for (i = 1; i < sz; i++)
+                            a->append(action->index(i));
+                    }
+                    else {
+                        for (i = 1; i < thevar; i++)
+                            a->append(action->index(i));
+                        a->append(var);                        
+                        for (i = i + 1;i < sz; i++)
+                            a->append(action->index(i));
+                    }
+
                     action = a;
                     return this;
                 }
@@ -415,19 +432,36 @@ public:
             else {
                 long sz = condition->size();
                 if (sz >= 2) {
-                    long i;
-                    if (lisp->isComparator(condition->index(0))) {
+                    long i = 1;
+                    if (condition->index(0)->isOperator()) {
                         List* a = lisp->cloning(condition->index(0)->label());
+                        long thevar = -1;
+                        for (i = 1; i < sz; i++) {
+                            if (condition->index(i)->isNULL()) {
+                                thevar = i;
+                                break;
+                            }
+                        }
                         a->append(condition->index(0));
-                        a->append(var);
-                        for (i = 1; i < sz; i++)
-                            a->append(condition->index(i));
+                        if (thevar == -1) {
+                            a->append(var);
+                            for (i = 1; i < sz; i++)
+                                a->append(condition->index(i));
+                        }
+                        else {
+                            for (i = 1; i < thevar; i++)
+                                a->append(condition->index(i));
+                            a->append(var);
+                            
+                            for (i = i + 1;i < sz; i++)
+                                a->append(condition->index(i));
+                        }
                         
                         c = a;
                         lisp->storeforgarbage(c);
                     }
                     else {
-                        if (lisp->isComparator(condition->index(sz - 1))) {
+                        if (condition->index(sz - 1)->isOperator()) {
                             List* a = lisp->cloning(condition->index(sz - 1)->label());
                             a->append(condition->index(sz - 1));
                             for (i = 0; i < sz - 1; i++)
