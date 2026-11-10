@@ -462,15 +462,16 @@ Element* Float::mod(LispE* lisp, Element* e) {
         return n->mod(lisp, e);
     }
     
-    li_long v = e->checkInteger(lisp);
+    // a real modulo: the decimal part is kept, 14.5 % 90 is 14.5 (fmod, the sign of the dividend)
+    double v = e->checkNumber(lisp);
     if (!v)
         throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
-        content = (li_long)content % v;
+        content = fmod(content, v);
         return this;
     }
-    return lisp->provideFloat((li_long)content%v);
+    return lisp->provideFloat(fmod(content, v));
 }
 
 Element* Float::power(LispE* lisp, Element* e) {
@@ -812,15 +813,16 @@ Element* Number::mod(LispE* lisp, Element* e) {
         return n->mod(lisp, e);
     }
     
-    li_long v = e->checkInteger(lisp);
+    // a real modulo: the decimal part is kept, 14.5 % 90 is 14.5 (fmod, the sign of the dividend)
+    double v = e->checkNumber(lisp);
     if (!v)
         throw new Errorstack(lisp, "Error: division by zero");
     
     if (status != s_constant) {
-        content = (li_long)content % v;
+        content = fmod(content, v);
         return this;
     }
-    return lisp->provideNumber((li_long)content%v);
+    return lisp->provideNumber(fmod(content, v));
 }
 
 Element* Number::power(LispE* lisp, Element* e) {
@@ -1198,6 +1200,14 @@ Element* Integer::mod(LispE* lisp, Element* e) {
         Element* n = e->newInstance(this);
         release();
         return n->mod(lisp, e);
+    }
+    if (e->isFloating()) {
+        // 7 % 2.5 is 2.0, not 7 % 2
+        double d = e->checkNumber(lisp);
+        if (!d)
+            throw new Errorstack(lisp, "Error: division by zero");
+        release();
+        return lisp->provideNumber(fmod((double)content, d));
     }
     li_long v =  e->checkInteger(lisp);
     if (!v)
@@ -5623,22 +5633,46 @@ static inline li_long floormodulo(li_long a, li_long b) {
     return r;
 }
 
+// The same with reals, as in Python: -29.5 % 90 is 60.5, 14.5 % -90 is -75.5
+static inline double floormodulo(double a, double b) {
+    double r = fmod(a, b);
+    if (r != 0 && ((r < 0) != (b < 0)))
+        r += b;
+    return r;
+}
+
 Element* List_pymodintegers::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     first_element = first_element->copyatom(lisp, 1);
 
     int16_t listsize = liste.size();
     Element* second_element = null_;
-    li_long nom = first_element->asInteger();
+    // integers stay integers; as soon as a real comes in, the modulo is computed on reals
+    // (Python: 7 % 2 is 1, but -29.5 % 90 is 60.5)
+    bool real = first_element->isFloating();
+    li_long nom = real ? 0 : first_element->asInteger();
+    double dnom = real ? first_element->asNumber() : 0;
     li_long quotient;
     try {
         lisp->checkState(this);
         for (long i = 2; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
-            quotient = second_element->asInteger();
-            if (!quotient)
-                throw new Errorstack(lisp, "Error: modulo by zero");
-            nom = floormodulo(nom, quotient);
+            if (!real && second_element->isFloating()) {
+                real = true;
+                dnom = (double)nom;
+            }
+            if (real) {
+                double d = second_element->asNumber();
+                if (!d)
+                    throw new Errorstack(lisp, "Error: modulo by zero");
+                dnom = floormodulo(dnom, d);
+            }
+            else {
+                quotient = second_element->asInteger();
+                if (!quotient)
+                    throw new Errorstack(lisp, "Error: modulo by zero");
+                nom = floormodulo(nom, quotient);
+            }
             _releasing(second_element);
         }
     }
@@ -5649,6 +5683,8 @@ Element* List_pymodintegers::eval(LispE* lisp) {
     }
 
     lisp->resetStack();
+    if (real)
+        return lisp->provideNumber(dnom);
     return lisp->provideInteger(nom);
 }
 
@@ -7586,19 +7622,34 @@ Element* List::evall_floormoduloequal(LispE* lisp) {
             }
         }
         else {
-            li_long value = first_element->asInteger();
+            // as _% : on reals as soon as a real comes in
+            bool real = first_element->isFloating();
+            li_long value = real ? 0 : first_element->asInteger();
+            double dvalue = real ? first_element->asNumber() : 0;
             li_long quotient;
 
             for (i = 2; i < listsize; i++) {
                 second_element = liste[i]->eval(lisp);
-                quotient = second_element->asInteger();
-                if (quotient == 0)
-                    throw new Errorstack(lisp, "Error: modulo by zero");
-                value = floormodulo(value, quotient);
+                if (!real && second_element->isFloating()) {
+                    real = true;
+                    dvalue = (double)value;
+                }
+                if (real) {
+                    double d = second_element->asNumber();
+                    if (d == 0)
+                        throw new Errorstack(lisp, "Error: modulo by zero");
+                    dvalue = floormodulo(dvalue, d);
+                }
+                else {
+                    quotient = second_element->asInteger();
+                    if (quotient == 0)
+                        throw new Errorstack(lisp, "Error: modulo by zero");
+                    value = floormodulo(value, quotient);
+                }
                 _releasing(second_element);
             }
             first_element->release();
-            first_element = lisp->provideInteger(value);
+            first_element = real ? (Element*)lisp->provideNumber(dvalue) : (Element*)lisp->provideInteger(value);
         }
     }
     catch (Error* err) {
