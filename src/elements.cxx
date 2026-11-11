@@ -1472,7 +1472,7 @@ Element* Infiniterangenumber::loop(LispE* lisp, int16_t label, List* code) {
             element->content = value;
         e = null_;
         //We then execute our instructions
-        for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
+        for (i_loop = 3; i_loop < sz && e->type != l_return && e->type != l_continue; i_loop++) {
             e->release();
             e = code->liste[i_loop]->eval(lisp);
         }
@@ -1519,7 +1519,7 @@ Element* Infiniterangeinteger::loop(LispE* lisp, int16_t label, List* code) {
         else
             element->content = value;
         e = null_;
-        for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
+        for (i_loop = 3; i_loop < sz && e->type != l_return && e->type != l_continue; i_loop++) {
             e->release();
             e = code->liste[i_loop]->eval(lisp);
         }
@@ -1543,7 +1543,7 @@ Element* Infinitelist::loop(LispE* lisp, int16_t label, List* code) {
     while (!lisp->hasStopped()) {
         _releasing(e);
         //We then execute our instructions
-        for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
+        for (i_loop = 3; i_loop < sz && e->type != l_return && e->type != l_continue; i_loop++) {
             e->release();
             e = code->liste[i_loop]->eval(lisp);
         }

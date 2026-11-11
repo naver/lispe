@@ -121,7 +121,7 @@ Element* List_check_eval::eval(LispE* lisp) {
         long listsize = liste.size();
         _releasing(element);
         liste.back()->setterminal(terminal);
-        for (long i = 2; i < listsize && element->type != l_return; i++) {
+        for (long i = 2; i < listsize && element->type != l_return && element->type != l_continue; i++) {
             element->release();
             element = liste[i]->eval(lisp);
         }
@@ -156,7 +156,7 @@ Element* List_cond_eval::eval(LispE* lisp) {
                 _releasing(third_element);
                 first_element = null_;
                 code->liste.back()->setterminal(terminal);
-                for (long int j = 1; j < szv; j++) {
+                for (long int j = 1; j < szv && first_element->type != l_return && first_element->type != l_continue; j++) {
                     _releasing(first_element);
                     first_element = code->liste[j]->eval(lisp);
                 }
@@ -1390,7 +1390,7 @@ Element* List_ncheck_eval::eval(LispE* lisp) {
 
         long listsize = liste.size();
         liste.back()->setterminal(terminal);
-        for (long i = 3; i < listsize && element->type != l_return; i++) {
+        for (long i = 3; i < listsize && element->type != l_return && element->type != l_continue; i++) {
             element->release();
             element = liste[i]->eval(lisp);
         }
@@ -4282,7 +4282,7 @@ Element* List_maybe_eval::eval(LispE* lisp) {
         }
         
         first_element = null_;
-        for (long i = 1; i < listsize - 1; i++) {
+        for (long i = 1; i < listsize - 1 && first_element->type != l_return && first_element->type != l_continue; i++) {
             first_element->release();
             first_element = liste[i]->eval(lisp);
         }
@@ -4820,7 +4820,7 @@ Element* List_elapse_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         std::chrono::high_resolution_clock::time_point chrono_beg = std::chrono::high_resolution_clock::now();
         second_element = null_;
-        for (long i = 1; i < listsize && second_element->type != l_return; i++) {
+        for (long i = 1; i < listsize && second_element->type != l_return && second_element->type != l_continue; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
         }
@@ -5332,8 +5332,12 @@ Element* List_irange_eval::eval(LispE* lisp) {
         double bound;
         evalAsNumber(2, lisp, bound);
         evalAsNumber(3, lisp, inc);
-        if (init == (li_long)init && inc == (li_long)inc)
+        if (init == (li_long)init && inc == (li_long)inc) {
+            //a real bound with integer values: (irange 0 2.5 1) gives 0 1 2, as range does
+            if (bound != (li_long)bound)
+                bound = (inc > 0)?ceil(bound):floor(bound);
             return lisp->providerange_Integer(init, inc, bound);
+        }
         return lisp->providerange_Number(init, inc, bound);
     }
     
@@ -5476,7 +5480,7 @@ Element* List_lock_eval::eval(LispE* lisp) {
     Element* value = null_;
     try {
         lisp->checkState(this);
-        for (long i = 2; i < listsize && value->type != l_return; i++) {
+        for (long i = 2; i < listsize && value->type != l_return && value->type != l_continue; i++) {
             value->release();
             value = liste[i]->eval(lisp);
         }
@@ -6929,7 +6933,7 @@ Element* List_ife_eval::eval(LispE* lisp) {
         long listsize = liste.size();
         liste.back()->setterminal(terminal);
         
-        for (long i = 3; i < listsize && res->type != l_return; i++) {
+        for (long i = 3; i < listsize && res->type != l_return && res->type != l_continue; i++) {
             res->release();
             res = liste[i]->eval(lisp);
         }

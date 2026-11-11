@@ -758,20 +758,34 @@ void LIST::sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin
         return;
     }
     
+    //Hoare partition, the pivot is the middle element.
+    //With the last element as pivot (Lomuto), a list already sorted, sorted in reverse order
+    //or made of equal values was the worst case: a quadratic time and a recursion as deep as the list.
+    Element* the_pivot = items->buffer[rmin + ((rmax - rmin) >> 1)];
     pivot = rmin - 1;
-    comparison->in_quote(2, items->buffer[rmax]);
-    for (j = rmin; j < rmax; j++) {
-        comparison->in_quote(1, items->buffer[j]);
-        if (comparison->eval_Boolean(lisp, instruction)) {
+    j = rmax + 1;
+    while (true) {
+        do {
             pivot++;
-            items->swap(pivot,j);
+            comparison->in_quote(1, items->buffer[pivot]);
+            comparison->in_quote(2, the_pivot);
         }
+        while (pivot < rmax && comparison->eval_Boolean(lisp, instruction));
+        
+        do {
+            j--;
+            comparison->in_quote(1, the_pivot);
+            comparison->in_quote(2, items->buffer[j]);
+        }
+        while (j > rmin && comparison->eval_Boolean(lisp, instruction));
+        
+        if (pivot >= j)
+            break;
+        items->swap(pivot, j);
     }
-    pivot++;
-    items->swap(pivot, rmax);
     
-    sorting(lisp, comparison, instruction, rmin, pivot-1);
-    sorting(lisp, comparison, instruction, pivot+1, rmax);
+    sorting(lisp, comparison, instruction, rmin, j);
+    sorting(lisp, comparison, instruction, j + 1, rmax);
 }
 
 void LIST::sorting(LispE* lisp, List* comparison) {
@@ -3268,20 +3282,34 @@ template <class Z>void vecte_a<Z>::values_sorting(LispE* lisp, List* comparison,
         return;
     }
     
+    //Hoare partition, the pivot is the middle element.
+    //With the last element as pivot (Lomuto), a list already sorted, sorted in reverse order
+    //or made of equal values was the worst case: a quadratic time and a recursion as deep as the list.
+    Z the_pivot = items->buffer[rmin + ((rmax - rmin) >> 1)];
     pivot = rmin - 1;
-    comparison->liste[2]->setvalue(items->buffer[rmax]);
-    for (j = rmin; j < rmax; j++) {
-        comparison->liste[1]->setvalue(items->buffer[j]);
-        if (comparison->eval_Boolean(lisp, instruction)) {
+    j = rmax + 1;
+    while (true) {
+        do {
             pivot++;
-            swap(pivot,j);
+            comparison->liste[1]->setvalue(items->buffer[pivot]);
+            comparison->liste[2]->setvalue(the_pivot);
         }
+        while (pivot < rmax && comparison->eval_Boolean(lisp, instruction));
+        
+        do {
+            j--;
+            comparison->liste[1]->setvalue(the_pivot);
+            comparison->liste[2]->setvalue(items->buffer[j]);
+        }
+        while (j > rmin && comparison->eval_Boolean(lisp, instruction));
+        
+        if (pivot >= j)
+            break;
+        swap(pivot, j);
     }
-    pivot++;
-    swap(pivot, rmax);
     
-    values_sorting(lisp, comparison, instruction, rmin, pivot-1);
-    values_sorting(lisp, comparison, instruction, pivot+1, rmax);
+    values_sorting(lisp, comparison, instruction, rmin, j);
+    values_sorting(lisp, comparison, instruction, j + 1, rmax);
 }
 
 //--------------------------------------------------------------------------------
@@ -3350,20 +3378,34 @@ template <class Z> void vecte_n<Z>::values_sorting(LispE* lisp, List* comparison
         return;
     }
     
+    //Hoare partition, the pivot is the middle element.
+    //With the last element as pivot (Lomuto), a list already sorted, sorted in reverse order
+    //or made of equal values was the worst case: a quadratic time and a recursion as deep as the list.
+    Z the_pivot = items->buffer[rmin + ((rmax - rmin) >> 1)];
     pivot = rmin - 1;
-    comparison->liste[2]->setvalue(items->buffer[rmax]);
-    for (j = rmin; j < rmax; j++) {
-        comparison->liste[1]->setvalue(items->buffer[j]);
-        if (comparison->eval_Boolean(lisp, instruction)) {
+    j = rmax + 1;
+    while (true) {
+        do {
             pivot++;
-            swap(pivot,j);
+            comparison->liste[1]->setvalue(items->buffer[pivot]);
+            comparison->liste[2]->setvalue(the_pivot);
         }
+        while (pivot < rmax && comparison->eval_Boolean(lisp, instruction));
+        
+        do {
+            j--;
+            comparison->liste[1]->setvalue(the_pivot);
+            comparison->liste[2]->setvalue(items->buffer[j]);
+        }
+        while (j > rmin && comparison->eval_Boolean(lisp, instruction));
+        
+        if (pivot >= j)
+            break;
+        swap(pivot, j);
     }
-    pivot++;
-    swap(pivot, rmax);
     
-    values_sorting(lisp, comparison, instruction, rmin, pivot-1);
-    values_sorting(lisp, comparison, instruction, pivot+1, rmax);
+    values_sorting(lisp, comparison, instruction, rmin, j);
+    values_sorting(lisp, comparison, instruction, j + 1, rmax);
 }
 
 //--------------------------------------------------------------------------------

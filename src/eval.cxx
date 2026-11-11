@@ -1017,7 +1017,7 @@ Element* List::evall_block(LispE* lisp) {
     
     Element* element = null_;
 
-    for (long i = 1; i < listsize && element->type != l_return; i++) {
+    for (long i = 1; i < listsize && element->type != l_return && element->type != l_continue; i++) {
         element->release();
         element = liste[i]->eval(lisp);
     }
@@ -1553,7 +1553,7 @@ Element* List::evall_ife(LispE* lisp) {
     liste.back()->setterminal(terminal);
     _releasing(element);
     
-    for (long i = 3; i < listsize && element->type != l_return; i++) {
+    for (long i = 3; i < listsize && element->type != l_return && element->type != l_continue; i++) {
         element->release();
         element = liste[i]->eval(lisp);
     }
