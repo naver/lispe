@@ -5642,43 +5642,40 @@ static inline double floormodulo(double a, double b) {
 }
 
 Element* List_pymodintegers::eval(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    first_element = first_element->copyatom(lisp, 1);
-
+    Element* element = liste[1]->eval(lisp);
     int16_t listsize = liste.size();
-    Element* second_element = null_;
     // integers stay integers; as soon as a real comes in, the modulo is computed on reals
     // (Python: 7 % 2 is 1, but -29.5 % 90 is 60.5)
-    bool real = first_element->isFloating();
-    li_long nom = real ? 0 : first_element->asInteger();
-    double dnom = real ? first_element->asNumber() : 0;
+    bool real = element->isFloating();
+    li_long nom = real ? 0 : element->asInteger();
+    double dnom = real ? element->asNumber() : 0;
     li_long quotient;
+    _releasing(element);
     try {
         lisp->checkState(this);
         for (long i = 2; i < listsize; i++) {
-            second_element = liste[i]->eval(lisp);
-            if (!real && second_element->isFloating()) {
+            element = liste[i]->eval(lisp);
+            if (!real && element->isFloating()) {
                 real = true;
                 dnom = (double)nom;
             }
             if (real) {
-                double d = second_element->asNumber();
+                double d = element->asNumber();
                 if (!d)
                     throw new Errorstack(lisp, "Error: modulo by zero");
                 dnom = floormodulo(dnom, d);
             }
             else {
-                quotient = second_element->asInteger();
+                quotient = element->asInteger();
                 if (!quotient)
                     throw new Errorstack(lisp, "Error: modulo by zero");
                 nom = floormodulo(nom, quotient);
             }
-            _releasing(second_element);
+            _releasing(element);
         }
     }
     catch (Error* err) {
-        second_element->release();
-        first_element->release();
+        element->release();
         return lisp->check_error(this, err, idxinfo);
     }
 
@@ -5700,29 +5697,26 @@ static inline li_long floordivide(li_long a, li_long b) {
 }
 
 Element* List_floordivideintegers::eval(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    first_element = first_element->copyatom(lisp, 1);
-
+    Element* element = liste[1]->eval(lisp);
     int16_t listsize = liste.size();
-    Element* second_element = null_;
-    li_long nom = first_element->asInteger();
+    li_long nom = element->asInteger();
     li_long quotient;
+    _releasing(element);
     try {
         lisp->checkState(this);
         for (long i = 2; i < listsize; i++) {
-            second_element = liste[i]->eval(lisp);
-            quotient = second_element->asInteger();
+            element = liste[i]->eval(lisp);
+            quotient = element->asInteger();
             if (!quotient)
                 throw new Errorstack(lisp, "Error: division by zero");
             if (quotient == -1 && nom == LONG_MIN)
                 throw new Errorstack(lisp, "Error: integer overflow");
             nom = floordivide(nom, quotient);
-            _releasing(second_element);
+            _releasing(element);
         }
     }
     catch (Error* err) {
-        second_element->release();
-        first_element->release();
+        element->release();
         return lisp->check_error(this, err, idxinfo);
     }
 

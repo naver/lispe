@@ -187,39 +187,41 @@ function callEvalLispEToStrings(lispe_idx, code) {
     const string_to_array = provideCharactersAsInts(code);
     const the_size = provideIntegers(2);
 
+    // Only the WASM call is inside the try: an Error thrown below must not
+    // reach this catch, which would free the buffers a second time.
+    let string_result;
     try {
-        const string_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
-        let sz = decode_size(the_size);
-        if (sz < 0) {
-            sz *= -1;
-            Module._free(string_to_array);
-            const str = decode(string_result, sz);
-            throw new Error(str);
-        }
-        const characters = decode_int(string_result, sz);
-        const str_vector = [];
-        let s = "";
-        for (let i = 0; i < sz; i++) {
-            if (characters[i] == 0) {
-                str_vector.push(s);
-                s = "";
-            }
-            else {
-                s += String.fromCharCode(characters[i]);
-            }
-        }
-        if (s != "") {
-            str_vector.push(s);
-        }
-
-        Module._free(string_to_array);
-        return str_vector;
+        string_result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
     }
     catch (e) {
         Module._free(string_to_array);
         Module._free(the_size);
         return handleException(e);
     }
+    Module._free(string_to_array);
+    // decode_size frees the_size
+    let sz = decode_size(the_size);
+    if (sz < 0) {
+        sz *= -1;
+        const str = decode(string_result, sz);
+        throw new Error(str);
+    }
+    const characters = decode_int(string_result, sz);
+    const str_vector = [];
+    let s = "";
+    for (let i = 0; i < sz; i++) {
+        if (characters[i] == 0) {
+            str_vector.push(s);
+            s = "";
+        }
+        else {
+            s += String.fromCharCode(characters[i]);
+        }
+    }
+    if (s != "") {
+        str_vector.push(s);
+    }
+    return str_vector;
 }
 
 //-----------------------------------------------------------------
@@ -379,6 +381,54 @@ function callSetqString(lispe_idx, a_variable, value) {
     return true;
 }
 
+// Set a LispE variable to an array of strings.
+// `vals` is an array of JavaScript strings; they are sent as one Int32Array:
+// for each string, its length, then its characters.
+function callSetqStrings(lispe_idx, a_variable, vals) {
+    assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
+    assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
+
+    if (!Array.isArray(vals) || vals.some(v => typeof v != "string")) {
+        throw new Error("Expecting an array of strings");
+    }
+
+    const entryFunction = Module['_eval_setq_strings_lispe'];
+    if (!entryFunction) {
+        throw new Error("eval_setq_strings_lispe is missing: lispe.wasm must be rebuilt");
+    }
+
+    let total = 0;
+    for (const v of vals) total += v.length + 1;
+    const flat = new Int32Array(total);
+    let pos = 0;
+    for (const v of vals) {
+        flat[pos++] = v.length;
+        for (let i = 0; i < v.length; i++) flat[pos++] = v.charCodeAt(i);
+    }
+
+    const string_to_array = provideCharactersAsInts(a_variable);
+    const values = provideIntegers(total, flat);
+
+    let ret;
+    try {
+        ret = entryFunction(lispe_idx, string_to_array, a_variable.length, values, vals.length);
+    }
+    catch (e) {
+        Module._free(string_to_array);
+        Module._free(values);
+        return handleException(e);
+    }
+
+    Module._free(values);
+    if (ret < 0) {
+        ret *= -1;
+        const str = decode(string_to_array, ret);
+        throw new Error(str);
+    }
+    Module._free(string_to_array);
+    return true;
+}
+
 //-----------------------------------------------------------------
 // Eval entry points returning scalars / strings
 //-----------------------------------------------------------------
@@ -442,22 +492,26 @@ function callEvalLispEAsString(lispe_idx, code) {
     const string_to_array = provideCharactersAsInts(code);
     const the_size = provideIntegers(2);
 
+    // Only the WASM call is inside the try: an Error thrown below must not
+    // reach this catch, which would free the buffers a second time.
+    let result;
     try {
-        const result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
-        Module._free(string_to_array);
-        let sz = decode_size(the_size);
-        if (sz < 0) {
-            sz *= -1;
-            const str = decode(result, sz);
-            throw new Error(str);
-        }
-        return decode(result, sz);
+        result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
     }
     catch (e) {
         Module._free(string_to_array);
         Module._free(the_size);
         return handleException(e);
     }
+    Module._free(string_to_array);
+    // decode_size frees the_size
+    let sz = decode_size(the_size);
+    if (sz < 0) {
+        sz *= -1;
+        const str = decode(result, sz);
+        throw new Error(str);
+    }
+    return decode(result, sz);
 }
 
 function callEvalLispE(lispe_idx, code) {
@@ -468,22 +522,26 @@ function callEvalLispE(lispe_idx, code) {
     const string_to_array = provideCharactersAsInts(code);
     const the_size = provideIntegers(2);
 
+    // Only the WASM call is inside the try: an Error thrown below must not
+    // reach this catch, which would free the buffers a second time.
+    let result;
     try {
-        const result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
-        Module._free(string_to_array);
-        let sz = decode_size(the_size);
-        if (sz < 0) {
-            sz *= -1;
-            const str = decode(result, sz);
-            throw new Error(str);
-        }
-        return decode(result, sz);
+        result = entryFunction(lispe_idx, string_to_array, code.length, the_size);
     }
     catch (e) {
         Module._free(string_to_array);
         Module._free(the_size);
         return handleException(e);
     }
+    Module._free(string_to_array);
+    // decode_size frees the_size
+    let sz = decode_size(the_size);
+    if (sz < 0) {
+        sz *= -1;
+        const str = decode(result, sz);
+        throw new Error(str);
+    }
+    return decode(result, sz);
 }
 
 //---------------------------------------------------------------

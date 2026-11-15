@@ -1619,7 +1619,9 @@ Element* List::eval_prolog(LispE* lisp, List* body) {
 }
 
 //------------------------------------------------------------------------------------------
-#ifdef LISPE_WASM
+// Without threads (the normal WebAssembly version), a thread does nothing; the version with
+// threads (make threads in wasm/, LISPE_WASM_THREADS) runs its body as in the native version
+#if defined(LISPE_WASM) && !defined(LISPE_WASM_THREADS)
 void List::evalthread(LispE* lisp, List* body) {
 }
 #else

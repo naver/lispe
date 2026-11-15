@@ -17,6 +17,47 @@ void display_error(std::string str);
 void display_error(u_ustring str);
 void moduleconsole(LispE *lisp);
 //------------------------------------------------------------------------------------------
+// LispE throws its errors as pointers (Error*), which the entry points below catch with catch(void*).
+// An exception of another kind (std::bad_alloc, std::out_of_range...) would otherwise cross
+// the WASM boundary: JavaScript would receive a WebAssembly.Exception and the interpreter
+// would be left half-way through its evaluation.
+// These two functions turn any such exception into a LispE error, so that the entry points
+// return an error message as usual.
+static void* foreign_exception(LispE* lisp, string message) {
+    lisp->delegation->forceClean();
+    return new Error("Error: internal exception: " + message);
+}
+
+static Element* protected_execute_code(LispE* lisp, string& code) {
+    try {
+        return lisp->execute_code(code);
+    }
+    catch (void* e) {
+        throw;
+    }
+    catch (std::exception& ex) {
+        throw foreign_exception(lisp, ex.what());
+    }
+    catch (...) {
+        throw foreign_exception(lisp, "unknown");
+    }
+}
+
+static Element* protected_eval(LispE* lisp, u_ustring& code) {
+    try {
+        return lisp->eval(code);
+    }
+    catch (void* e) {
+        throw;
+    }
+    catch (std::exception& ex) {
+        throw foreign_exception(lisp, ex.what());
+    }
+    catch (...) {
+        throw foreign_exception(lisp, "unknown");
+    }
+}
+//------------------------------------------------------------------------------------------
 extern "C" {
 EMSCRIPTEN_KEEPALIVE bool clean_lispe(int32_t idx) {
     return clean_global_lispe(idx);
@@ -90,7 +131,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_lispe(int32_t idx,  int32_t* str_as_int, int3
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->execute_code(cde);
+        executed_code = protected_execute_code(lisp, cde);
     }
     catch(void* e) {
         wstring result = L"error";
@@ -167,7 +208,7 @@ EMSCRIPTEN_KEEPALIVE double* eval_to_floats_lispe(int32_t idx,  int32_t* str_as_
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->eval(code);
+        executed_code = protected_eval(lisp, code);
     }
     catch(void* e) {
         wstring result = L"error";
@@ -286,7 +327,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_ints_lispe(int32_t idx,  int32_t* str_as_i
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->eval(code);
+        executed_code = protected_eval(lisp, code);
     }
     catch(void* e) {
         wstring result = L"error";
@@ -401,7 +442,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_strings_lispe(int32_t idx,  int32_t* str_a
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->eval(code);
+        executed_code = protected_eval(lisp, code);
     }
     catch(void* e) {
         wstring result = L"error";
@@ -516,7 +557,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_int_lispe(int32_t idx,  int32_t* str_as_int
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->eval(code);
+        executed_code = protected_eval(lisp, code);
     }
     catch(void* e) {
         wstring result = L"error";
@@ -577,7 +618,7 @@ EMSCRIPTEN_KEEPALIVE double eval_to_float_lispe(int32_t idx,  int32_t* str_as_in
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->eval(code);
+        executed_code = protected_eval(lisp, code);
     }
     catch(void* e) {
         wstring result = L"error";
@@ -637,7 +678,7 @@ EMSCRIPTEN_KEEPALIVE int32_t* eval_to_string_lispe(int32_t idx,  int32_t* str_as
     Element* executed_code = lisp->n_null;
     //We call _eval in that case
     try {
-        executed_code = lisp->eval(code);
+        executed_code = protected_eval(lisp, code);
     }
     catch(void* e) {
         wstring result = L"error";
@@ -869,6 +910,55 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t idx,  int32_t* str_a
     
     String* a_str = lisp->provideString(code);
     lisp->storing_variable(a_str, variable->label());
+    return true;
+}
+
+/*
+Storing an array of strings in a LispE variable
+ 
+ 1. str_as_int contains variable name
+ 2. sz is the number of values in str_as_int.
+ 3. values_as_int contains the strings, one after the other: each string is its length followed by its characters
+ 4. nb is the number of strings
+ 
+ In case of error, we return the size of the error message in str_as_int as a negative value
+*/
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_strings_lispe(int32_t idx,  int32_t* str_as_int, int32_t sz, int32_t* values_as_int, int32_t nb) {
+    wstring cde;
+    u_ustring code;
+    LispE* lisp = global_lispe(idx);
+    if (lisp == NULL) {
+        code = U"LispE was not initialized";
+        display_error(code);
+        sz = code.size();
+        for (long i = 0; i < sz; i++)
+            str_as_int[i] = code[i];
+        return sz*-1;
+    }
+    
+    for (long i = 0; i < sz; i++)
+        cde += str_as_int[i];
+    
+    //This is our variable name
+    s_utf16_to_unicode(code, cde);
+    Element* variable = lisp->provideAtom(code);
+    
+    //Now our values: for each string, its length, then its characters
+    Strings* strings = lisp->provideStrings();
+    wstring c;
+    long pos = 0;
+    long lg;
+    for (long i = 0; i < nb; i++) {
+        lg = values_as_int[pos++];
+        c = L"";
+        for (long j = 0; j < lg; j++)
+            c += values_as_int[pos++];
+        code = U"";
+        s_utf16_to_unicode(code, c);
+        strings->liste.push_back(code);
+    }
+    
+    lisp->storing_variable(strings, variable->label());
     return true;
 }
 
