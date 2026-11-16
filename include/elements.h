@@ -3539,9 +3539,12 @@ public:
     }
     
     long size() {
-        if (infinite_loop || !bound)
+        //same stop as next_iter: we stop before bound, in the direction of increment
+        if (infinite_loop || !increment)
             return (((uint64_t)-1) >> 1);
-        return (1 + ((abs(bound - initial_value) - 1)/increment));
+        if (increment > 0)
+            return (bound <= initial_value)?0:(bound - initial_value + increment - 1)/increment;
+        return (bound >= initial_value)?0:(initial_value - bound - increment - 1)/(-increment);
     }
 
     wstring asString(LispE* lisp);

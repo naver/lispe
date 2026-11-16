@@ -4002,6 +4002,15 @@ Element* List_maplist_eval::eval(LispE* lisp) {
         
         iter = current_list->begin_iter();
         Element* nxt = current_list->next_iter_exchange(lisp, iter);
+        if (nxt == emptyatom_) {
+            current_list->clean_iter(iter);
+            current_list->release();
+            call->force_release();
+            lisp->reset_to_true(sb);
+            lisp->resetStack();
+            return lisp->provideList();
+        }
+
         //Replacing the element in position 1, which is quoted with nxt
         call->in_quote(ps, nxt);
         //"met" is a List function, hence the weird call: call->*met, which consists of executing
@@ -4105,7 +4114,14 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
                 
         iter = current_list->begin_iter();
         Element* nxt = current_list->next_iter_exchange(lisp, iter);
-        
+        if (nxt == emptyatom_) {
+            current_list->clean_iter(iter);
+            current_list->release();
+            lisp->reset_to_true(sb);
+            lisp->resetStack();
+            return lisp->provideList();
+        }
+
         //if there is already a variable with this name on the stack
         //we record it to restore it later...
         save_variable = lisp->record_or_replace(nxt, label);
@@ -4288,36 +4304,37 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
-
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            save_variable = lisp->record_or_replace(nxt, label);
-            e = op->eval_lambda_min(lisp);
-            if (e->type != l_return) {
-                if (e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    check_tensor |= e->isPureList();
-                    protect_save = (e == save_variable);
-                    result->append(e);
-                }
-                e->release();
-                nxt = current_list->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    lisp->replacestackvalue(nxt, label);
-                    e = op->eval_lambda_min(lisp);
-                    if (e->type == l_return)
-                        break;
+            if (nxt != emptyatom_) {
+                //if there is already a variable with this name on the stack
+                //we record it to restore it later...
+                save_variable = lisp->record_or_replace(nxt, label);
+                e = op->eval_lambda_min(lisp);
+                if (e->type != l_return) {
                     if (e->Boolean()) {
                         e->release();
                         e = nxt->copying(false);
                         check_tensor |= e->isPureList();
-                        check_tensor |= !e->is_same_tensor(result->last(lisp));
+                        protect_save = (e == save_variable);
                         result->append(e);
-                        protect_save += (e == save_variable);
                     }
                     e->release();
                     nxt = current_list->next_iter_exchange(lisp, iter);
+                    while (nxt != emptyatom_) {
+                        lisp->replacestackvalue(nxt, label);
+                        e = op->eval_lambda_min(lisp);
+                        if (e->type == l_return)
+                            break;
+                        if (e->Boolean()) {
+                            e->release();
+                            e = nxt->copying(false);
+                            check_tensor |= e->isPureList();
+                            check_tensor |= !e->is_same_tensor(result->last(lisp));
+                            result->append(e);
+                            protect_save += (e == save_variable);
+                        }
+                        e->release();
+                        nxt = current_list->next_iter_exchange(lisp, iter);
+                    }
                 }
             }
             current_list->clean_iter(iter);
@@ -4491,44 +4508,45 @@ Element* List_takelist_eval::eval(LispE* lisp) {
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
-
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            save_variable = lisp->record_or_replace(nxt, label);
-            
-            e = op->eval_lambda_min(lisp);
-            if (e->type != l_return) {
-                if (e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    check_tensor |= e->isPureList();
-                    protect_save = (e == save_variable);
-                    result->append(e);
-                }
-                else
-                    listsz = 0; //we force to stop now...
-
-                e->release();
-                nxt = current_list->next_iter_exchange(lisp, iter);
-                while (listsz && nxt != emptyatom_) {
-                    lisp->replacestackvalue(nxt, label);
-                    e = op->eval_lambda_min(lisp);
-                    if (e->type == l_return)
-                        break;
+            if (nxt != emptyatom_) {
+                //if there is already a variable with this name on the stack
+                //we record it to restore it later...
+                save_variable = lisp->record_or_replace(nxt, label);
+                
+                e = op->eval_lambda_min(lisp);
+                if (e->type != l_return) {
                     if (e->Boolean()) {
                         e->release();
                         e = nxt->copying(false);
                         check_tensor |= e->isPureList();
-                        check_tensor |= !e->is_same_tensor(result->last(lisp));
+                        protect_save = (e == save_variable);
                         result->append(e);
-                        protect_save += (e == save_variable);
                     }
-                    else {
-                        e->release();
-                        break;
-                    }
+                    else
+                        listsz = 0; //we force to stop now...
+                    
                     e->release();
                     nxt = current_list->next_iter_exchange(lisp, iter);
+                    while (listsz && nxt != emptyatom_) {
+                        lisp->replacestackvalue(nxt, label);
+                        e = op->eval_lambda_min(lisp);
+                        if (e->type == l_return)
+                            break;
+                        if (e->Boolean()) {
+                            e->release();
+                            e = nxt->copying(false);
+                            check_tensor |= e->isPureList();
+                            check_tensor |= !e->is_same_tensor(result->last(lisp));
+                            result->append(e);
+                            protect_save += (e == save_variable);
+                        }
+                        else {
+                            e->release();
+                            break;
+                        }
+                        e->release();
+                        nxt = current_list->next_iter_exchange(lisp, iter);
+                    }
                 }
             }
             current_list->clean_iter(iter);
@@ -4563,7 +4581,6 @@ Element* List_takelist_eval::eval(LispE* lisp) {
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
-
             while (nxt != emptyatom_) {
                 call->in_quote(ps, nxt);
                 e = call->eval(lisp);
@@ -4711,40 +4728,41 @@ Element* List_droplist_eval::eval(LispE* lisp) {
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
-
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            save_variable = lisp->record_or_replace(nxt, label);
-            
-            e = op->eval_lambda_min(lisp);
-            if (e->type != l_return) {
-                if (e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    check_tensor |= e->isPureList();
-                    result->append(e);
-                    protect_save = (e == save_variable);
-                    add = true;
-                }
-                e->release();
-                nxt = current_list->next_iter_exchange(lisp, iter);
+            if (nxt != emptyatom_) {
+                //if there is already a variable with this name on the stack
+                //we record it to restore it later...
+                save_variable = lisp->record_or_replace(nxt, label);
                 
-                while (nxt != emptyatom_) {
-                    lisp->replacestackvalue(nxt, label);
-                    e = op->eval_lambda_min(lisp);
-                    if (e->type == l_return)
-                        break;
-                    if (add || e->Boolean()) {
+                e = op->eval_lambda_min(lisp);
+                if (e->type != l_return) {
+                    if (e->Boolean()) {
                         e->release();
                         e = nxt->copying(false);
                         check_tensor |= e->isPureList();
-                        check_tensor |= !e->is_same_tensor(result->last(lisp));
                         result->append(e);
-                        protect_save += (e == save_variable);
+                        protect_save = (e == save_variable);
                         add = true;
                     }
                     e->release();
                     nxt = current_list->next_iter_exchange(lisp, iter);
+                    
+                    while (nxt != emptyatom_) {
+                        lisp->replacestackvalue(nxt, label);
+                        e = op->eval_lambda_min(lisp);
+                        if (e->type == l_return)
+                            break;
+                        if (add || e->Boolean()) {
+                            e->release();
+                            e = nxt->copying(false);
+                            check_tensor |= e->isPureList();
+                            check_tensor |= !e->is_same_tensor(result->last(lisp));
+                            result->append(e);
+                            protect_save += (e == save_variable);
+                            add = true;
+                        }
+                        e->release();
+                        nxt = current_list->next_iter_exchange(lisp, iter);
+                    }
                 }
             }
             current_list->clean_iter(iter);
@@ -4779,7 +4797,6 @@ Element* List_droplist_eval::eval(LispE* lisp) {
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
-
             while (nxt != emptyatom_) {
                 call->in_quote(ps, nxt);
                 e = call->eval(lisp);
@@ -4868,19 +4885,20 @@ Element* List_scanlist_eval::eval(LispE* lisp) {
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
-
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            save_variable = lisp->record_or_replace(nxt, label);
-            while (nxt != emptyatom_) {
-                lisp->replacestackvalue(nxt, label);
-                result = op->eval_lambda_min(lisp);
-                if (result != null_)
-                    break;
-                nxt = current_list->next_iter_exchange(lisp, iter);
+            if (nxt != emptyatom_) {
+                //if there is already a variable with this name on the stack
+                //we record it to restore it later...
+                save_variable = lisp->record_or_replace(nxt, label);
+                while (nxt != emptyatom_) {
+                    lisp->replacestackvalue(nxt, label);
+                    result = op->eval_lambda_min(lisp);
+                    if (result != null_)
+                        break;
+                    nxt = current_list->next_iter_exchange(lisp, iter);
+                }
+                lisp->reset_in_stack(save_variable, label);
             }
             current_list->clean_iter(iter);
-            lisp->reset_in_stack(save_variable, label);
         }
         else {
             Element* e = op;
@@ -4905,7 +4923,6 @@ Element* List_scanlist_eval::eval(LispE* lisp) {
 
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
-
             while (nxt != emptyatom_) {
                 call->in_quote(ps, nxt);
                 result = call->eval(lisp);
