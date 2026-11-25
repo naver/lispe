@@ -486,7 +486,6 @@ void eval_js_async(LispE* lisp, string& code, List* recall);
 void List::run_js(LispE* lisp, string& code) {
     Element* element = liste[1]->eval(lisp);
     if (element->isList()) {
-        Element* e;
         if (!element->size()) {
             element->release();
             throw new Error ("Error: empty list");
@@ -497,9 +496,7 @@ void List::run_js(LispE* lisp, string& code) {
             for (long i = 1; i < element->size();i++) {
                 if (i != 1)
                     code += ", ";
-                e = element->index(i)->eval(lisp);
-                code += e->jsonify(lisp);
-                e->release();
+                code += element->index(i)->jsonify(lisp);
             }
         }
         catch(Error* err) {
