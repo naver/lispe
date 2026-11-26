@@ -6119,7 +6119,7 @@ Element* List_listand_eval::eval(LispE* lisp) {
 
     try {
         lisp->checkState(this);
-        for (long i = 1; i < listsize; i++) {
+        for (long i = 2; i < listsize; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
             result = first_element->list_and(lisp, second_element);
@@ -6147,7 +6147,7 @@ Element* List_listor_eval::eval(LispE* lisp) {
     long listsize = liste.size();
     try {
         lisp->checkState(this);
-        for (long i = 1; i < listsize; i++) {
+        for (long i = 2; i < listsize; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
             result = first_element->list_or(lisp, second_element);
@@ -6174,7 +6174,7 @@ Element* List_listxor_eval::eval(LispE* lisp) {
     long listsize = liste.size();
     try {
         lisp->checkState(this);
-        for (long i = 1; i < listsize; i++) {
+        for (long i = 2; i < listsize; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
             result = first_element->list_xor(lisp, second_element);
