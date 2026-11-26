@@ -33,7 +33,7 @@ void decrement_total() {
     total_objects--;
 }
 
-static std::string version = "1.2026.11.16.13.29";
+static std::string version = "1.2026.11.26.11.26";
 string LispVersion() {
     return version;
 }
@@ -2762,9 +2762,18 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
     Element* element = NULL;
     int16_t lab = -1;
     Element* check_composition_depth = NULL;
-        
+
     while (index < parse.types.size()) {
         parse.current = index;
+        //A composition (take, cycle, map...) that has just been read must be composed before the next
+        //element of the same list is added, whatever this element is (an atom, a number, a string, a quote...).
+        //Otherwise, the composed code is appended at the end of the list, after these elements:
+        //(list (take 3 (cycle '(1 2))) 5) would give (5 (1 2 1))
+        if (check_composition_depth == current_program && composition_stack.size() &&
+            parse.types[index] != c_closing && parse.types[index] != l_compose) {
+            compose(current_program);
+            check_composition_depth = NULL;
+        }
         switch (parse.types[index]) {
             case c_opening: {
                 if (quoting)
@@ -3970,6 +3979,7 @@ Element* LispE::size() {
 Element* List::evall_memory(LispE* lisp) {
     return lisp->size();
 }
+
 
 
 

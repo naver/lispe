@@ -637,32 +637,9 @@ Element* List::evall_js_lf(LispE* lisp) {
 }
 
 Element* List::evall_js_async(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
     string code;
-    if (element->isList()) {
-        if (!element->size()) {
-            element->release();
-            throw new Error ("Error: empty list");
-        }
-        code = element->index(0)->toString(lisp);
-        code += "(";
-        try {
-            for (long i = 1; i < element->size();i++) {
-                if (i != 1)
-                    code += ", ";
-                code += element->index(i)->jsonify(lisp);
-            }
-        }
-        catch(Error* err) {
-            element->release();
-            throw err;
-        }
-        code += ");";
-    }
-    else
-        code = element->toString(lisp);
-
-    element->release();
+    run_js(lisp, code);
+    Element* element;
     long sz = liste.size();
     List* recall = lisp->provideList();
     element = liste[2]->eval(lisp);
